@@ -45,9 +45,9 @@ interface Project {
 export default function Projects() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterBuilder, setFilterBuilder] = useState("");
-  const [filterLocation, setFilterLocation] = useState("");
-  const [filterStatus, setFilterStatus] = useState("");
+  const [filterBuilder, setFilterBuilder] = useState("all");
+  const [filterLocation, setFilterLocation] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
   
   const [newBuilderId, setNewBuilderId] = useState("");
   const [newLocationId, setNewLocationId] = useState("");
@@ -130,9 +130,9 @@ export default function Projects() {
       project.builders?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       project.locations?.name.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesBuilder = filterBuilder === "" || project.builders?.id === filterBuilder;
-    const matchesLocation = filterLocation === "" || project.locations?.id === filterLocation;
-    const matchesStatus = filterStatus === "" || project.project_statuses?.id === filterStatus;
+    const matchesBuilder = filterBuilder === "all" || project.builders?.id === filterBuilder;
+    const matchesLocation = filterLocation === "all" || project.locations?.id === filterLocation;
+    const matchesStatus = filterStatus === "all" || project.project_statuses?.id === filterStatus;
 
     return matchesSearch && matchesBuilder && matchesLocation && matchesStatus;
   });
@@ -245,7 +245,7 @@ export default function Projects() {
                   <SelectValue placeholder="All Builders" />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-700 border-slate-600">
-                  <SelectItem value="" className="text-white">All Builders</SelectItem>
+                  <SelectItem value="all" className="text-white">All Builders</SelectItem>
                   {builders.map((b) => (
                     <SelectItem key={b.id} value={b.id} className="text-white">{b.name}</SelectItem>
                   ))}
@@ -256,7 +256,7 @@ export default function Projects() {
                   <SelectValue placeholder="All Locations" />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-700 border-slate-600">
-                  <SelectItem value="" className="text-white">All Locations</SelectItem>
+                  <SelectItem value="all" className="text-white">All Locations</SelectItem>
                   {locations.map((l) => (
                     <SelectItem key={l.id} value={l.id} className="text-white">{l.name}</SelectItem>
                   ))}
@@ -267,7 +267,7 @@ export default function Projects() {
                   <SelectValue placeholder="All Statuses" />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-700 border-slate-600">
-                  <SelectItem value="" className="text-white">All Statuses</SelectItem>
+                  <SelectItem value="all" className="text-white">All Statuses</SelectItem>
                   {statuses.map((s) => (
                     <SelectItem key={s.id} value={s.id} className="text-white">{s.name}</SelectItem>
                   ))}

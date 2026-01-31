@@ -39,8 +39,8 @@ interface ScheduleEntry {
 }
 
 export default function Invoices() {
-  const [filterBuilder, setFilterBuilder] = useState("");
-  const [filterCrew, setFilterCrew] = useState("");
+  const [filterBuilder, setFilterBuilder] = useState("all");
+  const [filterCrew, setFilterCrew] = useState("all");
 
   const { data: pendingEntries = [], isLoading: loadingPending } = useQuery({
     queryKey: ["invoice-pending"],
@@ -102,10 +102,10 @@ export default function Invoices() {
 
   const filterEntries = (entries: ScheduleEntry[]) => {
     return entries.filter((entry) => {
-      const matchesBuilder = filterBuilder === "" || 
+      const matchesBuilder = filterBuilder === "all" || 
         entry.projects?.builders?.code === filterBuilder ||
         entry.projects?.builders?.name === filterBuilder;
-      const matchesCrew = filterCrew === "" || entry.crews?.name === filterCrew;
+      const matchesCrew = filterCrew === "all" || entry.crews?.name === filterCrew;
       return matchesBuilder && matchesCrew;
     });
   };
@@ -186,7 +186,7 @@ export default function Invoices() {
                   <SelectValue placeholder="All Builders" />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-700 border-slate-600">
-                  <SelectItem value="" className="text-white">All Builders</SelectItem>
+                  <SelectItem value="all" className="text-white">All Builders</SelectItem>
                   {builders.map((b) => (
                     <SelectItem key={b.id} value={b.code || b.name} className="text-white">{b.name}</SelectItem>
                   ))}
@@ -197,7 +197,7 @@ export default function Invoices() {
                   <SelectValue placeholder="All Crews" />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-700 border-slate-600">
-                  <SelectItem value="" className="text-white">All Crews</SelectItem>
+                  <SelectItem value="all" className="text-white">All Crews</SelectItem>
                   {crews.map((c) => (
                     <SelectItem key={c.id} value={c.name} className="text-white">{c.name}</SelectItem>
                   ))}
