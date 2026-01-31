@@ -1,0 +1,265 @@
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { Plus, Pencil } from "lucide-react";
+
+type TableName = "crews" | "builders" | "locations" | "phases" | "project_statuses" | "suppliers" | "pump_vendors" | "inspection_types" | "inspectors";
+
+interface ReferenceDataTableProps {
+  tableName: TableName;
+  displayName: string;
+  hasCode?: boolean;
+  hasOrder?: boolean;
+}
+
+interface ReferenceItem {
+  id: string;
+  name: string;
+  code?: string;
+  display_order?: number;
+  is_active: boolean;
+}
+
+export function ReferenceDataTable({ tableName, displayName, hasCode, hasOrder }: ReferenceDataTableProps) {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<ReferenceItem | null>(null);
+  const [name, setName] = useState("");
+  const [code, setCode] = useState("");
+  const [displayOrder, setDisplayOrder] = useState(0);
+  
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const { data: items = [], isLoading } = useQuery({
+    queryKey: [tableName],
+    queryFn: async () => {
+      const query = supabase.from(tableName).select("*");
+      
+      if (hasOrder) {
+        query.order("display_order", { ascending: true });
+      } else {
+        query.order("name", { ascending: true });
+      }
+      
+      const { data, error } = await query;
+      if (error) throw error;
+      return data as ReferenceItem[];
+    },
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async (newItem: Partial<ReferenceItem>) => {
+      const { error } = await supabase.from(tableName).insert([newItem] as any);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [tableName] });
+      toast({ title: "Created successfully" });
+      closeDialog();
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, ...updates }: Partial<ReferenceItem> & { id: string }) => {
+      const { error } = await supabase.from(tableName).update(updates).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [tableName] });
+      toast({ title: "Updated successfully" });
+      closeDialog();
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const toggleActiveMutation = useMutation({
+    mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
+      const { error } = await supabase.from(tableName).update({ is_active }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [tableName] });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const openDialog = (item?: ReferenceItem) => {
+    if (item) {
+      setEditingItem(item);
+      setName(item.name);
+      setCode(item.code || "");
+      setDisplayOrder(item.display_order || 0);
+    } else {
+      setEditingItem(null);
+      setName("");
+      setCode("");
+      setDisplayOrder(items.length + 1);
+    }
+    setIsDialogOpen(true);
+  };
+
+  const closeDialog = () => {
+    setIsDialogOpen(false);
+    setEditingItem(null);
+    setName("");
+    setCode("");
+    setDisplayOrder(0);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const itemData: Partial<ReferenceItem> = { name };
+    if (hasCode) itemData.code = code;
+    if (hasOrder) itemData.display_order = displayOrder;
+
+    if (editingItem) {
+      updateMutation.mutate({ id: editingItem.id, ...itemData });
+    } else {
+      createMutation.mutate(itemData);
+    }
+  };
+
+  return (
+    <Card className="bg-slate-800 border-slate-700">
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle className="text-white">{displayName}</CardTitle>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button 
+              onClick={() => openDialog()} 
+              className="bg-amber-500 hover:bg-amber-600 text-slate-900"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add {displayName.slice(0, -1)}
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="bg-slate-800 border-slate-700">
+            <DialogHeader>
+              <DialogTitle className="text-white">
+                {editingItem ? "Edit" : "Add"} {displayName.slice(0, -1)}
+              </DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-slate-300">Name</Label>
+                <Input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  className="bg-slate-700 border-slate-600 text-white"
+                />
+              </div>
+              {hasCode && (
+                <div className="space-y-2">
+                  <Label className="text-slate-300">Code (optional)</Label>
+                  <Input
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    className="bg-slate-700 border-slate-600 text-white"
+                  />
+                </div>
+              )}
+              {hasOrder && (
+                <div className="space-y-2">
+                  <Label className="text-slate-300">Display Order</Label>
+                  <Input
+                    type="number"
+                    value={displayOrder}
+                    onChange={(e) => setDisplayOrder(parseInt(e.target.value) || 0)}
+                    className="bg-slate-700 border-slate-600 text-white"
+                  />
+                </div>
+              )}
+              <Button 
+                type="submit" 
+                className="w-full bg-amber-500 hover:bg-amber-600 text-slate-900"
+                disabled={createMutation.isPending || updateMutation.isPending}
+              >
+                {editingItem ? "Update" : "Create"}
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="text-slate-400 text-center py-8">Loading...</div>
+        ) : items.length === 0 ? (
+          <div className="text-slate-400 text-center py-8">No items yet</div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow className="border-slate-700 hover:bg-transparent">
+                <TableHead className="text-slate-400">Name</TableHead>
+                {hasCode && <TableHead className="text-slate-400">Code</TableHead>}
+                {hasOrder && <TableHead className="text-slate-400">Order</TableHead>}
+                <TableHead className="text-slate-400">Active</TableHead>
+                <TableHead className="text-slate-400 w-20">Edit</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {items.map((item) => (
+                <TableRow key={item.id} className="border-slate-700">
+                  <TableCell className="text-white font-medium">{item.name}</TableCell>
+                  {hasCode && (
+                    <TableCell className="text-slate-400">{item.code || "-"}</TableCell>
+                  )}
+                  {hasOrder && (
+                    <TableCell className="text-slate-400">{item.display_order}</TableCell>
+                  )}
+                  <TableCell>
+                    <Switch
+                      checked={item.is_active}
+                      onCheckedChange={(checked) =>
+                        toggleActiveMutation.mutate({ id: item.id, is_active: checked })
+                      }
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => openDialog(item)}
+                      className="text-slate-400 hover:text-white"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
