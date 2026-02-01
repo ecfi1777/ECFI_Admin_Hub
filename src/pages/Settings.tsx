@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ReferenceDataTable } from "@/components/settings/ReferenceDataTable";
 import { CrewMembersTable } from "@/components/settings/CrewMembersTable";
 import { CrewOrderTable } from "@/components/settings/CrewOrderTable";
+import { ChangePassword } from "@/components/settings/ChangePassword";
 
 const tabs = [
   { value: "crews", label: "Crews", table: "crews" },
@@ -17,6 +18,7 @@ const tabs = [
   { value: "pump_vendors", label: "Pump Vendors", table: "pump_vendors" },
   { value: "inspection_types", label: "Inspection Types", table: "inspection_types" },
   { value: "inspectors", label: "Inspectors", table: "inspectors" },
+  { value: "account", label: "Account", table: null },
 ];
 
 export default function Settings() {
@@ -49,6 +51,8 @@ export default function Settings() {
                 <CrewMembersTable />
               ) : tab.value === "crew_order" ? (
                 <CrewOrderTable />
+              ) : tab.value === "account" ? (
+                <ChangePassword />
               ) : (
                 <ReferenceDataTable 
                   tableName={tab.table as any} 
