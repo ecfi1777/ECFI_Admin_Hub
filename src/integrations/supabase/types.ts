@@ -79,6 +79,7 @@ export type Database = {
       crews: {
         Row: {
           created_at: string
+          display_order: number
           id: string
           is_active: boolean
           name: string
@@ -86,6 +87,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          display_order?: number
           id?: string
           is_active?: boolean
           name: string
@@ -93,6 +95,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          display_order?: number
           id?: string
           is_active?: boolean
           name?: string
@@ -355,12 +358,14 @@ export type Database = {
           invoice_complete: boolean
           invoice_number: string | null
           notes: string | null
+          order_number: string | null
           order_status: string | null
           phase_id: string | null
           project_id: string | null
           pump_invoice_amount: number | null
           pump_invoice_number: string | null
           pump_vendor_id: string | null
+          qty_ordered: string | null
           ready_mix_invoice_amount: number | null
           ready_mix_invoice_number: string | null
           ready_mix_yards_billed: number | null
@@ -386,12 +391,14 @@ export type Database = {
           invoice_complete?: boolean
           invoice_number?: string | null
           notes?: string | null
+          order_number?: string | null
           order_status?: string | null
           phase_id?: string | null
           project_id?: string | null
           pump_invoice_amount?: number | null
           pump_invoice_number?: string | null
           pump_vendor_id?: string | null
+          qty_ordered?: string | null
           ready_mix_invoice_amount?: number | null
           ready_mix_invoice_number?: string | null
           ready_mix_yards_billed?: number | null
@@ -417,12 +424,14 @@ export type Database = {
           invoice_complete?: boolean
           invoice_number?: string | null
           notes?: string | null
+          order_number?: string | null
           order_status?: string | null
           phase_id?: string | null
           project_id?: string | null
           pump_invoice_amount?: number | null
           pump_invoice_number?: string | null
           pump_vendor_id?: string | null
+          qty_ordered?: string | null
           ready_mix_invoice_amount?: number | null
           ready_mix_invoice_number?: string | null
           ready_mix_yards_billed?: number | null

@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChevronLeft, ChevronRight, Plus, Calendar } from "lucide-react";
-import { ScheduleEntryRow } from "./ScheduleEntryRow";
+import { ScheduleTable } from "./ScheduleTable";
 import { AddEntryDialog } from "./AddEntryDialog";
 
 interface ScheduleEntry {
@@ -32,6 +32,8 @@ interface ScheduleEntry {
   to_be_invoiced: boolean;
   invoice_complete: boolean;
   invoice_number: string | null;
+  qty_ordered: string | null;
+  order_number: string | null;
   crews: { name: string } | null;
   phases: { name: string } | null;
   suppliers: { name: string; code: string | null } | null;
@@ -48,6 +50,37 @@ interface ScheduleEntry {
 interface Crew {
   id: string;
   name: string;
+  display_order: number;
+}
+
+// Sort crews: numbers first (ascending), then alphabetical
+function sortCrews(crews: Crew[]): Crew[] {
+  return [...crews].sort((a, b) => {
+    // First sort by display_order if set (non-zero)
+    if (a.display_order !== 0 || b.display_order !== 0) {
+      if (a.display_order !== b.display_order) {
+        return a.display_order - b.display_order;
+      }
+    }
+    
+    // Check if names start with numbers
+    const aIsNumber = /^\d/.test(a.name);
+    const bIsNumber = /^\d/.test(b.name);
+    
+    // Numbers come first
+    if (aIsNumber && !bIsNumber) return -1;
+    if (!aIsNumber && bIsNumber) return 1;
+    
+    // Both are numbers - sort numerically
+    if (aIsNumber && bIsNumber) {
+      const aNum = parseInt(a.name.match(/^\d+/)?.[0] || "0", 10);
+      const bNum = parseInt(b.name.match(/^\d+/)?.[0] || "0", 10);
+      return aNum - bNum;
+    }
+    
+    // Both are text - sort alphabetically
+    return a.name.localeCompare(b.name);
+  });
 }
 
 export function DailySchedule() {
@@ -62,13 +95,14 @@ export function DailySchedule() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("crews")
-        .select("id, name")
-        .eq("is_active", true)
-        .order("name");
+        .select("id, name, display_order")
+        .eq("is_active", true);
       if (error) throw error;
       return data as Crew[];
     },
   });
+
+  const sortedCrews = sortCrews(crews);
 
   const { data: entries = [], isLoading } = useQuery({
     queryKey: ["schedule-entries", dateStr],
@@ -97,7 +131,7 @@ export function DailySchedule() {
     },
   });
 
-  const entriesByCrew = crews.reduce((acc, crew) => {
+  const entriesByCrew = sortedCrews.reduce((acc, crew) => {
     acc[crew.id] = entries.filter((e) => e.crew_id === crew.id);
     return acc;
   }, {} as Record<string, ScheduleEntry[]>);
@@ -109,23 +143,23 @@ export function DailySchedule() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-white">Daily Schedule</h1>
-          <p className="text-slate-400">Manage crew assignments and pours</p>
+          <h1 className="text-2xl font-bold text-foreground">Daily Schedule</h1>
+          <p className="text-muted-foreground">Manage crew assignments and pours</p>
         </div>
         <div className="flex items-center gap-4">
           {/* Date Navigation */}
-          <div className="flex items-center gap-2 bg-slate-800 rounded-lg p-1">
+          <div className="flex items-center gap-2 bg-muted rounded-lg p-1">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setSelectedDate(subDays(selectedDate, 1))}
-              className="text-slate-400 hover:text-white"
+              className="text-muted-foreground hover:text-foreground"
             >
               <ChevronLeft className="w-4 h-4" />
             </Button>
             <div className="flex items-center gap-2 px-3">
               <Calendar className="w-4 h-4 text-amber-500" />
-              <span className="text-white font-medium min-w-[140px] text-center">
+              <span className="text-foreground font-medium min-w-[140px] text-center">
                 {format(selectedDate, "EEE, MMM d, yyyy")}
               </span>
             </div>
@@ -133,7 +167,7 @@ export function DailySchedule() {
               variant="ghost"
               size="icon"
               onClick={() => setSelectedDate(addDays(selectedDate, 1))}
-              className="text-slate-400 hover:text-white"
+              className="text-muted-foreground hover:text-foreground"
             >
               <ChevronRight className="w-4 h-4" />
             </Button>
@@ -141,7 +175,7 @@ export function DailySchedule() {
           <Button
             onClick={() => setSelectedDate(new Date())}
             variant="outline"
-            className="border-slate-600 text-slate-300 hover:bg-slate-700"
+            className="border-border text-foreground hover:bg-muted"
           >
             Today
           </Button>
@@ -150,11 +184,11 @@ export function DailySchedule() {
 
       {/* Schedule Grid */}
       {isLoading ? (
-        <div className="text-slate-400 text-center py-12">Loading schedule...</div>
+        <div className="text-muted-foreground text-center py-12">Loading schedule...</div>
       ) : (
         <div className="space-y-4">
-          {crews.map((crew) => (
-            <Card key={crew.id} className="bg-slate-800 border-slate-700">
+          {sortedCrews.map((crew) => (
+            <Card key={crew.id} className="bg-card border-border">
               <CardHeader className="py-3 px-4 flex flex-row items-center justify-between">
                 <CardTitle className="text-lg font-semibold text-amber-500">
                   Crew {crew.name}
@@ -172,34 +206,20 @@ export function DailySchedule() {
                 </Button>
               </CardHeader>
               <CardContent className="p-0">
-                {entriesByCrew[crew.id]?.length > 0 ? (
-                  <div className="divide-y divide-slate-700">
-                    {entriesByCrew[crew.id].map((entry) => (
-                      <ScheduleEntryRow key={entry.id} entry={entry} />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-slate-500 text-sm text-center py-6">
-                    No entries scheduled
-                  </div>
-                )}
+                <ScheduleTable entries={entriesByCrew[crew.id] || []} />
               </CardContent>
             </Card>
           ))}
 
           {unassignedEntries.length > 0 && (
-            <Card className="bg-slate-800 border-slate-700">
+            <Card className="bg-card border-border">
               <CardHeader className="py-3 px-4">
-                <CardTitle className="text-lg font-semibold text-slate-400">
+                <CardTitle className="text-lg font-semibold text-muted-foreground">
                   Unassigned
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                <div className="divide-y divide-slate-700">
-                  {unassignedEntries.map((entry) => (
-                    <ScheduleEntryRow key={entry.id} entry={entry} />
-                  ))}
-                </div>
+                <ScheduleTable entries={unassignedEntries} />
               </CardContent>
             </Card>
           )}
