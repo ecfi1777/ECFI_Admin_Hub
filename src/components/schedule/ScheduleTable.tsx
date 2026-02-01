@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, CalendarIcon, AlertTriangle } from "lucide-react";
+import { Trash2, CalendarIcon, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
+import { EditEntryDialog } from "./EditEntryDialog";
 
 interface ScheduleEntry {
   id: string;
@@ -52,7 +53,6 @@ interface ScheduleEntry {
   ready_mix_invoice_number: string | null;
   ready_mix_invoice_amount: number | null;
   ready_mix_yards_billed: number | null;
-  crew_yards_poured: number | null;
   pump_vendor_id: string | null;
   pump_invoice_number: string | null;
   pump_invoice_amount: number | null;
@@ -88,6 +88,7 @@ export function ScheduleTable({ entries }: ScheduleTableProps) {
   const [deleteEntryId, setDeleteEntryId] = useState<string | null>(null);
   const [moveEntryId, setMoveEntryId] = useState<string | null>(null);
   const [moveDate, setMoveDate] = useState<Date | undefined>(undefined);
+  const [editEntry, setEditEntry] = useState<ScheduleEntry | null>(null);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -322,19 +323,12 @@ export function ScheduleTable({ entries }: ScheduleTableProps) {
               <TableHead className="text-muted-foreground w-24">Inspector</TableHead>
               <TableHead className="text-muted-foreground w-20">Supplier</TableHead>
               <TableHead className="text-muted-foreground w-16">Qty Ord</TableHead>
-              <TableHead className="text-muted-foreground w-16">Yards</TableHead>
               <TableHead className="text-muted-foreground w-10 text-center">Inv</TableHead>
-              <TableHead className="text-muted-foreground w-20">Actions</TableHead>
+              <TableHead className="text-muted-foreground w-24">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {entries.map((entry) => {
-              const hasDiscrepancy = 
-                entry.crew_yards_poured !== null && 
-                entry.ready_mix_yards_billed !== null && 
-                entry.crew_yards_poured !== entry.ready_mix_yards_billed;
-
-              return (
+            {entries.map((entry) => (
                 <TableRow key={entry.id} className="border-border hover:bg-muted/50">
                   <TableCell className="text-foreground text-sm py-2">
                     {entry.projects?.builders?.code || entry.projects?.builders?.name || "-"}
@@ -344,7 +338,7 @@ export function ScheduleTable({ entries }: ScheduleTableProps) {
                       {entry.projects?.locations?.name || "-"}
                     </span>
                   </TableCell>
-                  <TableCell className="text-amber-500 font-medium text-sm py-2">
+                  <TableCell className="text-primary font-medium text-sm py-2">
                     {entry.projects?.lot_number || "-"}
                   </TableCell>
                   <TableCell className="py-2">
@@ -399,26 +393,24 @@ export function ScheduleTable({ entries }: ScheduleTableProps) {
                       entry.qty_ordered || "-"
                     )}
                   </TableCell>
-                  <TableCell className="py-2">
-                    <div className="flex items-center gap-1">
-                      {renderEditableCell(
-                        entry,
-                        "crew_yards_poured",
-                        entry.crew_yards_poured?.toString() || "-",
-                        hasDiscrepancy ? "text-red-400" : "text-foreground"
-                      )}
-                      {hasDiscrepancy && <AlertTriangle className="w-3 h-3 text-red-400 flex-shrink-0" />}
-                    </div>
-                  </TableCell>
                   <TableCell className="py-2 text-center">
                     <Checkbox
                       checked={entry.to_be_invoiced}
                       onCheckedChange={() => handleCheckboxChange(entry.id, entry.to_be_invoiced)}
-                      className="border-muted-foreground data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
+                      className="border-muted-foreground data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                     />
                   </TableCell>
                   <TableCell className="py-2">
                     <div className="flex items-center gap-1">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => setEditEntry(entry)}
+                        className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                        title="Edit full details"
+                      >
+                        <Pencil className="w-3 h-3" />
+                      </Button>
                       <Popover>
                         <PopoverTrigger asChild>
                           <Button
@@ -473,8 +465,7 @@ export function ScheduleTable({ entries }: ScheduleTableProps) {
                     </div>
                   </TableCell>
                 </TableRow>
-              );
-            })}
+              ))}
           </TableBody>
         </Table>
       </div>
@@ -499,6 +490,13 @@ export function ScheduleTable({ entries }: ScheduleTableProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Edit Entry Dialog */}
+      <EditEntryDialog
+        entry={editEntry}
+        open={!!editEntry}
+        onOpenChange={(open) => !open && setEditEntry(null)}
+      />
     </>
   );
 }
