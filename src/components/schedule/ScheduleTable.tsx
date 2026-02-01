@@ -200,9 +200,13 @@ export function ScheduleTable({ entries }: ScheduleTableProps) {
   const saveEdit = (entryId: string, field: string) => {
     const updates: Record<string, any> = {};
     
-    if (field === "crew_yards_poured") {
+    // Numeric fields that need parsing
+    const numericFields = ["crew_yards_poured", "ready_mix_yards_billed", "ready_mix_invoice_amount", "pump_invoice_amount", "inspection_amount"];
+    
+    if (numericFields.includes(field)) {
       updates[field] = parseFloat(editValue) || 0;
     } else {
+      // Text fields - store as-is (allows "10+", "8+2", etc.)
       updates[field] = editValue || null;
     }
     
@@ -317,6 +321,7 @@ export function ScheduleTable({ entries }: ScheduleTableProps) {
               <TableHead className="text-muted-foreground w-24">Insp. Type</TableHead>
               <TableHead className="text-muted-foreground w-24">Inspector</TableHead>
               <TableHead className="text-muted-foreground w-20">Supplier</TableHead>
+              <TableHead className="text-muted-foreground w-16">Qty Ord</TableHead>
               <TableHead className="text-muted-foreground w-16">Yards</TableHead>
               <TableHead className="text-muted-foreground w-10 text-center">Inv</TableHead>
               <TableHead className="text-muted-foreground w-20">Actions</TableHead>
@@ -385,6 +390,13 @@ export function ScheduleTable({ entries }: ScheduleTableProps) {
                       entry.supplier_id,
                       suppliers,
                       entry.suppliers?.code || entry.suppliers?.name || "-"
+                    )}
+                  </TableCell>
+                  <TableCell className="py-2">
+                    {renderEditableCell(
+                      entry,
+                      "qty_ordered",
+                      entry.qty_ordered || "-"
                     )}
                   </TableCell>
                   <TableCell className="py-2">
