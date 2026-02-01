@@ -208,7 +208,17 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!projectId) {
+      toast({ title: "Error", description: "Please select a project before adding an entry", variant: "destructive" });
+      return;
+    }
     createMutation.mutate();
+  };
+
+  const handleProjectSelect = (id: string) => {
+    setProjectId(id);
+    // Clear search after selection to show the selected project clearly
+    setProjectSearch("");
   };
 
   return (
@@ -263,29 +273,55 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate 
               </div>
 
               <div className="space-y-2">
-                <Label className="text-muted-foreground">Project</Label>
+                <Label className="text-muted-foreground">Project <span className="text-red-400">*</span></Label>
                 <div className="space-y-2">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
                       value={projectSearch}
-                      onChange={(e) => setProjectSearch(e.target.value)}
+                      onChange={(e) => {
+                        setProjectSearch(e.target.value);
+                        // Clear selection when user starts typing again
+                        if (projectId) setProjectId("");
+                      }}
                       placeholder="Search by builder, location, or lot..."
                       className="bg-muted border-border text-foreground pl-9"
                     />
                   </div>
-                  <Select value={projectId} onValueChange={setProjectId}>
-                    <SelectTrigger className="bg-muted border-border text-foreground">
-                      <SelectValue placeholder="Select project" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-popover border-border max-h-60">
-                      {filteredProjects.map((project) => (
-                        <SelectItem key={project.id} value={project.id} className="text-foreground">
-                          {project.builders?.code || project.builders?.name} - {project.locations?.name} - {project.lot_number}
-                        </SelectItem>
+                  {/* Show search results as clickable list */}
+                  {projectSearch.trim() && filteredProjects.length > 0 && !projectId && (
+                    <div className="bg-muted border border-border rounded-md max-h-48 overflow-y-auto">
+                      {filteredProjects.slice(0, 10).map((project) => (
+                        <div
+                          key={project.id}
+                          onClick={() => handleProjectSelect(project.id)}
+                          className="px-3 py-2 hover:bg-accent cursor-pointer text-foreground text-sm border-b border-border last:border-b-0"
+                        >
+                          {project.builders?.code || project.builders?.name || "No Builder"} - {project.locations?.name || "No Location"} - {project.lot_number}
+                        </div>
                       ))}
-                    </SelectContent>
-                  </Select>
+                    </div>
+                  )}
+                  {projectSearch.trim() && filteredProjects.length === 0 && !projectId && (
+                    <div className="text-muted-foreground text-sm py-2">
+                      No projects found matching "{projectSearch}"
+                    </div>
+                  )}
+                  {/* Show selected project */}
+                  {projectId && (
+                    <div className="bg-amber-500/10 border border-amber-500/30 rounded-md px-3 py-2 text-foreground text-sm flex justify-between items-center">
+                      <span>
+                        {projects.find(p => p.id === projectId)?.builders?.code || projects.find(p => p.id === projectId)?.builders?.name} - {projects.find(p => p.id === projectId)?.locations?.name} - {projects.find(p => p.id === projectId)?.lot_number}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setProjectId("")}
+                        className="text-muted-foreground hover:text-foreground ml-2"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 
