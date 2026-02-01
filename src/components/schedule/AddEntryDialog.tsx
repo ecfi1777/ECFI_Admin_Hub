@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Search } from "lucide-react";
 
 interface AddEntryDialogProps {
   open: boolean;
@@ -31,11 +32,14 @@ interface AddEntryDialogProps {
 export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate }: AddEntryDialogProps) {
   const [crewId, setCrewId] = useState(defaultCrewId || "");
   const [projectId, setProjectId] = useState("");
+  const [projectSearch, setProjectSearch] = useState("");
   const [phaseId, setPhaseId] = useState("");
   const [startTime, setStartTime] = useState("");
   const [orderStatus, setOrderStatus] = useState("");
   const [notes, setNotes] = useState("");
   const [supplierId, setSupplierId] = useState("");
+  const [orderNumber, setOrderNumber] = useState("");
+  const [qtyOrdered, setQtyOrdered] = useState("");
   const [readyMixInvoiceNumber, setReadyMixInvoiceNumber] = useState("");
   const [readyMixInvoiceAmount, setReadyMixInvoiceAmount] = useState("");
   const [readyMixYardsBilled, setReadyMixYardsBilled] = useState("");
@@ -65,17 +69,36 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate 
   });
 
   const { data: projects = [] } = useQuery({
-    queryKey: ["projects-active"],
+    queryKey: ["projects-all"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
         .select("id, lot_number, builders(name, code), locations(name)")
-        .order("created_at", { ascending: false })
-        .limit(100);
+        .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },
   });
+
+  // Filter projects based on search term
+  const filteredProjects = useMemo(() => {
+    if (!projectSearch.trim()) return projects;
+    
+    const searchLower = projectSearch.toLowerCase();
+    return projects.filter((project) => {
+      const builderName = project.builders?.name?.toLowerCase() || "";
+      const builderCode = project.builders?.code?.toLowerCase() || "";
+      const location = project.locations?.name?.toLowerCase() || "";
+      const lot = project.lot_number?.toLowerCase() || "";
+      
+      return (
+        builderName.includes(searchLower) ||
+        builderCode.includes(searchLower) ||
+        location.includes(searchLower) ||
+        lot.includes(searchLower)
+      );
+    });
+  }, [projects, projectSearch]);
 
   const { data: phases = [] } = useQuery({
     queryKey: ["phases-active"],
@@ -133,6 +156,8 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate 
         order_status: orderStatus || null,
         notes: notes || null,
         supplier_id: supplierId || null,
+        order_number: orderNumber || null,
+        qty_ordered: qtyOrdered || null,
         ready_mix_invoice_number: readyMixInvoiceNumber || null,
         ready_mix_invoice_amount: parseFloat(readyMixInvoiceAmount) || 0,
         ready_mix_yards_billed: parseFloat(readyMixYardsBilled) || 0,
@@ -160,11 +185,14 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate 
 
   const resetForm = () => {
     setProjectId("");
+    setProjectSearch("");
     setPhaseId("");
     setStartTime("");
     setOrderStatus("");
     setNotes("");
     setSupplierId("");
+    setOrderNumber("");
+    setQtyOrdered("");
     setReadyMixInvoiceNumber("");
     setReadyMixInvoiceAmount("");
     setReadyMixYardsBilled("");
@@ -185,14 +213,14 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-slate-800 border-slate-700 max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="bg-card border-border max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-white">Add Schedule Entry</DialogTitle>
+          <DialogTitle className="text-foreground">Add Schedule Entry</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <Tabs defaultValue="basic" className="w-full">
-            <TabsList className="bg-slate-700 w-full">
+            <TabsList className="bg-muted w-full">
               <TabsTrigger value="basic" className="flex-1 data-[state=active]:bg-amber-500 data-[state=active]:text-slate-900">
                 Basic
               </TabsTrigger>
@@ -210,151 +238,186 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate 
             <TabsContent value="basic" className="space-y-4 mt-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-slate-300">Crew</Label>
+                  <Label className="text-muted-foreground">Crew</Label>
                   <Select value={crewId} onValueChange={setCrewId}>
-                    <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                    <SelectTrigger className="bg-muted border-border text-foreground">
                       <SelectValue placeholder="Select crew" />
                     </SelectTrigger>
-                    <SelectContent className="bg-slate-700 border-slate-600">
+                    <SelectContent className="bg-popover border-border">
                       {crews.map((crew) => (
-                        <SelectItem key={crew.id} value={crew.id} className="text-white">{crew.name}</SelectItem>
+                        <SelectItem key={crew.id} value={crew.id} className="text-foreground">{crew.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-slate-300">Start Time</Label>
+                  <Label className="text-muted-foreground">Start Time</Label>
                   <Input
                     type="time"
                     value={startTime}
                     onChange={(e) => setStartTime(e.target.value)}
-                    className="bg-slate-700 border-slate-600 text-white"
+                    className="bg-muted border-border text-foreground"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label className="text-slate-300">Project</Label>
-                <Select value={projectId} onValueChange={setProjectId}>
-                  <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
-                    <SelectValue placeholder="Select project" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-slate-700 border-slate-600 max-h-60">
-                    {projects.map((project) => (
-                      <SelectItem key={project.id} value={project.id} className="text-white">
-                        {project.builders?.code || project.builders?.name} - {project.locations?.name} - {project.lot_number}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label className="text-muted-foreground">Project</Label>
+                <div className="space-y-2">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      value={projectSearch}
+                      onChange={(e) => setProjectSearch(e.target.value)}
+                      placeholder="Search by builder, location, or lot..."
+                      className="bg-muted border-border text-foreground pl-9"
+                    />
+                  </div>
+                  <Select value={projectId} onValueChange={setProjectId}>
+                    <SelectTrigger className="bg-muted border-border text-foreground">
+                      <SelectValue placeholder="Select project" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover border-border max-h-60">
+                      {filteredProjects.map((project) => (
+                        <SelectItem key={project.id} value={project.id} className="text-foreground">
+                          {project.builders?.code || project.builders?.name} - {project.locations?.name} - {project.lot_number}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-slate-300">Phase</Label>
+                  <Label className="text-muted-foreground">Phase</Label>
                   <Select value={phaseId} onValueChange={setPhaseId}>
-                    <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                    <SelectTrigger className="bg-muted border-border text-foreground">
                       <SelectValue placeholder="Select phase" />
                     </SelectTrigger>
-                    <SelectContent className="bg-slate-700 border-slate-600">
+                    <SelectContent className="bg-popover border-border">
                       {phases.map((phase) => (
-                        <SelectItem key={phase.id} value={phase.id} className="text-white">{phase.name}</SelectItem>
+                        <SelectItem key={phase.id} value={phase.id} className="text-foreground">{phase.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-slate-300">Order Status</Label>
-                  <Input
-                    value={orderStatus}
-                    onChange={(e) => setOrderStatus(e.target.value)}
-                    placeholder="Set, Order #, etc."
-                    className="bg-slate-700 border-slate-600 text-white"
-                  />
+                  <Label className="text-muted-foreground">Status</Label>
+                  <Select value={orderStatus} onValueChange={setOrderStatus}>
+                    <SelectTrigger className="bg-muted border-border text-foreground">
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover border-border">
+                      <SelectItem value="Sure Go" className="text-foreground">Sure Go</SelectItem>
+                      <SelectItem value="Will Call" className="text-foreground">Will Call</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label className="text-slate-300">Notes</Label>
+                <Label className="text-muted-foreground">Notes</Label>
                 <Textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Any additional notes..."
-                  className="bg-slate-700 border-slate-600 text-white"
+                  className="bg-muted border-border text-foreground"
                 />
               </div>
             </TabsContent>
 
             <TabsContent value="concrete" className="space-y-4 mt-4">
               <div className="space-y-2">
-                <Label className="text-slate-300">Supplier</Label>
+                <Label className="text-muted-foreground">Supplier</Label>
                 <Select value={supplierId} onValueChange={setSupplierId}>
-                  <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                  <SelectTrigger className="bg-muted border-border text-foreground">
                     <SelectValue placeholder="Select supplier" />
                   </SelectTrigger>
-                  <SelectContent className="bg-slate-700 border-slate-600">
+                  <SelectContent className="bg-popover border-border">
                     {suppliers.map((s) => (
-                      <SelectItem key={s.id} value={s.id} className="text-white">{s.name}</SelectItem>
+                      <SelectItem key={s.id} value={s.id} className="text-foreground">{s.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label className="text-muted-foreground">Order Number</Label>
+                <Input
+                  value={orderNumber}
+                  onChange={(e) => setOrderNumber(e.target.value)}
+                  placeholder="e.g., RM-12345"
+                  className="bg-muted border-border text-foreground"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-slate-300">Invoice #</Label>
+                  <Label className="text-muted-foreground">Qty Ordered</Label>
                   <Input
-                    value={readyMixInvoiceNumber}
-                    onChange={(e) => setReadyMixInvoiceNumber(e.target.value)}
-                    className="bg-slate-700 border-slate-600 text-white"
+                    value={qtyOrdered}
+                    onChange={(e) => setQtyOrdered(e.target.value)}
+                    placeholder="e.g., 10+5"
+                    className="bg-muted border-border text-foreground"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-slate-300">Invoice $</Label>
+                  <Label className="text-muted-foreground">Crew Yards Poured</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    value={crewYardsPoured}
+                    onChange={(e) => setCrewYardsPoured(e.target.value)}
+                    className="bg-muted border-border text-foreground"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Invoice #</Label>
+                  <Input
+                    value={readyMixInvoiceNumber}
+                    onChange={(e) => setReadyMixInvoiceNumber(e.target.value)}
+                    className="bg-muted border-border text-foreground"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Invoice $</Label>
                   <Input
                     type="number"
                     step="0.01"
                     value={readyMixInvoiceAmount}
                     onChange={(e) => setReadyMixInvoiceAmount(e.target.value)}
-                    className="bg-slate-700 border-slate-600 text-white"
+                    className="bg-muted border-border text-foreground"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-slate-300">Yards Billed</Label>
+                  <Label className="text-muted-foreground">Yards Billed</Label>
                   <Input
                     type="number"
                     step="0.1"
                     value={readyMixYardsBilled}
                     onChange={(e) => setReadyMixYardsBilled(e.target.value)}
-                    className="bg-slate-700 border-slate-600 text-white"
+                    className="bg-muted border-border text-foreground"
                   />
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-slate-300">Crew Yards Poured</Label>
-                <Input
-                  type="number"
-                  step="0.1"
-                  value={crewYardsPoured}
-                  onChange={(e) => setCrewYardsPoured(e.target.value)}
-                  className="bg-slate-700 border-slate-600 text-white"
-                />
               </div>
             </TabsContent>
 
             <TabsContent value="pump" className="space-y-4 mt-4">
               <div className="space-y-2">
-                <Label className="text-slate-300">Pump Vendor</Label>
+                <Label className="text-muted-foreground">Pump Vendor</Label>
                 <Select value={pumpVendorId} onValueChange={setPumpVendorId}>
-                  <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                  <SelectTrigger className="bg-muted border-border text-foreground">
                     <SelectValue placeholder="Select pump vendor" />
                   </SelectTrigger>
-                  <SelectContent className="bg-slate-700 border-slate-600">
+                  <SelectContent className="bg-popover border-border">
                     {pumpVendors.map((p) => (
-                      <SelectItem key={p.id} value={p.id} className="text-white">{p.name}</SelectItem>
+                      <SelectItem key={p.id} value={p.id} className="text-foreground">{p.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -362,21 +425,21 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate 
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-slate-300">Invoice #</Label>
+                  <Label className="text-muted-foreground">Invoice #</Label>
                   <Input
                     value={pumpInvoiceNumber}
                     onChange={(e) => setPumpInvoiceNumber(e.target.value)}
-                    className="bg-slate-700 border-slate-600 text-white"
+                    className="bg-muted border-border text-foreground"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-slate-300">Invoice $</Label>
+                  <Label className="text-muted-foreground">Invoice $</Label>
                   <Input
                     type="number"
                     step="0.01"
                     value={pumpInvoiceAmount}
                     onChange={(e) => setPumpInvoiceAmount(e.target.value)}
-                    className="bg-slate-700 border-slate-600 text-white"
+                    className="bg-muted border-border text-foreground"
                   />
                 </div>
               </div>
@@ -385,27 +448,27 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate 
             <TabsContent value="inspection" className="space-y-4 mt-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-slate-300">Inspection Type</Label>
+                  <Label className="text-muted-foreground">Inspection Type</Label>
                   <Select value={inspectionTypeId} onValueChange={setInspectionTypeId}>
-                    <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                    <SelectTrigger className="bg-muted border-border text-foreground">
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
-                    <SelectContent className="bg-slate-700 border-slate-600">
+                    <SelectContent className="bg-popover border-border">
                       {inspectionTypes.map((t) => (
-                        <SelectItem key={t.id} value={t.id} className="text-white">{t.name}</SelectItem>
+                        <SelectItem key={t.id} value={t.id} className="text-foreground">{t.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-slate-300">Inspector</Label>
+                  <Label className="text-muted-foreground">Inspector</Label>
                   <Select value={inspectorId} onValueChange={setInspectorId}>
-                    <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                    <SelectTrigger className="bg-muted border-border text-foreground">
                       <SelectValue placeholder="Select inspector" />
                     </SelectTrigger>
-                    <SelectContent className="bg-slate-700 border-slate-600">
+                    <SelectContent className="bg-popover border-border">
                       {inspectors.map((i) => (
-                        <SelectItem key={i.id} value={i.id} className="text-white">{i.name}</SelectItem>
+                        <SelectItem key={i.id} value={i.id} className="text-foreground">{i.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -414,34 +477,35 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate 
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-slate-300">Invoice #</Label>
+                  <Label className="text-muted-foreground">Invoice #</Label>
                   <Input
                     value={inspectionInvoiceNumber}
                     onChange={(e) => setInspectionInvoiceNumber(e.target.value)}
-                    className="bg-slate-700 border-slate-600 text-white"
+                    className="bg-muted border-border text-foreground"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-slate-300">Invoice $</Label>
+                  <Label className="text-muted-foreground">Invoice $</Label>
                   <Input
                     type="number"
                     step="0.01"
                     value={inspectionAmount}
                     onChange={(e) => setInspectionAmount(e.target.value)}
-                    className="bg-slate-700 border-slate-600 text-white"
+                    className="bg-muted border-border text-foreground"
                   />
                 </div>
               </div>
             </TabsContent>
           </Tabs>
 
-          <Button
-            type="submit"
-            className="w-full bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold"
-            disabled={createMutation.isPending}
-          >
-            {createMutation.isPending ? "Creating..." : "Create Entry"}
-          </Button>
+          <div className="flex justify-end gap-2 pt-4">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="border-border">
+              Cancel
+            </Button>
+            <Button type="submit" className="bg-amber-500 text-slate-900 hover:bg-amber-600">
+              Add Entry
+            </Button>
+          </div>
         </form>
       </DialogContent>
     </Dialog>
