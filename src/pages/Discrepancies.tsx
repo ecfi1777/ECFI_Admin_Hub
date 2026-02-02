@@ -1,4 +1,7 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
+import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { AlertTriangle, TrendingDown, TrendingUp } from "lucide-react";
+import { ProjectDetailsSheet } from "@/components/projects/ProjectDetailsSheet";
 
 interface ScheduleEntry {
   id: string;
@@ -22,6 +26,7 @@ interface ScheduleEntry {
   phases: { name: string } | null;
   suppliers: { name: string; code: string | null } | null;
   projects: {
+    id: string;
     lot_number: string;
     builders: { name: string; code: string | null } | null;
     locations: { name: string } | null;
@@ -39,6 +44,9 @@ interface SupplierSummary {
 }
 
 export default function Discrepancies() {
+  const navigate = useNavigate();
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+
   const { data: discrepancyEntries = [], isLoading } = useQuery({
     queryKey: ["discrepancies"],
     queryFn: async () => {
@@ -49,7 +57,7 @@ export default function Discrepancies() {
           crews(name),
           phases(name),
           suppliers(name, code),
-          projects(lot_number, builders(name, code), locations(name))
+          projects(id, lot_number, builders(name, code), locations(name))
         `)
         .eq("deleted", false)
         .not("crew_yards_poured", "is", null)
@@ -208,13 +216,24 @@ export default function Discrepancies() {
                 <TableBody>
                   {discrepancyEntries.map((entry) => {
                     const diff = (entry.crew_yards_poured || 0) - (entry.ready_mix_yards_billed || 0);
+                    const dateForNav = format(new Date(entry.scheduled_date + "T00:00:00"), "yyyy-MM-dd");
                     return (
                       <TableRow key={entry.id} className="border-slate-700">
-                        <TableCell className="text-white">
-                          {new Date(entry.scheduled_date).toLocaleDateString()}
+                        <TableCell>
+                          <button
+                            onClick={() => navigate(`/?date=${dateForNav}`)}
+                            className="text-white hover:text-blue-400 hover:underline transition-colors text-left"
+                          >
+                            {new Date(entry.scheduled_date).toLocaleDateString()}
+                          </button>
                         </TableCell>
-                        <TableCell className="text-slate-300">
-                          {entry.projects?.builders?.code || entry.projects?.builders?.name} - {entry.projects?.lot_number}
+                        <TableCell>
+                          <button
+                            onClick={() => entry.projects?.id && setSelectedProjectId(entry.projects.id)}
+                            className="text-slate-300 hover:text-blue-400 hover:underline transition-colors text-left"
+                          >
+                            {entry.projects?.builders?.code || entry.projects?.builders?.name} - {entry.projects?.lot_number}
+                          </button>
                         </TableCell>
                         <TableCell className="text-slate-300">
                           {entry.phases?.name || "-"}
@@ -244,6 +263,13 @@ export default function Discrepancies() {
             )}
           </CardContent>
         </Card>
+
+        <ProjectDetailsSheet
+          projectId={selectedProjectId}
+          isOpen={!!selectedProjectId}
+          onClose={() => setSelectedProjectId(null)}
+          onEdit={() => {}}
+        />
       </div>
     </AppLayout>
   );
