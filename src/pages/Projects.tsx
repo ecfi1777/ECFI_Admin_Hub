@@ -26,10 +26,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Search, Paperclip, X, FileText } from "lucide-react";
+import { Search, Paperclip, X, FileText, ExternalLink } from "lucide-react";
 import { AddProjectDialog } from "@/components/projects/AddProjectDialog";
 import { EditProjectDialog } from "@/components/projects/EditProjectDialog";
 import { ProjectDetailsSheet } from "@/components/projects/ProjectDetailsSheet";
+import { useToast } from "@/hooks/use-toast";
 
 interface Project {
   id: string;
@@ -60,7 +61,7 @@ export default function Projects() {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
-
+  const { toast } = useToast();
   const { data: projects = [], isLoading } = useQuery({
     queryKey: ["projects"],
     queryFn: async () => {
@@ -84,7 +85,7 @@ export default function Projects() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("project_documents")
-        .select("id, project_id, file_name, category")
+        .select("id, project_id, file_name, file_path, category")
         .order("category");
       if (error) throw error;
       return data;
@@ -99,6 +100,21 @@ export default function Projects() {
     acc[doc.project_id].push(doc);
     return acc;
   }, {} as Record<string, typeof projectDocuments>);
+
+  const openDocument = async (filePath: string) => {
+    const { data, error } = await supabase.storage
+      .from("project-documents")
+      .createSignedUrl(filePath, 3600);
+    
+    if (error) {
+      toast({ title: "Failed to open file", description: error.message, variant: "destructive" });
+      return;
+    }
+    
+    if (data?.signedUrl) {
+      window.open(data.signedUrl, "_blank");
+    }
+  };
 
   const hasFiltersApplied =
     searchQuery !== "" ||
@@ -355,13 +371,15 @@ export default function Projects() {
                                 </h4>
                                 <div className="space-y-1 max-h-48 overflow-y-auto">
                                   {documentsByProject[project.id].map((doc) => (
-                                    <div
+                                    <button
                                       key={doc.id}
-                                      className="flex items-center gap-2 text-sm text-slate-300 py-1"
+                                      onClick={() => openDocument(doc.file_path)}
+                                      className="flex items-center gap-2 text-sm text-slate-300 py-1 w-full hover:text-amber-500 transition-colors text-left group"
                                     >
-                                      <FileText className="w-3 h-3 text-slate-400 flex-shrink-0" />
-                                      <span className="truncate">{doc.file_name}</span>
-                                    </div>
+                                      <FileText className="w-3 h-3 text-slate-400 flex-shrink-0 group-hover:text-amber-500" />
+                                      <span className="truncate flex-1">{doc.file_name}</span>
+                                      <ExternalLink className="w-3 h-3 text-slate-500 flex-shrink-0 opacity-0 group-hover:opacity-100" />
+                                    </button>
                                   ))}
                                 </div>
                               </div>
