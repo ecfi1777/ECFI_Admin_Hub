@@ -39,6 +39,7 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { EditEntryDialog } from "./EditEntryDialog";
+import { ProjectDetailsSheet } from "@/components/projects/ProjectDetailsSheet";
 
 interface ScheduleEntry {
   id: string;
@@ -89,6 +90,8 @@ export function ScheduleTable({ entries }: ScheduleTableProps) {
   const [moveEntryId, setMoveEntryId] = useState<string | null>(null);
   const [moveDate, setMoveDate] = useState<Date | undefined>(undefined);
   const [editEntry, setEditEntry] = useState<ScheduleEntry | null>(null);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [isProjectSheetOpen, setIsProjectSheetOpen] = useState(false);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -331,15 +334,46 @@ export function ScheduleTable({ entries }: ScheduleTableProps) {
             {entries.map((entry) => (
                 <TableRow key={entry.id} className="border-border hover:bg-muted/50">
                   <TableCell className="text-foreground text-sm py-2">
-                    {entry.projects?.builders?.code || entry.projects?.builders?.name || "-"}
+                    <button
+                      onClick={() => {
+                        if (entry.project_id) {
+                          setSelectedProjectId(entry.project_id);
+                          setIsProjectSheetOpen(true);
+                        }
+                      }}
+                      className={`text-left ${entry.project_id ? "hover:underline hover:text-primary cursor-pointer" : ""}`}
+                      disabled={!entry.project_id}
+                    >
+                      {entry.projects?.builders?.code || entry.projects?.builders?.name || "-"}
+                    </button>
                   </TableCell>
                   <TableCell className="text-foreground text-sm py-2">
-                    <span className="truncate block max-w-24">
+                    <button
+                      onClick={() => {
+                        if (entry.project_id) {
+                          setSelectedProjectId(entry.project_id);
+                          setIsProjectSheetOpen(true);
+                        }
+                      }}
+                      className={`truncate block max-w-24 text-left ${entry.project_id ? "hover:underline hover:text-primary cursor-pointer" : ""}`}
+                      disabled={!entry.project_id}
+                    >
                       {entry.projects?.locations?.name || "-"}
-                    </span>
+                    </button>
                   </TableCell>
-                  <TableCell className="text-primary font-medium text-sm py-2">
-                    {entry.projects?.lot_number || "-"}
+                  <TableCell className="text-sm py-2">
+                    <button
+                      onClick={() => {
+                        if (entry.project_id) {
+                          setSelectedProjectId(entry.project_id);
+                          setIsProjectSheetOpen(true);
+                        }
+                      }}
+                      className={`text-left text-primary font-medium ${entry.project_id ? "hover:underline cursor-pointer" : ""}`}
+                      disabled={!entry.project_id}
+                    >
+                      {entry.projects?.lot_number || "-"}
+                    </button>
                   </TableCell>
                   <TableCell className="py-2">
                     {renderSelectCell(
@@ -496,6 +530,19 @@ export function ScheduleTable({ entries }: ScheduleTableProps) {
         entry={editEntry}
         open={!!editEntry}
         onOpenChange={(open) => !open && setEditEntry(null)}
+      />
+
+      {/* Project Details Sheet */}
+      <ProjectDetailsSheet
+        projectId={selectedProjectId}
+        isOpen={isProjectSheetOpen}
+        onClose={() => {
+          setIsProjectSheetOpen(false);
+          setSelectedProjectId(null);
+        }}
+        onEdit={() => {
+          // Edit button inside the sheet handles the edit flow
+        }}
       />
     </>
   );
