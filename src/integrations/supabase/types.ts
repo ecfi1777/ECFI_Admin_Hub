@@ -229,6 +229,53 @@ export type Database = {
         }
         Relationships: []
       }
+      project_documents: {
+        Row: {
+          category: string
+          content_type: string | null
+          created_at: string
+          created_by: string | null
+          file_name: string
+          file_path: string
+          file_size: number | null
+          id: string
+          project_id: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          content_type?: string | null
+          created_at?: string
+          created_by?: string | null
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          id?: string
+          project_id: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          content_type?: string | null
+          created_at?: string
+          created_by?: string | null
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          id?: string
+          project_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_documents_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_statuses: {
         Row: {
           created_at: string
@@ -258,37 +305,58 @@ export type Database = {
       }
       projects: {
         Row: {
+          authorization_numbers: string | null
+          basement_type: string | null
           builder_id: string | null
+          county: string | null
           created_at: string
           created_by: string | null
+          full_address: string | null
+          google_drive_url: string | null
           id: string
           location_id: string | null
           lot_number: string
           notes: string | null
+          permit_number: string | null
           status_id: string | null
           updated_at: string
+          wall_height: string | null
         }
         Insert: {
+          authorization_numbers?: string | null
+          basement_type?: string | null
           builder_id?: string | null
+          county?: string | null
           created_at?: string
           created_by?: string | null
+          full_address?: string | null
+          google_drive_url?: string | null
           id?: string
           location_id?: string | null
           lot_number: string
           notes?: string | null
+          permit_number?: string | null
           status_id?: string | null
           updated_at?: string
+          wall_height?: string | null
         }
         Update: {
+          authorization_numbers?: string | null
+          basement_type?: string | null
           builder_id?: string | null
+          county?: string | null
           created_at?: string
           created_by?: string | null
+          full_address?: string | null
+          google_drive_url?: string | null
           id?: string
           location_id?: string | null
           lot_number?: string
           notes?: string | null
+          permit_number?: string | null
           status_id?: string | null
           updated_at?: string
+          wall_height?: string | null
         }
         Relationships: [
           {
