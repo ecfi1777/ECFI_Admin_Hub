@@ -1,101 +1,142 @@
 
 
-# Add Crew Tab to Edit Entry Dialog
+# Fix Inactive Crew Behavior
 
 ## Overview
 
-This plan adds a new "Crew" tab to both Edit Entry dialogs, providing a dedicated place for crew-reported data that gets compared against supplier-billed data on the Discrepancies page.
+This plan addresses two issues with inactive crews:
 
-## Database Changes
+1. **Daily Schedule**: Entries assigned to inactive crews are currently shown in "Unassigned" because the inactive crew's card is not rendered
+2. **Edit Entry Dialog**: The crew dropdown only shows active crews, which means you cannot see/keep the currently assigned inactive crew when editing an existing entry
 
-A new column needs to be added to the `schedule_entries` table:
+## Problem Analysis
 
-| Column | Type | Purpose |
-|--------|------|---------|
-| `crew_notes` | TEXT (nullable) | Notes related to the crew's work on this entry |
+### Issue 1: Daily Schedule Missing Inactive Crew Cards
 
-The `crew_yards_poured` column already exists in the database.
+**Current Behavior:**
+- `DailySchedule.tsx` fetches only active crews (line 129: `.eq("is_active", true)`)
+- If an entry is assigned to an inactive crew, no card exists for that crew
+- The entry falls into "Unassigned" section (line 222: entries where `crew_id` doesn't match any sorted crew)
 
----
+**Desired Behavior:**
+- Show inactive crew cards only if they have entries on the selected date
+- Historical entries remain visible under their original crew assignment
 
-## Files to Modify
+### Issue 2: Edit Dialog Hides Currently-Assigned Inactive Crew
 
-### 1. Daily Schedule - EditEntryDialog.tsx
+**Current Behavior:**
+- `EditEntryDialog.tsx` fetches only active crews (line 180: `.eq("is_active", true)`)
+- If editing an entry assigned to an inactive crew, that crew is not in the dropdown
+- User cannot see or maintain the original crew assignment
 
-**Current State:**
-- 5 tabs: General, Concrete, Pump, Inspection, Invoicing
-- `crew_yards_poured` not currently included in this dialog
-
-**Changes:**
-- Add "Crew" tab after "Invoicing" (6 tabs total)
-- Update `defaultTab` type to include "crew"
-- Add `crew_yards_poured` and `crew_notes` to form state
-- Add to `useEffect` initialization
-- Add to `handleSave` updates
-- Add TabsContent for Crew tab with:
-  - Crew Yards Poured (number input)
-  - Crew Notes (textarea)
-
-### 2. Project Details - ProjectScheduleHistory.tsx
-
-**Current State:**
-- 3 tabs: Concrete, Pump, Inspection
-- `crew_yards_poured` is in the Concrete tab, but should move to Crew tab
-
-**Changes:**
-- Add "Crew" tab (4 tabs total)
-- Move `crew_yards_poured` from Concrete tab to Crew tab
-- Add `crew_notes` to form state
-- Add to initialization in `handleEditClick`
-- Add to `handleSave` updates
-- Update ScheduleEntry interface to include `crew_notes`
-- Update Supabase query to fetch `crew_notes`
-- Add TabsContent for Crew tab
+**Desired Behavior:**
+- Dropdown shows all active crews PLUS the currently-assigned crew (even if inactive)
+- User can change to any active crew, or keep the inactive crew assignment
 
 ---
 
-## UI Layout for Crew Tab
+## Solution
 
+### File 1: `src/components/schedule/DailySchedule.tsx`
+
+**Changes:**
+
+1. Remove `is_active` filter from crews query - fetch all crews
+2. Add `is_active` field to the Crew interface
+3. Filter the crews to display based on:
+   - Active crews (always shown)
+   - Inactive crews that have at least one entry on the selected date
+
+**Logic:**
 ```text
-+----------------------------------------+
-|  Crew Yards Poured                     |
-|  [   Number input field           ]    |
-|                                        |
-|  Crew Notes                            |
-|  [                                  ]  |
-|  [   Textarea for notes            ]  |
-|  [                                  ]  |
-+----------------------------------------+
+displayedCrews = crews.filter(crew => 
+  crew.is_active || 
+  entries.some(entry => entry.crew_id === crew.id)
+)
+```
+
+### File 2: `src/components/schedule/EditEntryDialog.tsx`
+
+**Changes:**
+
+1. Modify the crews query to fetch all crews (remove `is_active` filter)
+2. Add `is_active` field to the crew data
+3. Filter the dropdown options to show:
+   - All active crews
+   - The currently-assigned crew if it exists (even if inactive)
+4. Mark inactive crews in the dropdown with "(Inactive)" label
+
+**Logic:**
+```text
+crewOptions = crews.filter(crew =>
+  crew.is_active ||
+  crew.id === entry.crew_id
+)
 ```
 
 ---
 
 ## Technical Details
 
-### Form State Updates
-
-Both dialogs will add these fields to their form state:
+### DailySchedule.tsx Changes
 
 ```typescript
-crew_yards_poured: "",
-crew_notes: "",
+// Update Crew interface (line ~53-57)
+interface Crew {
+  id: string;
+  name: string;
+  display_order: number;
+  is_active: boolean;  // Add this field
+}
+
+// Update query (lines 123-133)
+const { data: crews = [] } = useQuery({
+  queryKey: ["crews-all"],  // Change query key
+  queryFn: async () => {
+    const { data, error } = await supabase
+      .from("crews")
+      .select("id, name, display_order, is_active");  // Remove .eq filter, add is_active
+    if (error) throw error;
+    return data as Crew[];
+  },
+});
+
+// Filter crews for display (after sortCrews, before entriesByCrew)
+const displayedCrews = sortedCrews.filter(
+  (crew) => crew.is_active || entries.some((e) => e.crew_id === crew.id)
+);
+
+// Use displayedCrews instead of sortedCrews in the render
 ```
 
-### Save Logic Updates
-
-Both `handleSave` functions will include:
+### EditEntryDialog.tsx Changes
 
 ```typescript
-crew_yards_poured: formData.crew_yards_poured 
-  ? parseFloat(formData.crew_yards_poured) 
-  : null,
-crew_notes: formData.crew_notes || null,
+// Update query (lines 177-184)
+const { data: crews = [] } = useQuery({
+  queryKey: ["crews-all"],  // Change query key
+  queryFn: async () => {
+    const { data, error } = await supabase
+      .from("crews")
+      .select("id, name, is_active")  // Add is_active, remove .eq filter
+      .order("display_order");
+    if (error) throw error;
+    return data;
+  },
+});
+
+// Filter for dropdown options
+const crewOptions = crews.filter(
+  (c) => c.is_active || c.id === entry?.crew_id
+);
+
+// Update SelectItem rendering to show inactive label
+{crewOptions.map((c) => (
+  <SelectItem key={c.id} value={c.id}>
+    {c.name}{!c.is_active && " (Inactive)"}
+  </SelectItem>
+))}
 ```
-
-### Tab Grid Layout
-
-- **EditEntryDialog**: Change from `grid-cols-5` to `grid-cols-6`
-- **ProjectScheduleHistory**: Change from `grid-cols-3` to `grid-cols-4`
 
 ---
 
@@ -103,7 +144,12 @@ crew_notes: formData.crew_notes || null,
 
 | File | Changes |
 |------|---------|
-| Database Migration | Add `crew_notes` column to `schedule_entries` |
-| `src/components/schedule/EditEntryDialog.tsx` | Add Crew tab, update form state, save logic, tab layout |
-| `src/components/projects/ProjectScheduleHistory.tsx` | Add Crew tab, move `crew_yards_poured`, add `crew_notes`, update form state, save logic, fetch query |
+| `src/components/schedule/DailySchedule.tsx` | Fetch all crews with `is_active` field; filter to show active crews + inactive crews with entries for the selected date |
+| `src/components/schedule/EditEntryDialog.tsx` | Fetch all crews with `is_active` field; filter dropdown to show active crews + currently-assigned crew; add "(Inactive)" label |
+
+---
+
+## No Database Changes Required
+
+Both fixes only require frontend query and filtering changes. The existing `is_active` column on the `crews` table already stores the necessary data.
 
