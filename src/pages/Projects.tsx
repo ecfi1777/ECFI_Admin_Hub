@@ -21,7 +21,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, Paperclip, X } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Search, Paperclip, X, FileText } from "lucide-react";
 import { AddProjectDialog } from "@/components/projects/AddProjectDialog";
 import { EditProjectDialog } from "@/components/projects/EditProjectDialog";
 import { ProjectDetailsSheet } from "@/components/projects/ProjectDetailsSheet";
@@ -73,22 +78,27 @@ export default function Projects() {
     },
   });
 
-  // Fetch documents count per project to show attachment indicator
+  // Fetch all documents to show attachment indicator and list
   const { data: projectDocuments = [] } = useQuery({
-    queryKey: ["project-documents-counts"],
+    queryKey: ["project-documents-all"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("project_documents")
-        .select("project_id");
+        .select("id, project_id, file_name, category")
+        .order("category");
       if (error) throw error;
       return data;
     },
   });
 
-  // Create a set of project IDs that have documents
-  const projectsWithDocuments = new Set(
-    projectDocuments.map((doc) => doc.project_id)
-  );
+  // Group documents by project ID
+  const documentsByProject = projectDocuments.reduce((acc, doc) => {
+    if (!acc[doc.project_id]) {
+      acc[doc.project_id] = [];
+    }
+    acc[doc.project_id].push(doc);
+    return acc;
+  }, {} as Record<string, typeof projectDocuments>);
 
   const hasFiltersApplied =
     searchQuery !== "" ||
@@ -293,7 +303,7 @@ export default function Projects() {
                     <TableHead className="text-slate-400">Lot #</TableHead>
                     <TableHead className="text-slate-400">Status</TableHead>
                     <TableHead className="text-slate-400">Created</TableHead>
-                    <TableHead className="text-slate-400 w-12"></TableHead>
+                    <TableHead className="text-slate-400 w-16 text-center">Docs</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -323,9 +333,40 @@ export default function Projects() {
                       <TableCell className="text-slate-400">
                         {new Date(project.created_at).toLocaleDateString()}
                       </TableCell>
-                      <TableCell>
-                        {projectsWithDocuments.has(project.id) && (
-                          <Paperclip className="w-4 h-4 text-amber-500" />
+                      <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                        {documentsByProject[project.id]?.length > 0 && (
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 hover:bg-slate-700"
+                              >
+                                <Paperclip className="w-4 h-4 text-amber-500" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent
+                              className="w-64 bg-slate-800 border-slate-700 p-3"
+                              align="end"
+                            >
+                              <div className="space-y-2">
+                                <h4 className="font-medium text-white text-sm">
+                                  Attached Documents ({documentsByProject[project.id].length})
+                                </h4>
+                                <div className="space-y-1 max-h-48 overflow-y-auto">
+                                  {documentsByProject[project.id].map((doc) => (
+                                    <div
+                                      key={doc.id}
+                                      className="flex items-center gap-2 text-sm text-slate-300 py-1"
+                                    >
+                                      <FileText className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                                      <span className="truncate">{doc.file_name}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </PopoverContent>
+                          </Popover>
                         )}
                       </TableCell>
                     </TableRow>
