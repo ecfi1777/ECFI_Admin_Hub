@@ -56,33 +56,11 @@ interface Crew {
   display_order: number;
 }
 
-// Sort crews: numbers first (ascending), then alphabetical
+// Sort crews by display_order (set via drag-and-drop in Settings)
 function sortCrews(crews: Crew[]): Crew[] {
   return [...crews].sort((a, b) => {
-    // First sort by display_order if set (non-zero)
-    if (a.display_order !== 0 || b.display_order !== 0) {
-      if (a.display_order !== b.display_order) {
-        return a.display_order - b.display_order;
-      }
-    }
-    
-    // Check if names start with numbers
-    const aIsNumber = /^\d/.test(a.name);
-    const bIsNumber = /^\d/.test(b.name);
-    
-    // Numbers come first
-    if (aIsNumber && !bIsNumber) return -1;
-    if (!aIsNumber && bIsNumber) return 1;
-    
-    // Both are numbers - sort numerically
-    if (aIsNumber && bIsNumber) {
-      const aNum = parseInt(a.name.match(/^\d+/)?.[0] || "0", 10);
-      const bNum = parseInt(b.name.match(/^\d+/)?.[0] || "0", 10);
-      return aNum - bNum;
-    }
-    
-    // Both are text - sort alphabetically
-    return a.name.localeCompare(b.name);
+    // Primary sort: by display_order ascending
+    return a.display_order - b.display_order;
   });
 }
 
