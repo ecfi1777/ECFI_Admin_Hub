@@ -327,7 +327,7 @@ export function ProjectScheduleHistory({ projectId }: ProjectScheduleHistoryProp
                             >
                               <Calendar className="w-4 h-4" />
                               <span className="font-medium underline">
-                                {format(new Date(entry.scheduled_date), "MMM d, yyyy")}
+                                {format(new Date(entry.scheduled_date + "T00:00:00"), "MMM d, yyyy")}
                               </span>
                               {entry.start_time && (
                                 <span className="text-slate-400 no-underline">
@@ -466,7 +466,7 @@ export function ProjectScheduleHistory({ projectId }: ProjectScheduleHistoryProp
         <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto bg-slate-800 border-slate-700">
           <DialogHeader>
             <DialogTitle className="text-white">
-              Edit Vendor Details - {editingEntry && format(new Date(editingEntry.scheduled_date), "MMM d, yyyy")}
+              Edit Vendor Details - {editingEntry && format(new Date(editingEntry.scheduled_date + "T00:00:00"), "MMM d, yyyy")}
             </DialogTitle>
           </DialogHeader>
 

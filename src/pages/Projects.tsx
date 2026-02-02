@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Input } from "@/components/ui/input";
@@ -347,7 +348,7 @@ export default function Projects() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-slate-400">
-                        {new Date(project.created_at).toLocaleDateString()}
+                        {format(new Date(project.created_at), "M/d/yyyy")}
                       </TableCell>
                       <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
                         {documentsByProject[project.id]?.length > 0 && (
