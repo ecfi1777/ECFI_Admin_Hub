@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -20,7 +21,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, Check } from "lucide-react";
+import { FileText, Check, CheckCircle } from "lucide-react";
+import { toast } from "sonner";
+import { ProjectDetailsSheet } from "@/components/projects/ProjectDetailsSheet";
 
 interface ScheduleEntry {
   id: string;
@@ -31,7 +34,9 @@ interface ScheduleEntry {
   invoice_number: string | null;
   crews: { name: string } | null;
   phases: { name: string } | null;
+  project_id: string | null;
   projects: {
+    id: string;
     lot_number: string;
     builders: { name: string; code: string | null } | null;
     locations: { name: string } | null;
@@ -41,6 +46,12 @@ interface ScheduleEntry {
 export default function Invoices() {
   const [filterBuilder, setFilterBuilder] = useState("all");
   const [filterCrew, setFilterCrew] = useState("all");
+  const [editingInvoiceId, setEditingInvoiceId] = useState<string | null>(null);
+  const [invoiceNumberValue, setInvoiceNumberValue] = useState("");
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [isProjectSheetOpen, setIsProjectSheetOpen] = useState(false);
+
+  const queryClient = useQueryClient();
 
   const { data: pendingEntries = [], isLoading: loadingPending } = useQuery({
     queryKey: ["invoice-pending"],
@@ -48,10 +59,10 @@ export default function Invoices() {
       const { data, error } = await supabase
         .from("schedule_entries")
         .select(`
-          id, scheduled_date, crew_yards_poured, to_be_invoiced, invoice_complete, invoice_number,
+          id, scheduled_date, crew_yards_poured, to_be_invoiced, invoice_complete, invoice_number, project_id,
           crews(name),
           phases(name),
-          projects(lot_number, builders(name, code), locations(name))
+          projects(id, lot_number, builders(name, code), locations(name))
         `)
         .eq("to_be_invoiced", true)
         .eq("invoice_complete", false)
@@ -68,10 +79,10 @@ export default function Invoices() {
       const { data, error } = await supabase
         .from("schedule_entries")
         .select(`
-          id, scheduled_date, crew_yards_poured, to_be_invoiced, invoice_complete, invoice_number,
+          id, scheduled_date, crew_yards_poured, to_be_invoiced, invoice_complete, invoice_number, project_id,
           crews(name),
           phases(name),
-          projects(lot_number, builders(name, code), locations(name))
+          projects(id, lot_number, builders(name, code), locations(name))
         `)
         .eq("invoice_complete", true)
         .eq("deleted", false)
@@ -100,6 +111,43 @@ export default function Invoices() {
     },
   });
 
+  const markCompleteMutation = useMutation({
+    mutationFn: async (entryId: string) => {
+      const { error } = await supabase
+        .from("schedule_entries")
+        .update({ invoice_complete: true })
+        .eq("id", entryId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["invoice-pending"] });
+      queryClient.invalidateQueries({ queryKey: ["invoice-completed"] });
+      toast.success("Invoice marked as complete");
+    },
+    onError: () => {
+      toast.error("Failed to mark invoice as complete");
+    },
+  });
+
+  const updateInvoiceNumberMutation = useMutation({
+    mutationFn: async ({ entryId, invoiceNumber }: { entryId: string; invoiceNumber: string }) => {
+      const { error } = await supabase
+        .from("schedule_entries")
+        .update({ invoice_number: invoiceNumber || null })
+        .eq("id", entryId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["invoice-pending"] });
+      queryClient.invalidateQueries({ queryKey: ["invoice-completed"] });
+      setEditingInvoiceId(null);
+      toast.success("Invoice number updated");
+    },
+    onError: () => {
+      toast.error("Failed to update invoice number");
+    },
+  });
+
   const filterEntries = (entries: ScheduleEntry[]) => {
     return entries.filter((entry) => {
       const matchesBuilder = filterBuilder === "all" || 
@@ -110,7 +158,28 @@ export default function Invoices() {
     });
   };
 
-  const renderTable = (entries: ScheduleEntry[], isLoading: boolean) => {
+  const handleStartEditInvoice = (entry: ScheduleEntry) => {
+    setEditingInvoiceId(entry.id);
+    setInvoiceNumberValue(entry.invoice_number || "");
+  };
+
+  const handleSaveInvoiceNumber = (entryId: string) => {
+    updateInvoiceNumberMutation.mutate({ entryId, invoiceNumber: invoiceNumberValue });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingInvoiceId(null);
+    setInvoiceNumberValue("");
+  };
+
+  const handleProjectClick = (projectId: string | null) => {
+    if (projectId) {
+      setSelectedProjectId(projectId);
+      setIsProjectSheetOpen(true);
+    }
+  };
+
+  const renderTable = (entries: ScheduleEntry[], isLoading: boolean, showMarkComplete: boolean) => {
     const filtered = filterEntries(entries);
     
     if (isLoading) {
@@ -125,14 +194,14 @@ export default function Invoices() {
       <Table>
         <TableHeader>
           <TableRow className="border-slate-700 hover:bg-transparent">
-            <TableHead className="text-slate-400">Date</TableHead>
+            <TableHead className="text-slate-400">Date Completed</TableHead>
             <TableHead className="text-slate-400">Builder</TableHead>
             <TableHead className="text-slate-400">Location</TableHead>
             <TableHead className="text-slate-400">Lot</TableHead>
             <TableHead className="text-slate-400">Phase</TableHead>
             <TableHead className="text-slate-400">Crew</TableHead>
-            <TableHead className="text-slate-400">Yards</TableHead>
             <TableHead className="text-slate-400">Invoice #</TableHead>
+            {showMarkComplete && <TableHead className="text-slate-400 w-24">Actions</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -141,14 +210,29 @@ export default function Invoices() {
               <TableCell className="text-white">
                 {new Date(entry.scheduled_date).toLocaleDateString()}
               </TableCell>
-              <TableCell className="text-white font-medium">
-                {entry.projects?.builders?.code || entry.projects?.builders?.name || "-"}
+              <TableCell>
+                <button
+                  onClick={() => handleProjectClick(entry.projects?.id || entry.project_id)}
+                  className="text-white font-medium hover:text-primary hover:underline transition-colors text-left"
+                >
+                  {entry.projects?.builders?.code || entry.projects?.builders?.name || "-"}
+                </button>
               </TableCell>
-              <TableCell className="text-slate-300">
-                {entry.projects?.locations?.name || "-"}
+              <TableCell>
+                <button
+                  onClick={() => handleProjectClick(entry.projects?.id || entry.project_id)}
+                  className="text-slate-300 hover:text-primary hover:underline transition-colors text-left"
+                >
+                  {entry.projects?.locations?.name || "-"}
+                </button>
               </TableCell>
-              <TableCell className="text-amber-500 font-medium">
-                {entry.projects?.lot_number || "-"}
+              <TableCell>
+                <button
+                  onClick={() => handleProjectClick(entry.projects?.id || entry.project_id)}
+                  className="text-amber-500 font-medium hover:text-primary hover:underline transition-colors text-left"
+                >
+                  {entry.projects?.lot_number || "-"}
+                </button>
               </TableCell>
               <TableCell className="text-slate-300">
                 {entry.phases?.name || "-"}
@@ -156,12 +240,52 @@ export default function Invoices() {
               <TableCell className="text-slate-300">
                 {entry.crews?.name || "-"}
               </TableCell>
-              <TableCell className="text-white">
-                {entry.crew_yards_poured || "-"}
+              <TableCell>
+                {editingInvoiceId === entry.id ? (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={invoiceNumberValue}
+                      onChange={(e) => setInvoiceNumberValue(e.target.value)}
+                      className="h-8 w-28 bg-slate-700 border-slate-600 text-white"
+                      placeholder="Invoice #"
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleSaveInvoiceNumber(entry.id);
+                        if (e.key === "Escape") handleCancelEdit();
+                      }}
+                    />
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 px-2 text-green-500 hover:text-green-400"
+                      onClick={() => handleSaveInvoiceNumber(entry.id)}
+                    >
+                      <Check className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => handleStartEditInvoice(entry)}
+                    className="text-slate-400 hover:text-white transition-colors text-left min-w-[80px]"
+                  >
+                    {entry.invoice_number || "Add #"}
+                  </button>
+                )}
               </TableCell>
-              <TableCell className="text-slate-400">
-                {entry.invoice_number || "-"}
-              </TableCell>
+              {showMarkComplete && (
+                <TableCell>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 px-2 text-green-500 hover:text-green-400 hover:bg-green-500/10"
+                    onClick={() => markCompleteMutation.mutate(entry.id)}
+                    disabled={markCompleteMutation.isPending}
+                  >
+                    <CheckCircle className="w-4 h-4 mr-1" />
+                    Complete
+                  </Button>
+                </TableCell>
+              )}
             </TableRow>
           ))}
         </TableBody>
@@ -222,7 +346,7 @@ export default function Invoices() {
           <TabsContent value="pending">
             <Card className="bg-slate-800 border-slate-700">
               <CardContent className="p-0">
-                {renderTable(pendingEntries, loadingPending)}
+                {renderTable(pendingEntries, loadingPending, true)}
               </CardContent>
             </Card>
           </TabsContent>
@@ -230,12 +354,19 @@ export default function Invoices() {
           <TabsContent value="completed">
             <Card className="bg-slate-800 border-slate-700">
               <CardContent className="p-0">
-                {renderTable(completedEntries, loadingCompleted)}
+                {renderTable(completedEntries, loadingCompleted, false)}
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
       </div>
+
+      <ProjectDetailsSheet
+        projectId={selectedProjectId}
+        isOpen={isProjectSheetOpen}
+        onClose={() => setIsProjectSheetOpen(false)}
+        onEdit={() => {}}
+      />
     </AppLayout>
   );
 }
