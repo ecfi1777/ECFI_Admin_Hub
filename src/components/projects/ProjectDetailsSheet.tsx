@@ -9,9 +9,11 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Pencil, ExternalLink, MapPin, FileText, Building, Home } from "lucide-react";
+import { Pencil, ExternalLink, MapPin, FileText, Building, Home, Download } from "lucide-react";
 import { ProjectScheduleHistory } from "./ProjectScheduleHistory";
 import { ProjectDocuments } from "./ProjectDocuments";
+import { generateProjectPdf } from "@/lib/generateProjectPdf";
+import { useToast } from "@/hooks/use-toast";
 
 interface ProjectDetailsSheetProps {
   projectId: string | null;
@@ -26,6 +28,8 @@ export function ProjectDetailsSheet({
   onClose,
   onEdit,
 }: ProjectDetailsSheetProps) {
+  const { toast } = useToast();
+
   const { data: project, isLoading } = useQuery({
     queryKey: ["project", projectId],
     queryFn: async () => {
@@ -45,6 +49,59 @@ export function ProjectDetailsSheet({
     },
     enabled: !!projectId,
   });
+
+  // Fetch schedule entries for PDF export
+  const { data: scheduleEntries = [] } = useQuery({
+    queryKey: ["project-schedule-history-pdf", projectId],
+    queryFn: async () => {
+      if (!projectId) return [];
+      const { data, error } = await supabase
+        .from("schedule_entries")
+        .select(`
+          id,
+          scheduled_date,
+          start_time,
+          crew_yards_poured,
+          crew_notes,
+          ready_mix_yards_billed,
+          ready_mix_invoice_number,
+          ready_mix_invoice_amount,
+          concrete_notes,
+          pump_invoice_number,
+          pump_invoice_amount,
+          pump_notes,
+          inspection_invoice_number,
+          inspection_amount,
+          inspection_notes,
+          notes,
+          to_be_invoiced,
+          invoice_complete,
+          invoice_number,
+          phases(id, name),
+          crews(id, name),
+          suppliers(id, name, code),
+          pump_vendors(id, name, code),
+          inspectors(id, name),
+          inspection_types(id, name)
+        `)
+        .eq("project_id", projectId)
+        .eq("deleted", false)
+        .order("scheduled_date", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!projectId,
+  });
+
+  const handleExportPdf = () => {
+    if (!project) return;
+    try {
+      generateProjectPdf(project, scheduleEntries);
+      toast({ title: "PDF exported successfully" });
+    } catch (error) {
+      toast({ title: "Error exporting PDF", variant: "destructive" });
+    }
+  };
 
   const getStatusColor = (status: string | undefined) => {
     switch (status) {
@@ -84,6 +141,15 @@ export function ProjectDetailsSheet({
                       className="text-slate-400 hover:text-white h-8 w-8 p-0"
                     >
                       <Pencil className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleExportPdf}
+                      className="text-slate-400 hover:text-white h-8 w-8 p-0"
+                      title="Export to PDF"
+                    >
+                      <Download className="w-4 h-4" />
                     </Button>
                   </SheetTitle>
                   <div className="flex items-center gap-2 mt-1">
