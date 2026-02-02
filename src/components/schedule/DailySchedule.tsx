@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { format, addDays, subDays } from "date-fns";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
+import { format, addDays, subDays, parseISO, isValid } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -84,9 +85,55 @@ function sortCrews(crews: Crew[]): Crew[] {
 }
 
 export function DailySchedule() {
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [searchParams, setSearchParams] = useSearchParams();
+  const dateParam = searchParams.get("date");
+  
+  // Parse date from URL or use today
+  const getInitialDate = () => {
+    if (dateParam) {
+      const parsed = parseISO(dateParam);
+      if (isValid(parsed)) {
+        return parsed;
+      }
+    }
+    return new Date();
+  };
+  
+  const [selectedDate, setSelectedDate] = useState(getInitialDate);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedCrewId, setSelectedCrewId] = useState<string | null>(null);
+
+  // Sync URL when date changes (but not on initial load from URL)
+  useEffect(() => {
+    const currentDateStr = format(selectedDate, "yyyy-MM-dd");
+    const todayStr = format(new Date(), "yyyy-MM-dd");
+    
+    // If it's today, remove the date param; otherwise set it
+    if (currentDateStr === todayStr) {
+      if (searchParams.has("date")) {
+        searchParams.delete("date");
+        setSearchParams(searchParams, { replace: true });
+      }
+    } else {
+      if (searchParams.get("date") !== currentDateStr) {
+        searchParams.set("date", currentDateStr);
+        setSearchParams(searchParams, { replace: true });
+      }
+    }
+  }, [selectedDate, searchParams, setSearchParams]);
+
+  // Update date when URL changes (e.g., from navigation)
+  useEffect(() => {
+    if (dateParam) {
+      const parsed = parseISO(dateParam);
+      if (isValid(parsed)) {
+        const currentDateStr = format(selectedDate, "yyyy-MM-dd");
+        if (dateParam !== currentDateStr) {
+          setSelectedDate(parsed);
+        }
+      }
+    }
+  }, [dateParam]);
 
   const dateStr = format(selectedDate, "yyyy-MM-dd");
 
