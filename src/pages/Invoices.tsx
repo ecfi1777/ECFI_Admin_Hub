@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -220,7 +221,7 @@ export default function Invoices() {
                 />
               </TableCell>
               <TableCell className="text-white">
-                {new Date(entry.scheduled_date).toLocaleDateString()}
+                {format(new Date(entry.scheduled_date + "T00:00:00"), "M/d/yyyy")}
               </TableCell>
               <TableCell>
                 <button
