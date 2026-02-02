@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Upload, File, X, Loader2, ExternalLink, CheckCircle } from "lucide-react";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 const DOCUMENT_CATEGORIES = [
   { id: "permit_copy", label: "Permit Copy" },
@@ -31,6 +32,7 @@ interface ProjectDocumentsProps {
 
 export function ProjectDocuments({ projectId }: ProjectDocumentsProps) {
   const [uploadingCategory, setUploadingCategory] = useState<string | null>(null);
+  const [documentToDelete, setDocumentToDelete] = useState<ProjectDocument | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -97,12 +99,21 @@ export function ProjectDocuments({ projectId }: ProjectDocumentsProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["project-documents", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["project-documents-all"] });
       toast({ title: "Document deleted" });
+      setDocumentToDelete(null);
     },
     onError: (error: Error) => {
       toast({ title: "Delete failed", description: error.message, variant: "destructive" });
+      setDocumentToDelete(null);
     },
   });
+
+  const handleDeleteConfirm = () => {
+    if (documentToDelete) {
+      deleteMutation.mutate(documentToDelete);
+    }
+  };
 
   const handleFileSelect = useCallback(
     (category: string, file: File) => {
@@ -183,7 +194,7 @@ export function ProjectDocuments({ projectId }: ProjectDocumentsProps) {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => deleteMutation.mutate(doc)}
+                    onClick={() => setDocumentToDelete(doc)}
                     disabled={deleteMutation.isPending}
                     className="text-slate-400 hover:text-red-400 h-6 w-6 p-0"
                   >
@@ -222,6 +233,16 @@ export function ProjectDocuments({ projectId }: ProjectDocumentsProps) {
           );
         })}
       </CardContent>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={!!documentToDelete}
+        onOpenChange={(open) => !open && setDocumentToDelete(null)}
+        title="Delete Document?"
+        description={`Are you sure you want to delete "${documentToDelete?.file_name}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        onConfirm={handleDeleteConfirm}
+      />
     </Card>
   );
 }
