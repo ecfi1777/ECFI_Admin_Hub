@@ -14,7 +14,9 @@ import {
   ChevronDown,
   ChevronRight,
   Users,
+  Trash2,
 } from "lucide-react";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   Dialog,
   DialogContent,
@@ -68,6 +70,7 @@ function SortableCrewRow({
   onToggleCrewActive,
   onEditMember,
   onToggleMemberActive,
+  onDeleteMember,
   onAddMember,
 }: {
   crew: Crew;
@@ -78,6 +81,7 @@ function SortableCrewRow({
   onEditCrew: (crew: Crew) => void;
   onToggleCrewActive: (id: string, isActive: boolean) => void;
   onEditMember: (member: CrewMember) => void;
+  onDeleteMember: (member: CrewMember) => void;
   onToggleMemberActive: (id: string, isActive: boolean) => void;
   onAddMember: (crewId: string) => void;
 }) {
@@ -200,6 +204,14 @@ function SortableCrewRow({
                   >
                     <Pencil className="w-3 h-3" />
                   </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onDeleteMember(member)}
+                    className="text-muted-foreground hover:text-destructive h-8 w-8"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
                 </div>
               ))
             )}
@@ -238,6 +250,10 @@ export function CrewsManagement() {
   const [editingMember, setEditingMember] = useState<CrewMember | null>(null);
   const [memberName, setMemberName] = useState("");
   const [memberCrewId, setMemberCrewId] = useState<string | null>(null);
+
+  // Delete confirmation state
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [memberToDelete, setMemberToDelete] = useState<CrewMember | null>(null);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -412,6 +428,22 @@ export function CrewsManagement() {
     },
   });
 
+  const deleteMemberMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("crew_members").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["crew-members-management"] });
+      toast({ title: "Crew member deleted" });
+      setDeleteConfirmOpen(false);
+      setMemberToDelete(null);
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
   // Handlers
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -556,6 +588,10 @@ export function CrewsManagement() {
                   toggleCrewActiveMutation.mutate({ id, is_active: isActive })
                 }
                 onEditMember={(member) => openMemberDialog(member)}
+                onDeleteMember={(member) => {
+                  setMemberToDelete(member);
+                  setDeleteConfirmOpen(true);
+                }}
                 onToggleMemberActive={(id, isActive) =>
                   toggleMemberActiveMutation.mutate({ id, is_active: isActive })
                 }
@@ -625,6 +661,21 @@ export function CrewsManagement() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        onOpenChange={setDeleteConfirmOpen}
+        title="Delete Crew Member"
+        description={`Are you sure you want to delete "${memberToDelete?.name}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        onConfirm={() => {
+          if (memberToDelete) {
+            deleteMemberMutation.mutate(memberToDelete.id);
+          }
+        }}
+        variant="destructive"
+      />
     </div>
   );
 }
