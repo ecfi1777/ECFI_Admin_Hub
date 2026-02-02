@@ -5,6 +5,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -21,7 +22,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, Check, CheckCircle } from "lucide-react";
+import { FileText, Check } from "lucide-react";
 import { toast } from "sonner";
 import { ProjectDetailsSheet } from "@/components/projects/ProjectDetailsSheet";
 
@@ -111,21 +112,22 @@ export default function Invoices() {
     },
   });
 
-  const markCompleteMutation = useMutation({
-    mutationFn: async (entryId: string) => {
+  const toggleCompleteMutation = useMutation({
+    mutationFn: async ({ entryId, complete }: { entryId: string; complete: boolean }) => {
       const { error } = await supabase
         .from("schedule_entries")
-        .update({ invoice_complete: true })
+        .update({ invoice_complete: complete })
         .eq("id", entryId);
       if (error) throw error;
+      return complete;
     },
-    onSuccess: () => {
+    onSuccess: (complete) => {
       queryClient.invalidateQueries({ queryKey: ["invoice-pending"] });
       queryClient.invalidateQueries({ queryKey: ["invoice-completed"] });
-      toast.success("Invoice marked as complete");
+      toast.success(complete ? "Invoice marked as complete" : "Invoice moved to pending");
     },
     onError: () => {
-      toast.error("Failed to mark invoice as complete");
+      toast.error("Failed to update invoice status");
     },
   });
 
@@ -179,7 +181,7 @@ export default function Invoices() {
     }
   };
 
-  const renderTable = (entries: ScheduleEntry[], isLoading: boolean, showMarkComplete: boolean) => {
+  const renderTable = (entries: ScheduleEntry[], isLoading: boolean) => {
     const filtered = filterEntries(entries);
     
     if (isLoading) {
@@ -194,6 +196,7 @@ export default function Invoices() {
       <Table>
         <TableHeader>
           <TableRow className="border-slate-700 hover:bg-transparent">
+            <TableHead className="text-slate-400 w-12">Complete</TableHead>
             <TableHead className="text-slate-400">Date Completed</TableHead>
             <TableHead className="text-slate-400">Builder</TableHead>
             <TableHead className="text-slate-400">Location</TableHead>
@@ -201,12 +204,21 @@ export default function Invoices() {
             <TableHead className="text-slate-400">Phase</TableHead>
             <TableHead className="text-slate-400">Crew</TableHead>
             <TableHead className="text-slate-400">Invoice #</TableHead>
-            {showMarkComplete && <TableHead className="text-slate-400 w-24">Actions</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
           {filtered.map((entry) => (
             <TableRow key={entry.id} className="border-slate-700">
+              <TableCell>
+                <Checkbox
+                  checked={entry.invoice_complete}
+                  onCheckedChange={(checked) => 
+                    toggleCompleteMutation.mutate({ entryId: entry.id, complete: !!checked })
+                  }
+                  disabled={toggleCompleteMutation.isPending}
+                  className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
+                />
+              </TableCell>
               <TableCell className="text-white">
                 {new Date(entry.scheduled_date).toLocaleDateString()}
               </TableCell>
@@ -272,20 +284,6 @@ export default function Invoices() {
                   </button>
                 )}
               </TableCell>
-              {showMarkComplete && (
-                <TableCell>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-8 px-2 text-green-500 hover:text-green-400 hover:bg-green-500/10"
-                    onClick={() => markCompleteMutation.mutate(entry.id)}
-                    disabled={markCompleteMutation.isPending}
-                  >
-                    <CheckCircle className="w-4 h-4 mr-1" />
-                    Complete
-                  </Button>
-                </TableCell>
-              )}
             </TableRow>
           ))}
         </TableBody>
@@ -346,7 +344,7 @@ export default function Invoices() {
           <TabsContent value="pending">
             <Card className="bg-slate-800 border-slate-700">
               <CardContent className="p-0">
-                {renderTable(pendingEntries, loadingPending, true)}
+                {renderTable(pendingEntries, loadingPending)}
               </CardContent>
             </Card>
           </TabsContent>
@@ -354,7 +352,7 @@ export default function Invoices() {
           <TabsContent value="completed">
             <Card className="bg-slate-800 border-slate-700">
               <CardContent className="p-0">
-                {renderTable(completedEntries, loadingCompleted, false)}
+                {renderTable(completedEntries, loadingCompleted)}
               </CardContent>
             </Card>
           </TabsContent>
