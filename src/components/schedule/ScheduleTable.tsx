@@ -90,7 +90,7 @@ export function ScheduleTable({ entries }: ScheduleTableProps) {
   const [moveEntryId, setMoveEntryId] = useState<string | null>(null);
   const [moveDate, setMoveDate] = useState<Date | undefined>(undefined);
   const [editEntry, setEditEntry] = useState<ScheduleEntry | null>(null);
-  const [editEntryTab, setEditEntryTab] = useState<"general" | "concrete" | "pump" | "inspection" | "invoicing">("general");
+  const [editEntryTab, setEditEntryTab] = useState<"general" | "concrete" | "pump" | "inspection" | "invoicing" | "crew">("general");
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [isProjectSheetOpen, setIsProjectSheetOpen] = useState(false);
   
@@ -360,6 +360,7 @@ export function ScheduleTable({ entries }: ScheduleTableProps) {
         <Table>
           <TableHeader>
             <TableRow className="border-border">
+              <TableHead className="text-muted-foreground w-24">Crew</TableHead>
               <TableHead className="text-muted-foreground w-20">Builder</TableHead>
               <TableHead className="text-muted-foreground w-24">Location</TableHead>
               <TableHead className="text-muted-foreground w-16">Lot #</TableHead>
@@ -376,6 +377,25 @@ export function ScheduleTable({ entries }: ScheduleTableProps) {
           <TableBody>
             {entries.map((entry) => (
                 <TableRow key={entry.id} className="border-border hover:bg-muted/50">
+                  <TableCell className="text-foreground text-sm py-2">
+                    <div className="group flex items-center gap-1">
+                      <span className="flex-1 truncate">
+                        {entry.crews?.name || "-"}
+                      </span>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => {
+                          setEditEntry(entry);
+                          setEditEntryTab("crew");
+                        }}
+                        className="h-6 w-6 text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                        title="Edit crew details"
+                      >
+                        <MoreVertical className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </TableCell>
                   <TableCell className="text-foreground text-sm py-2">
                     <button
                       onClick={() => {
