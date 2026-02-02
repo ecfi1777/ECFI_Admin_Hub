@@ -441,6 +441,7 @@ export type Database = {
       }
       schedule_entries: {
         Row: {
+          concrete_notes: string | null
           created_at: string
           created_by: string | null
           crew_id: string | null
@@ -452,6 +453,7 @@ export type Database = {
           id: string
           inspection_amount: number | null
           inspection_invoice_number: string | null
+          inspection_notes: string | null
           inspection_type_id: string | null
           inspector_id: string | null
           invoice_complete: boolean
@@ -463,6 +465,7 @@ export type Database = {
           project_id: string | null
           pump_invoice_amount: number | null
           pump_invoice_number: string | null
+          pump_notes: string | null
           pump_vendor_id: string | null
           qty_ordered: string | null
           ready_mix_invoice_amount: number | null
@@ -475,6 +478,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          concrete_notes?: string | null
           created_at?: string
           created_by?: string | null
           crew_id?: string | null
@@ -486,6 +490,7 @@ export type Database = {
           id?: string
           inspection_amount?: number | null
           inspection_invoice_number?: string | null
+          inspection_notes?: string | null
           inspection_type_id?: string | null
           inspector_id?: string | null
           invoice_complete?: boolean
@@ -497,6 +502,7 @@ export type Database = {
           project_id?: string | null
           pump_invoice_amount?: number | null
           pump_invoice_number?: string | null
+          pump_notes?: string | null
           pump_vendor_id?: string | null
           qty_ordered?: string | null
           ready_mix_invoice_amount?: number | null
@@ -509,6 +515,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          concrete_notes?: string | null
           created_at?: string
           created_by?: string | null
           crew_id?: string | null
@@ -520,6 +527,7 @@ export type Database = {
           id?: string
           inspection_amount?: number | null
           inspection_invoice_number?: string | null
+          inspection_notes?: string | null
           inspection_type_id?: string | null
           inspector_id?: string | null
           invoice_complete?: boolean
@@ -531,6 +539,7 @@ export type Database = {
           project_id?: string | null
           pump_invoice_amount?: number | null
           pump_invoice_number?: string | null
+          pump_notes?: string | null
           pump_vendor_id?: string | null
           qty_ordered?: string | null
           ready_mix_invoice_amount?: number | null
