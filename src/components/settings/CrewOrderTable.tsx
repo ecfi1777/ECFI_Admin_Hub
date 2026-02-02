@@ -2,9 +2,25 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { GripVertical, Save } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import {
   Table,
   TableBody,
@@ -21,12 +37,61 @@ interface Crew {
   is_active: boolean;
 }
 
+function SortableRow({ crew, index }: { crew: Crew; index: number }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: crew.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <TableRow
+      ref={setNodeRef}
+      style={style}
+      className={`border-border ${isDragging ? "bg-muted" : ""}`}
+    >
+      <TableCell className="py-2 w-10">
+        <button
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded"
+        >
+          <GripVertical className="w-4 h-4 text-muted-foreground" />
+        </button>
+      </TableCell>
+      <TableCell className="text-foreground font-medium py-2">
+        {crew.name}
+      </TableCell>
+      <TableCell className="text-muted-foreground py-2 w-20 text-center">
+        {index + 1}
+      </TableCell>
+    </TableRow>
+  );
+}
+
 export function CrewOrderTable() {
-  const [orderValues, setOrderValues] = useState<Record<string, number>>({});
+  const [orderedCrews, setOrderedCrews] = useState<Crew[]>([]);
+  const [hasChanges, setHasChanges] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: crews = [], isLoading } = useQuery({
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const { isLoading } = useQuery({
     queryKey: ["crews-all-order"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -36,15 +101,34 @@ export function CrewOrderTable() {
         .order("display_order")
         .order("name");
       if (error) throw error;
-      
-      // Initialize order values
-      const initialValues: Record<string, number> = {};
-      data.forEach((crew: Crew) => {
-        initialValues[crew.id] = crew.display_order;
+
+      // Sort crews: by display_order first, then numbers first, then alphabetical
+      const sorted = [...(data as Crew[])].sort((a, b) => {
+        // First sort by display_order if set (non-zero)
+        if (a.display_order !== 0 || b.display_order !== 0) {
+          if (a.display_order !== b.display_order) {
+            return a.display_order - b.display_order;
+          }
+        }
+
+        // Check if names start with numbers
+        const aIsNumber = /^\d/.test(a.name);
+        const bIsNumber = /^\d/.test(b.name);
+
+        if (aIsNumber && !bIsNumber) return -1;
+        if (!aIsNumber && bIsNumber) return 1;
+
+        if (aIsNumber && bIsNumber) {
+          const aNum = parseInt(a.name.match(/^\d+/)?.[0] || "0", 10);
+          const bNum = parseInt(b.name.match(/^\d+/)?.[0] || "0", 10);
+          return aNum - bNum;
+        }
+
+        return a.name.localeCompare(b.name);
       });
-      setOrderValues(initialValues);
-      
-      return data as Crew[];
+
+      setOrderedCrews(sorted);
+      return sorted;
     },
   });
 
@@ -62,6 +146,7 @@ export function CrewOrderTable() {
       queryClient.invalidateQueries({ queryKey: ["crews"] });
       queryClient.invalidateQueries({ queryKey: ["crews-active"] });
       queryClient.invalidateQueries({ queryKey: ["crews-all-order"] });
+      setHasChanges(false);
       toast({ title: "Crew order saved" });
     },
     onError: (error: Error) => {
@@ -69,48 +154,26 @@ export function CrewOrderTable() {
     },
   });
 
-  const handleOrderChange = (crewId: string, value: string) => {
-    setOrderValues((prev) => ({
-      ...prev,
-      [crewId]: parseInt(value) || 0,
-    }));
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      setOrderedCrews((items) => {
+        const oldIndex = items.findIndex((item) => item.id === active.id);
+        const newIndex = items.findIndex((item) => item.id === over.id);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+      setHasChanges(true);
+    }
   };
 
   const handleSave = () => {
-    const updates = Object.entries(orderValues).map(([id, display_order]) => ({
-      id,
-      display_order,
+    const updates = orderedCrews.map((crew, index) => ({
+      id: crew.id,
+      display_order: index + 1,
     }));
     updateMutation.mutate(updates);
   };
-
-  // Sort crews for display (numbers first, then alphabetical)
-  const sortedCrews = [...crews].sort((a, b) => {
-    const aOrder = orderValues[a.id] ?? a.display_order;
-    const bOrder = orderValues[b.id] ?? b.display_order;
-    
-    // First sort by display_order if set (non-zero)
-    if (aOrder !== 0 || bOrder !== 0) {
-      if (aOrder !== bOrder) {
-        return aOrder - bOrder;
-      }
-    }
-    
-    // Check if names start with numbers
-    const aIsNumber = /^\d/.test(a.name);
-    const bIsNumber = /^\d/.test(b.name);
-    
-    if (aIsNumber && !bIsNumber) return -1;
-    if (!aIsNumber && bIsNumber) return 1;
-    
-    if (aIsNumber && bIsNumber) {
-      const aNum = parseInt(a.name.match(/^\d+/)?.[0] || "0", 10);
-      const bNum = parseInt(b.name.match(/^\d+/)?.[0] || "0", 10);
-      return aNum - bNum;
-    }
-    
-    return a.name.localeCompare(b.name);
-  });
 
   if (isLoading) {
     return <div className="text-muted-foreground p-4">Loading...</div>;
@@ -122,10 +185,13 @@ export function CrewOrderTable() {
         <div>
           <h3 className="text-lg font-medium text-foreground">Crew Display Order</h3>
           <p className="text-sm text-muted-foreground">
-            Set the display order for crews on the schedule. Lower numbers appear first. Use 0 for default sorting (numbers first, then alphabetical).
+            Drag crews to reorder them. The order shown here is how they'll appear on the schedule.
           </p>
         </div>
-        <Button onClick={handleSave} disabled={updateMutation.isPending}>
+        <Button 
+          onClick={handleSave} 
+          disabled={updateMutation.isPending || !hasChanges}
+        >
           <Save className="w-4 h-4 mr-2" />
           Save Order
         </Button>
@@ -137,28 +203,24 @@ export function CrewOrderTable() {
             <TableRow className="border-border">
               <TableHead className="text-muted-foreground w-10"></TableHead>
               <TableHead className="text-muted-foreground">Crew Name</TableHead>
-              <TableHead className="text-muted-foreground w-32">Display Order</TableHead>
+              <TableHead className="text-muted-foreground w-20 text-center">Position</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sortedCrews.map((crew) => (
-              <TableRow key={crew.id} className="border-border">
-                <TableCell className="py-2">
-                  <GripVertical className="w-4 h-4 text-muted-foreground" />
-                </TableCell>
-                <TableCell className="text-foreground font-medium py-2">
-                  {crew.name}
-                </TableCell>
-                <TableCell className="py-2">
-                  <Input
-                    type="number"
-                    value={orderValues[crew.id] ?? crew.display_order}
-                    onChange={(e) => handleOrderChange(crew.id, e.target.value)}
-                    className="h-8 w-20 bg-muted border-border text-foreground"
-                  />
-                </TableCell>
-              </TableRow>
-            ))}
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={orderedCrews.map((c) => c.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                {orderedCrews.map((crew, index) => (
+                  <SortableRow key={crew.id} crew={crew} index={index} />
+                ))}
+              </SortableContext>
+            </DndContext>
           </TableBody>
         </Table>
       </div>
