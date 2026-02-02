@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -46,6 +47,7 @@ interface ScheduleEntry {
 }
 
 export default function Invoices() {
+  const navigate = useNavigate();
   const [filterBuilder, setFilterBuilder] = useState("all");
   const [filterCrew, setFilterCrew] = useState("all");
   const [editingInvoiceId, setEditingInvoiceId] = useState<string | null>(null);
@@ -182,6 +184,10 @@ export default function Invoices() {
     }
   };
 
+  const handleDateClick = (date: string) => {
+    navigate(`/?date=${date}`);
+  };
+
   const renderTable = (entries: ScheduleEntry[], isLoading: boolean) => {
     const filtered = filterEntries(entries);
     
@@ -220,8 +226,13 @@ export default function Invoices() {
                   className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
                 />
               </TableCell>
-              <TableCell className="text-white">
-                {format(new Date(entry.scheduled_date + "T00:00:00"), "M/d/yyyy")}
+              <TableCell>
+                <button
+                  onClick={() => handleDateClick(entry.scheduled_date)}
+                  className="text-white hover:text-amber-400 hover:underline transition-colors cursor-pointer"
+                >
+                  {format(new Date(entry.scheduled_date + "T00:00:00"), "M/d/yyyy")}
+                </button>
               </TableCell>
               <TableCell>
                 <button

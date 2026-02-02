@@ -29,7 +29,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
-import { Calendar, Users, Truck, Building, ClipboardCheck, Pencil } from "lucide-react";
+import { Calendar, Users, Truck, Building, ClipboardCheck, Pencil, FileText } from "lucide-react";
 
 interface ScheduleEntry {
   id: string;
@@ -51,6 +51,9 @@ interface ScheduleEntry {
   inspector_id: string | null;
   qty_ordered: string | null;
   order_number: string | null;
+  to_be_invoiced: boolean;
+  invoice_complete: boolean;
+  invoice_number: string | null;
   phases: { id: string; name: string } | null;
   crews: { id: string; name: string } | null;
   suppliers: { id: string; name: string; code: string | null } | null;
@@ -112,6 +115,9 @@ export function ProjectScheduleHistory({ projectId }: ProjectScheduleHistoryProp
           inspector_id,
           qty_ordered,
           order_number,
+          to_be_invoiced,
+          invoice_complete,
+          invoice_number,
           phases(id, name),
           crews(id, name),
           suppliers(id, name, code),
@@ -449,6 +455,24 @@ export function ProjectScheduleHistory({ projectId }: ProjectScheduleHistoryProp
                                   {formatCurrency(entry.inspection_amount)}
                                 </div>
                               )}
+                            </div>
+                          )}
+
+                          {/* Invoicing */}
+                          {(entry.to_be_invoiced || entry.invoice_complete || entry.invoice_number) && (
+                            <div className="bg-slate-900 rounded p-2 space-y-1">
+                              <div className="flex items-center gap-1 text-slate-400 text-xs font-medium">
+                                <FileText className="w-3 h-3" />
+                                Invoicing
+                              </div>
+                              {entry.invoice_number && (
+                                <div className="text-slate-300">
+                                  Inv #: {entry.invoice_number}
+                                </div>
+                              )}
+                              <div className={entry.invoice_complete ? "text-green-400" : "text-amber-400"}>
+                                {entry.invoice_complete ? "Complete" : "Pending"}
+                              </div>
                             </div>
                           )}
                         </div>
