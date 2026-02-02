@@ -5,6 +5,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -20,7 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search } from "lucide-react";
+import { Search, Paperclip, X } from "lucide-react";
 import { AddProjectDialog } from "@/components/projects/AddProjectDialog";
 import { EditProjectDialog } from "@/components/projects/EditProjectDialog";
 import { ProjectDetailsSheet } from "@/components/projects/ProjectDetailsSheet";
@@ -71,6 +72,36 @@ export default function Projects() {
       return data as Project[];
     },
   });
+
+  // Fetch documents count per project to show attachment indicator
+  const { data: projectDocuments = [] } = useQuery({
+    queryKey: ["project-documents-counts"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("project_documents")
+        .select("project_id");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Create a set of project IDs that have documents
+  const projectsWithDocuments = new Set(
+    projectDocuments.map((doc) => doc.project_id)
+  );
+
+  const hasFiltersApplied =
+    searchQuery !== "" ||
+    filterBuilder !== "all" ||
+    filterLocation !== "all" ||
+    filterStatus !== "all";
+
+  const clearAllFilters = () => {
+    setSearchQuery("");
+    setFilterBuilder("all");
+    setFilterLocation("all");
+    setFilterStatus("all");
+  };
 
   const { data: builders = [] } = useQuery({
     queryKey: ["builders-active"],
@@ -174,7 +205,7 @@ export default function Projects() {
         {/* Filters */}
         <Card className="bg-slate-800 border-slate-700 mb-6">
           <CardContent className="p-4">
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-wrap gap-4 items-center">
               <div className="flex-1 min-w-[200px]">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -231,6 +262,17 @@ export default function Projects() {
                   ))}
                 </SelectContent>
               </Select>
+              {hasFiltersApplied && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearAllFilters}
+                  className="text-slate-400 hover:text-white"
+                >
+                  <X className="w-4 h-4 mr-1" />
+                  Clear Filters
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -251,6 +293,7 @@ export default function Projects() {
                     <TableHead className="text-slate-400">Lot #</TableHead>
                     <TableHead className="text-slate-400">Status</TableHead>
                     <TableHead className="text-slate-400">Created</TableHead>
+                    <TableHead className="text-slate-400 w-12"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -279,6 +322,11 @@ export default function Projects() {
                       </TableCell>
                       <TableCell className="text-slate-400">
                         {new Date(project.created_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        {projectsWithDocuments.has(project.id) && (
+                          <Paperclip className="w-4 h-4 text-amber-500" />
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
