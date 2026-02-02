@@ -1,13 +1,15 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { format, addDays, subDays, parseISO, isValid } from "date-fns";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChevronLeft, ChevronRight, Plus, Calendar } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Calendar, FileText } from "lucide-react";
 import { ScheduleTable } from "./ScheduleTable";
 import { AddEntryDialog } from "./AddEntryDialog";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 
 interface ScheduleEntry {
   id: string;
@@ -86,6 +88,7 @@ function sortCrews(crews: Crew[]): Crew[] {
 
 export function DailySchedule() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const queryClient = useQueryClient();
   const dateParam = searchParams.get("date");
   
   // Parse date from URL or use today
@@ -102,6 +105,8 @@ export function DailySchedule() {
   const [selectedDate, setSelectedDate] = useState(getInitialDate);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedCrewId, setSelectedCrewId] = useState<string | null>(null);
+  const [dailyNotes, setDailyNotes] = useState("");
+  const [isNotesEditing, setIsNotesEditing] = useState(false);
 
   // Sync URL when date changes (but not on initial load from URL)
   useEffect(() => {
@@ -177,6 +182,59 @@ export function DailySchedule() {
       return data as ScheduleEntry[];
     },
   });
+
+  // Fetch daily notes for the selected date
+  const { data: dailyNotesData } = useQuery({
+    queryKey: ["daily-notes", dateStr],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("daily_notes")
+        .select("*")
+        .eq("note_date", dateStr)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Update local state when daily notes data changes
+  useEffect(() => {
+    setDailyNotes(dailyNotesData?.notes || "");
+    setIsNotesEditing(false);
+  }, [dailyNotesData]);
+
+  // Mutation to save daily notes
+  const saveDailyNotesMutation = useMutation({
+    mutationFn: async (notes: string) => {
+      if (dailyNotesData) {
+        // Update existing
+        const { error } = await supabase
+          .from("daily_notes")
+          .update({ notes, updated_at: new Date().toISOString() })
+          .eq("id", dailyNotesData.id);
+        if (error) throw error;
+      } else {
+        // Insert new
+        const { error } = await supabase
+          .from("daily_notes")
+          .insert({ note_date: dateStr, notes });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["daily-notes", dateStr] });
+      toast.success("Daily notes saved");
+      setIsNotesEditing(false);
+    },
+    onError: (error) => {
+      toast.error("Failed to save notes");
+      console.error(error);
+    },
+  });
+
+  const handleSaveNotes = () => {
+    saveDailyNotesMutation.mutate(dailyNotes);
+  };
 
   const entriesByCrew = sortedCrews.reduce((acc, crew) => {
     acc[crew.id] = entries.filter((e) => e.crew_id === crew.id);
@@ -270,6 +328,64 @@ export function DailySchedule() {
               </CardContent>
             </Card>
           )}
+
+          {/* Daily Notes Section */}
+          <Card className="bg-card border-border">
+            <CardHeader className="py-3 px-4 flex flex-row items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FileText className="w-5 h-5 text-amber-500" />
+                <CardTitle className="text-lg font-semibold text-foreground">
+                  Daily Notes
+                </CardTitle>
+              </div>
+              {isNotesEditing ? (
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setDailyNotes(dailyNotesData?.notes || "");
+                      setIsNotesEditing(false);
+                    }}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleSaveNotes}
+                    disabled={saveDailyNotesMutation.isPending}
+                    className="bg-amber-500 text-black hover:bg-amber-600"
+                  >
+                    {saveDailyNotesMutation.isPending ? "Saving..." : "Save"}
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setIsNotesEditing(true)}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  Edit
+                </Button>
+              )}
+            </CardHeader>
+            <CardContent className="px-4 pb-4">
+              {isNotesEditing ? (
+                <Textarea
+                  value={dailyNotes}
+                  onChange={(e) => setDailyNotes(e.target.value)}
+                  placeholder="Add daily notes... (weather, holidays, general info)"
+                  className="min-h-[100px] bg-background"
+                />
+              ) : (
+                <div className="text-sm text-muted-foreground whitespace-pre-wrap min-h-[40px]">
+                  {dailyNotes || "No notes for this day. Click Edit to add notes."}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       )}
 
