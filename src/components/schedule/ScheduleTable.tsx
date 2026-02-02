@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, CalendarIcon, Pencil } from "lucide-react";
+import { Trash2, CalendarIcon, Pencil, MoreVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -90,6 +90,7 @@ export function ScheduleTable({ entries }: ScheduleTableProps) {
   const [moveEntryId, setMoveEntryId] = useState<string | null>(null);
   const [moveDate, setMoveDate] = useState<Date | undefined>(undefined);
   const [editEntry, setEditEntry] = useState<ScheduleEntry | null>(null);
+  const [editEntryTab, setEditEntryTab] = useState<"general" | "concrete" | "pump" | "inspection" | "invoicing">("general");
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [isProjectSheetOpen, setIsProjectSheetOpen] = useState(false);
   
@@ -303,6 +304,48 @@ export function ScheduleTable({ entries }: ScheduleTableProps) {
     );
   };
 
+  const renderSelectCellWithQuickEdit = (
+    entry: ScheduleEntry,
+    field: string,
+    currentId: string | null,
+    options: { id: string; name: string }[],
+    displayValue: string,
+    quickEditTab: "concrete" | "pump" | "inspection"
+  ) => {
+    return (
+      <div className="group flex items-center gap-1">
+        <div className="flex-1 min-w-0">
+          <Select
+            value={currentId || "none"}
+            onValueChange={(value) => handleSelectChange(entry.id, field, value)}
+          >
+            <SelectTrigger className="h-7 bg-background border-border text-foreground text-xs w-full">
+              <SelectValue>{displayValue || "-"}</SelectValue>
+            </SelectTrigger>
+            <SelectContent className="bg-popover border-border">
+              <SelectItem value="none" className="text-muted-foreground">None</SelectItem>
+              {options.map((opt) => (
+                <SelectItem key={opt.id} value={opt.id} className="text-foreground">{opt.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <Button
+          size="icon"
+          variant="ghost"
+          onClick={() => {
+            setEditEntry(entry);
+            setEditEntryTab(quickEditTab);
+          }}
+          className="h-6 w-6 text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+          title={`Edit ${quickEditTab} details`}
+        >
+          <MoreVertical className="w-3 h-3" />
+        </Button>
+      </div>
+    );
+  };
+
   if (entries.length === 0) {
     return (
       <div className="text-muted-foreground text-sm text-center py-6">
@@ -385,39 +428,43 @@ export function ScheduleTable({ entries }: ScheduleTableProps) {
                     )}
                   </TableCell>
                   <TableCell className="py-2">
-                    {renderSelectCell(
+                    {renderSelectCellWithQuickEdit(
                       entry,
                       "pump_vendor_id",
                       entry.pump_vendor_id,
                       pumpVendors,
-                      entry.pump_vendors?.code || entry.pump_vendors?.name || "-"
+                      entry.pump_vendors?.code || entry.pump_vendors?.name || "-",
+                      "pump"
                     )}
                   </TableCell>
                   <TableCell className="py-2">
-                    {renderSelectCell(
+                    {renderSelectCellWithQuickEdit(
                       entry,
                       "inspection_type_id",
                       entry.inspection_type_id,
                       inspectionTypes,
-                      entry.inspection_types?.name || "-"
+                      entry.inspection_types?.name || "-",
+                      "inspection"
                     )}
                   </TableCell>
                   <TableCell className="py-2">
-                    {renderSelectCell(
+                    {renderSelectCellWithQuickEdit(
                       entry,
                       "inspector_id",
                       entry.inspector_id,
                       inspectors,
-                      entry.inspectors?.name || "-"
+                      entry.inspectors?.name || "-",
+                      "inspection"
                     )}
                   </TableCell>
                   <TableCell className="py-2">
-                    {renderSelectCell(
+                    {renderSelectCellWithQuickEdit(
                       entry,
                       "supplier_id",
                       entry.supplier_id,
                       suppliers,
-                      entry.suppliers?.code || entry.suppliers?.name || "-"
+                      entry.suppliers?.code || entry.suppliers?.name || "-",
+                      "concrete"
                     )}
                   </TableCell>
                   <TableCell className="py-2">
@@ -439,7 +486,10 @@ export function ScheduleTable({ entries }: ScheduleTableProps) {
                       <Button
                         size="icon"
                         variant="ghost"
-                        onClick={() => setEditEntry(entry)}
+                        onClick={() => {
+                          setEditEntry(entry);
+                          setEditEntryTab("general");
+                        }}
                         className="h-7 w-7 text-muted-foreground hover:text-foreground"
                         title="Edit full details"
                       >
@@ -530,6 +580,7 @@ export function ScheduleTable({ entries }: ScheduleTableProps) {
         entry={editEntry}
         open={!!editEntry}
         onOpenChange={(open) => !open && setEditEntry(null)}
+        defaultTab={editEntryTab}
       />
 
       {/* Project Details Sheet */}

@@ -57,9 +57,10 @@ interface EditEntryDialogProps {
   entry: ScheduleEntry | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  defaultTab?: "general" | "concrete" | "pump" | "inspection" | "invoicing";
 }
 
-export function EditEntryDialog({ entry, open, onOpenChange }: EditEntryDialogProps) {
+export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "general" }: EditEntryDialogProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -233,7 +234,7 @@ export function EditEntryDialog({ entry, open, onOpenChange }: EditEntryDialogPr
           <DialogTitle>Edit Entry: {projectLabel}</DialogTitle>
         </DialogHeader>
         
-        <Tabs defaultValue="general" className="w-full">
+        <Tabs defaultValue={defaultTab} key={defaultTab} className="w-full">
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="concrete">Concrete</TabsTrigger>
