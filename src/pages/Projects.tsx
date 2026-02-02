@@ -1,19 +1,10 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -29,41 +20,52 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useToast } from "@/hooks/use-toast";
-import { Plus, Search } from "lucide-react";
+import { Search } from "lucide-react";
+import { AddProjectDialog } from "@/components/projects/AddProjectDialog";
+import { EditProjectDialog } from "@/components/projects/EditProjectDialog";
+import { ProjectDetailsSheet } from "@/components/projects/ProjectDetailsSheet";
 
 interface Project {
   id: string;
   lot_number: string;
   notes: string | null;
   created_at: string;
+  builder_id: string | null;
+  location_id: string | null;
+  status_id: string | null;
+  full_address: string | null;
+  county: string | null;
+  permit_number: string | null;
+  authorization_numbers: string | null;
+  wall_height: string | null;
+  basement_type: string | null;
+  google_drive_url: string | null;
   builders: { id: string; name: string; code: string | null } | null;
   locations: { id: string; name: string } | null;
   project_statuses: { id: string; name: string } | null;
 }
 
 export default function Projects() {
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterBuilder, setFilterBuilder] = useState("all");
   const [filterLocation, setFilterLocation] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   
-  const [newBuilderId, setNewBuilderId] = useState("");
-  const [newLocationId, setNewLocationId] = useState("");
-  const [newLotNumber, setNewLotNumber] = useState("");
-  const [newStatusId, setNewStatusId] = useState("");
-  const [newNotes, setNewNotes] = useState("");
-
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
 
   const { data: projects = [], isLoading } = useQuery({
     queryKey: ["projects"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
-        .select("*, builders(id, name, code), locations(id, name), project_statuses(id, name)")
+        .select(`
+          *,
+          builders(id, name, code),
+          locations(id, name),
+          project_statuses(id, name)
+        `)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as Project[];
@@ -73,7 +75,11 @@ export default function Projects() {
   const { data: builders = [] } = useQuery({
     queryKey: ["builders-active"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("builders").select("id, name, code").eq("is_active", true).order("name");
+      const { data, error } = await supabase
+        .from("builders")
+        .select("id, name, code")
+        .eq("is_active", true)
+        .order("name");
       if (error) throw error;
       return data;
     },
@@ -82,7 +88,11 @@ export default function Projects() {
   const { data: locations = [] } = useQuery({
     queryKey: ["locations-active"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("locations").select("id, name").eq("is_active", true).order("name");
+      const { data, error } = await supabase
+        .from("locations")
+        .select("id, name")
+        .eq("is_active", true)
+        .order("name");
       if (error) throw error;
       return data;
     },
@@ -91,44 +101,26 @@ export default function Projects() {
   const { data: statuses = [] } = useQuery({
     queryKey: ["statuses-active"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("project_statuses").select("id, name").eq("is_active", true).order("display_order");
+      const { data, error } = await supabase
+        .from("project_statuses")
+        .select("id, name")
+        .eq("is_active", true)
+        .order("display_order");
       if (error) throw error;
       return data;
     },
   });
 
-  const createMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.from("projects").insert({
-        builder_id: newBuilderId || null,
-        location_id: newLocationId || null,
-        lot_number: newLotNumber,
-        status_id: newStatusId || null,
-        notes: newNotes || null,
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["projects"] });
-      toast({ title: "Project created" });
-      setIsDialogOpen(false);
-      setNewBuilderId("");
-      setNewLocationId("");
-      setNewLotNumber("");
-      setNewStatusId("");
-      setNewNotes("");
-    },
-    onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    },
-  });
+  const selectedProject = projects.find((p) => p.id === selectedProjectId) || null;
 
   const filteredProjects = projects.filter((project) => {
     const matchesSearch =
       searchQuery === "" ||
       project.lot_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
       project.builders?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      project.locations?.name.toLowerCase().includes(searchQuery.toLowerCase());
+      project.locations?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      project.full_address?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      project.permit_number?.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesBuilder = filterBuilder === "all" || project.builders?.id === filterBuilder;
     const matchesLocation = filterLocation === "all" || project.locations?.id === filterLocation;
@@ -139,13 +131,29 @@ export default function Projects() {
 
   const getStatusColor = (status: string | undefined) => {
     switch (status) {
-      case "Upcoming": return "bg-blue-500/20 text-blue-400 border-blue-500/30";
-      case "Ready to Start": return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30";
-      case "In Progress": return "bg-green-500/20 text-green-400 border-green-500/30";
-      case "Ready to Invoice": return "bg-amber-500/20 text-amber-400 border-amber-500/30";
-      case "Invoice Complete - Archive": return "bg-slate-500/20 text-slate-400 border-slate-500/30";
-      default: return "bg-slate-500/20 text-slate-400 border-slate-500/30";
+      case "Upcoming":
+        return "bg-blue-500/20 text-blue-400 border-blue-500/30";
+      case "Ready to Start":
+        return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30";
+      case "In Progress":
+        return "bg-green-500/20 text-green-400 border-green-500/30";
+      case "Ready to Invoice":
+        return "bg-amber-500/20 text-amber-400 border-amber-500/30";
+      case "Invoice Complete - Archive":
+        return "bg-slate-500/20 text-slate-400 border-slate-500/30";
+      default:
+        return "bg-slate-500/20 text-slate-400 border-slate-500/30";
     }
+  };
+
+  const handleRowClick = (projectId: string) => {
+    setSelectedProjectId(projectId);
+    setIsDetailsOpen(true);
+  };
+
+  const handleEditFromDetails = () => {
+    setIsDetailsOpen(false);
+    setIsEditOpen(true);
   };
 
   return (
@@ -156,73 +164,11 @@ export default function Projects() {
             <h1 className="text-2xl font-bold text-white">Projects</h1>
             <p className="text-slate-400">Manage all your jobs and projects</p>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-amber-500 hover:bg-amber-600 text-slate-900">
-                <Plus className="w-4 h-4 mr-2" />
-                Add Project
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="bg-slate-800 border-slate-700">
-              <DialogHeader>
-                <DialogTitle className="text-white">Add New Project</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={(e) => { e.preventDefault(); createMutation.mutate(); }} className="space-y-4">
-                <div className="space-y-2">
-                  <Label className="text-slate-300">Builder</Label>
-                  <Select value={newBuilderId} onValueChange={setNewBuilderId}>
-                    <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
-                      <SelectValue placeholder="Select builder" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-slate-700 border-slate-600">
-                      {builders.map((b) => (
-                        <SelectItem key={b.id} value={b.id} className="text-white">{b.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-slate-300">Location</Label>
-                  <Select value={newLocationId} onValueChange={setNewLocationId}>
-                    <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
-                      <SelectValue placeholder="Select location" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-slate-700 border-slate-600">
-                      {locations.map((l) => (
-                        <SelectItem key={l.id} value={l.id} className="text-white">{l.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-slate-300">Lot Number</Label>
-                  <Input
-                    value={newLotNumber}
-                    onChange={(e) => setNewLotNumber(e.target.value)}
-                    required
-                    placeholder="e.g., 12-18V"
-                    className="bg-slate-700 border-slate-600 text-white"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-slate-300">Status</Label>
-                  <Select value={newStatusId} onValueChange={setNewStatusId}>
-                    <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-slate-700 border-slate-600">
-                      {statuses.map((s) => (
-                        <SelectItem key={s.id} value={s.id} className="text-white">{s.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button type="submit" className="w-full bg-amber-500 hover:bg-amber-600 text-slate-900" disabled={createMutation.isPending}>
-                  {createMutation.isPending ? "Creating..." : "Create Project"}
-                </Button>
-              </form>
-            </DialogContent>
-          </Dialog>
+          <AddProjectDialog
+            builders={builders}
+            locations={locations}
+            statuses={statuses}
+          />
         </div>
 
         {/* Filters */}
@@ -245,9 +191,13 @@ export default function Projects() {
                   <SelectValue placeholder="All Builders" />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-700 border-slate-600">
-                  <SelectItem value="all" className="text-white">All Builders</SelectItem>
+                  <SelectItem value="all" className="text-white">
+                    All Builders
+                  </SelectItem>
                   {builders.map((b) => (
-                    <SelectItem key={b.id} value={b.id} className="text-white">{b.name}</SelectItem>
+                    <SelectItem key={b.id} value={b.id} className="text-white">
+                      {b.name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -256,9 +206,13 @@ export default function Projects() {
                   <SelectValue placeholder="All Locations" />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-700 border-slate-600">
-                  <SelectItem value="all" className="text-white">All Locations</SelectItem>
+                  <SelectItem value="all" className="text-white">
+                    All Locations
+                  </SelectItem>
                   {locations.map((l) => (
-                    <SelectItem key={l.id} value={l.id} className="text-white">{l.name}</SelectItem>
+                    <SelectItem key={l.id} value={l.id} className="text-white">
+                      {l.name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -267,9 +221,13 @@ export default function Projects() {
                   <SelectValue placeholder="All Statuses" />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-700 border-slate-600">
-                  <SelectItem value="all" className="text-white">All Statuses</SelectItem>
+                  <SelectItem value="all" className="text-white">
+                    All Statuses
+                  </SelectItem>
                   {statuses.map((s) => (
-                    <SelectItem key={s.id} value={s.id} className="text-white">{s.name}</SelectItem>
+                    <SelectItem key={s.id} value={s.id} className="text-white">
+                      {s.name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -297,7 +255,11 @@ export default function Projects() {
                 </TableHeader>
                 <TableBody>
                   {filteredProjects.map((project) => (
-                    <TableRow key={project.id} className="border-slate-700 hover:bg-slate-700/50 cursor-pointer">
+                    <TableRow
+                      key={project.id}
+                      className="border-slate-700 hover:bg-slate-700/50 cursor-pointer"
+                      onClick={() => handleRowClick(project.id)}
+                    >
                       <TableCell className="text-white font-medium">
                         {project.builders?.code || project.builders?.name || "-"}
                       </TableCell>
@@ -308,7 +270,10 @@ export default function Projects() {
                         {project.lot_number}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={getStatusColor(project.project_statuses?.name)}>
+                        <Badge
+                          variant="outline"
+                          className={getStatusColor(project.project_statuses?.name)}
+                        >
                           {project.project_statuses?.name || "No Status"}
                         </Badge>
                       </TableCell>
@@ -323,6 +288,24 @@ export default function Projects() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Project Details Sheet */}
+      <ProjectDetailsSheet
+        projectId={selectedProjectId}
+        isOpen={isDetailsOpen}
+        onClose={() => setIsDetailsOpen(false)}
+        onEdit={handleEditFromDetails}
+      />
+
+      {/* Edit Project Dialog */}
+      <EditProjectDialog
+        project={selectedProject}
+        isOpen={isEditOpen}
+        onClose={() => setIsEditOpen(false)}
+        builders={builders}
+        locations={locations}
+        statuses={statuses}
+      />
     </AppLayout>
   );
 }
