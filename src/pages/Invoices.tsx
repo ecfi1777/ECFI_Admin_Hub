@@ -24,7 +24,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, Check } from "lucide-react";
+import { FileText, Check, Search, X } from "lucide-react";
 import { toast } from "sonner";
 import { ProjectDetailsSheet } from "@/components/projects/ProjectDetailsSheet";
 
@@ -48,8 +48,11 @@ interface ScheduleEntry {
 
 export default function Invoices() {
   const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState("");
   const [filterBuilder, setFilterBuilder] = useState("all");
   const [filterCrew, setFilterCrew] = useState("all");
+  const [filterLocation, setFilterLocation] = useState("all");
+  const [filterPhase, setFilterPhase] = useState("all");
   const [editingInvoiceId, setEditingInvoiceId] = useState<string | null>(null);
   const [invoiceNumberValue, setInvoiceNumberValue] = useState("");
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
@@ -115,6 +118,24 @@ export default function Invoices() {
     },
   });
 
+  const { data: locations = [] } = useQuery({
+    queryKey: ["locations-active"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("locations").select("id, name").eq("is_active", true).order("name");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: phases = [] } = useQuery({
+    queryKey: ["phases-active"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("phases").select("id, name").eq("is_active", true).order("display_order");
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const toggleCompleteMutation = useMutation({
     mutationFn: async ({ entryId, complete }: { entryId: string; complete: boolean }) => {
       const { error } = await supabase
@@ -155,12 +176,34 @@ export default function Invoices() {
 
   const filterEntries = (entries: ScheduleEntry[]) => {
     return entries.filter((entry) => {
+      // Search across builder, location, crew, phase
+      const searchLower = searchQuery.toLowerCase();
+      const matchesSearch = !searchQuery || 
+        entry.projects?.builders?.name?.toLowerCase().includes(searchLower) ||
+        entry.projects?.builders?.code?.toLowerCase().includes(searchLower) ||
+        entry.projects?.locations?.name?.toLowerCase().includes(searchLower) ||
+        entry.crews?.name?.toLowerCase().includes(searchLower) ||
+        entry.phases?.name?.toLowerCase().includes(searchLower);
+      
       const matchesBuilder = filterBuilder === "all" || 
         entry.projects?.builders?.code === filterBuilder ||
         entry.projects?.builders?.name === filterBuilder;
       const matchesCrew = filterCrew === "all" || entry.crews?.name === filterCrew;
-      return matchesBuilder && matchesCrew;
+      const matchesLocation = filterLocation === "all" || entry.projects?.locations?.name === filterLocation;
+      const matchesPhase = filterPhase === "all" || entry.phases?.name === filterPhase;
+      
+      return matchesSearch && matchesBuilder && matchesCrew && matchesLocation && matchesPhase;
     });
+  };
+
+  const hasActiveFilters = searchQuery || filterBuilder !== "all" || filterCrew !== "all" || filterLocation !== "all" || filterPhase !== "all";
+
+  const clearFilters = () => {
+    setSearchQuery("");
+    setFilterBuilder("all");
+    setFilterCrew("all");
+    setFilterLocation("all");
+    setFilterPhase("all");
   };
 
   const handleStartEditInvoice = (entry: ScheduleEntry) => {
@@ -314,7 +357,18 @@ export default function Invoices() {
         {/* Filters */}
         <Card className="bg-slate-800 border-slate-700 mb-6">
           <CardContent className="p-4">
-            <div className="flex gap-4">
+            <div className="flex flex-wrap gap-4 items-center">
+              {/* Search box */}
+              <div className="relative flex-1 min-w-[200px] max-w-sm">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+                <Input
+                  placeholder="Search builder, location, crew, phase..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 bg-slate-700 border-slate-600 text-white"
+                />
+              </div>
+              
               <Select value={filterBuilder} onValueChange={setFilterBuilder}>
                 <SelectTrigger className="w-40 bg-slate-700 border-slate-600 text-white">
                   <SelectValue placeholder="All Builders" />
@@ -326,6 +380,19 @@ export default function Invoices() {
                   ))}
                 </SelectContent>
               </Select>
+              
+              <Select value={filterLocation} onValueChange={setFilterLocation}>
+                <SelectTrigger className="w-40 bg-slate-700 border-slate-600 text-white">
+                  <SelectValue placeholder="All Locations" />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-700 border-slate-600">
+                  <SelectItem value="all" className="text-white">All Locations</SelectItem>
+                  {locations.map((l) => (
+                    <SelectItem key={l.id} value={l.name} className="text-white">{l.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
               <Select value={filterCrew} onValueChange={setFilterCrew}>
                 <SelectTrigger className="w-40 bg-slate-700 border-slate-600 text-white">
                   <SelectValue placeholder="All Crews" />
@@ -337,6 +404,29 @@ export default function Invoices() {
                   ))}
                 </SelectContent>
               </Select>
+              
+              <Select value={filterPhase} onValueChange={setFilterPhase}>
+                <SelectTrigger className="w-40 bg-slate-700 border-slate-600 text-white">
+                  <SelectValue placeholder="All Phases" />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-700 border-slate-600">
+                  <SelectItem value="all" className="text-white">All Phases</SelectItem>
+                  {phases.map((p) => (
+                    <SelectItem key={p.id} value={p.name} className="text-white">{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              {hasActiveFilters && (
+                <Button
+                  variant="ghost"
+                  onClick={clearFilters}
+                  className="text-slate-400 hover:text-white"
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  Clear Filters
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
