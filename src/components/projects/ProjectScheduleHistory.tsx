@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
 import { Calendar, Users, Truck, Building, ClipboardCheck, Pencil } from "lucide-react";
 
@@ -35,6 +36,7 @@ interface ScheduleEntry {
   scheduled_date: string;
   start_time: string | null;
   crew_yards_poured: number | null;
+  crew_notes: string | null;
   ready_mix_yards_billed: number | null;
   ready_mix_invoice_number: string | null;
   ready_mix_invoice_amount: number | null;
@@ -73,7 +75,6 @@ export function ProjectScheduleHistory({ projectId }: ProjectScheduleHistoryProp
     ready_mix_invoice_number: "",
     ready_mix_invoice_amount: "",
     ready_mix_yards_billed: "",
-    crew_yards_poured: "",
     pump_vendor_id: "",
     pump_invoice_number: "",
     pump_invoice_amount: "",
@@ -81,6 +82,9 @@ export function ProjectScheduleHistory({ projectId }: ProjectScheduleHistoryProp
     inspector_id: "",
     inspection_invoice_number: "",
     inspection_amount: "",
+    // Crew tab
+    crew_yards_poured: "",
+    crew_notes: "",
   });
 
   const { data: entries = [], isLoading } = useQuery({
@@ -93,6 +97,7 @@ export function ProjectScheduleHistory({ projectId }: ProjectScheduleHistoryProp
           scheduled_date,
           start_time,
           crew_yards_poured,
+          crew_notes,
           ready_mix_yards_billed,
           ready_mix_invoice_number,
           ready_mix_invoice_amount,
@@ -232,7 +237,6 @@ export function ProjectScheduleHistory({ projectId }: ProjectScheduleHistoryProp
       ready_mix_invoice_number: entry.ready_mix_invoice_number || "",
       ready_mix_invoice_amount: entry.ready_mix_invoice_amount?.toString() || "",
       ready_mix_yards_billed: entry.ready_mix_yards_billed?.toString() || "",
-      crew_yards_poured: entry.crew_yards_poured?.toString() || "",
       pump_vendor_id: entry.pump_vendor_id || "",
       pump_invoice_number: entry.pump_invoice_number || "",
       pump_invoice_amount: entry.pump_invoice_amount?.toString() || "",
@@ -240,6 +244,8 @@ export function ProjectScheduleHistory({ projectId }: ProjectScheduleHistoryProp
       inspector_id: entry.inspector_id || "",
       inspection_invoice_number: entry.inspection_invoice_number || "",
       inspection_amount: entry.inspection_amount?.toString() || "",
+      crew_yards_poured: entry.crew_yards_poured?.toString() || "",
+      crew_notes: entry.crew_notes || "",
     });
   };
 
@@ -251,7 +257,6 @@ export function ProjectScheduleHistory({ projectId }: ProjectScheduleHistoryProp
       ready_mix_invoice_number: formData.ready_mix_invoice_number || null,
       ready_mix_invoice_amount: formData.ready_mix_invoice_amount ? parseFloat(formData.ready_mix_invoice_amount) : null,
       ready_mix_yards_billed: formData.ready_mix_yards_billed ? parseFloat(formData.ready_mix_yards_billed) : null,
-      crew_yards_poured: formData.crew_yards_poured ? parseFloat(formData.crew_yards_poured) : null,
       pump_vendor_id: formData.pump_vendor_id || null,
       pump_invoice_number: formData.pump_invoice_number || null,
       pump_invoice_amount: formData.pump_invoice_amount ? parseFloat(formData.pump_invoice_amount) : null,
@@ -259,6 +264,8 @@ export function ProjectScheduleHistory({ projectId }: ProjectScheduleHistoryProp
       inspector_id: formData.inspector_id || null,
       inspection_invoice_number: formData.inspection_invoice_number || null,
       inspection_amount: formData.inspection_amount ? parseFloat(formData.inspection_amount) : null,
+      crew_yards_poured: formData.crew_yards_poured ? parseFloat(formData.crew_yards_poured) : null,
+      crew_notes: formData.crew_notes || null,
     };
     updateMutation.mutate(updates);
   };
@@ -471,10 +478,11 @@ export function ProjectScheduleHistory({ projectId }: ProjectScheduleHistoryProp
           </DialogHeader>
 
           <Tabs defaultValue="concrete" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 bg-slate-700">
+            <TabsList className="grid w-full grid-cols-4 bg-slate-700">
               <TabsTrigger value="concrete" className="data-[state=active]:bg-slate-600">Concrete</TabsTrigger>
               <TabsTrigger value="pump" className="data-[state=active]:bg-slate-600">Pump</TabsTrigger>
               <TabsTrigger value="inspection" className="data-[state=active]:bg-slate-600">Inspection</TabsTrigger>
+              <TabsTrigger value="crew" className="data-[state=active]:bg-slate-600">Crew</TabsTrigger>
             </TabsList>
 
             <TabsContent value="concrete" className="space-y-4 mt-4">
@@ -545,17 +553,6 @@ export function ProjectScheduleHistory({ projectId }: ProjectScheduleHistoryProp
                     className="bg-slate-700 border-slate-600 text-white"
                   />
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-slate-300">Yards Poured (Crew)</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={formData.crew_yards_poured}
-                  onChange={(e) => updateField("crew_yards_poured", e.target.value)}
-                  placeholder="0"
-                  className="bg-slate-700 border-slate-600 text-white"
-                />
               </div>
             </TabsContent>
 
@@ -647,6 +644,30 @@ export function ProjectScheduleHistory({ projectId }: ProjectScheduleHistoryProp
                     className="bg-slate-700 border-slate-600 text-white"
                   />
                 </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="crew" className="space-y-4 mt-4">
+              <div className="space-y-2">
+                <Label className="text-slate-300">Crew Yards Poured</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={formData.crew_yards_poured}
+                  onChange={(e) => updateField("crew_yards_poured", e.target.value)}
+                  placeholder="0"
+                  className="bg-slate-700 border-slate-600 text-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-slate-300">Crew Notes</Label>
+                <Textarea
+                  value={formData.crew_notes}
+                  onChange={(e) => updateField("crew_notes", e.target.value)}
+                  placeholder="Notes related to crew work on this entry..."
+                  rows={4}
+                  className="bg-slate-700 border-slate-600 text-white"
+                />
               </div>
             </TabsContent>
           </Tabs>

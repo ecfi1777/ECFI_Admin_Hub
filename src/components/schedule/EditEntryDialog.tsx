@@ -57,7 +57,7 @@ interface EditEntryDialogProps {
   entry: ScheduleEntry | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  defaultTab?: "general" | "concrete" | "pump" | "inspection" | "invoicing";
+  defaultTab?: "general" | "concrete" | "pump" | "inspection" | "invoicing" | "crew";
 }
 
 export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "general" }: EditEntryDialogProps) {
@@ -88,6 +88,9 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
     inspection_amount: "",
     // Invoice tab
     to_be_invoiced: false,
+    // Crew tab
+    crew_yards_poured: "",
+    crew_notes: "",
   });
 
   // Reset form when entry changes
@@ -112,6 +115,8 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
         inspection_invoice_number: entry.inspection_invoice_number || "",
         inspection_amount: entry.inspection_amount?.toString() || "",
         to_be_invoiced: entry.to_be_invoiced,
+        crew_yards_poured: (entry as any).crew_yards_poured?.toString() || "",
+        crew_notes: (entry as any).crew_notes || "",
       });
     }
   }, [entry]);
@@ -210,6 +215,8 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
       inspection_invoice_number: formData.inspection_invoice_number || null,
       inspection_amount: formData.inspection_amount ? parseFloat(formData.inspection_amount) : null,
       to_be_invoiced: formData.to_be_invoiced,
+      crew_yards_poured: formData.crew_yards_poured ? parseFloat(formData.crew_yards_poured) : null,
+      crew_notes: formData.crew_notes || null,
     };
     
     updateMutation.mutate(updates);
@@ -235,12 +242,13 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
         </DialogHeader>
         
         <Tabs defaultValue={defaultTab} key={defaultTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="concrete">Concrete</TabsTrigger>
             <TabsTrigger value="pump">Pump</TabsTrigger>
             <TabsTrigger value="inspection">Inspection</TabsTrigger>
             <TabsTrigger value="invoicing">Invoicing</TabsTrigger>
+            <TabsTrigger value="crew">Crew</TabsTrigger>
           </TabsList>
           
           <TabsContent value="general" className="space-y-4 mt-4">
@@ -457,6 +465,28 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
             <p className="text-sm text-muted-foreground">
               Note: "Invoice Complete" status is managed from the Invoices page.
             </p>
+          </TabsContent>
+          
+          <TabsContent value="crew" className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label>Crew Yards Poured</Label>
+              <Input
+                type="number"
+                step="0.01"
+                value={formData.crew_yards_poured}
+                onChange={(e) => updateField("crew_yards_poured", e.target.value)}
+                placeholder="0"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Crew Notes</Label>
+              <Textarea
+                value={formData.crew_notes}
+                onChange={(e) => updateField("crew_notes", e.target.value)}
+                placeholder="Notes related to crew work on this entry..."
+                rows={4}
+              />
+            </div>
           </TabsContent>
         </Tabs>
         
