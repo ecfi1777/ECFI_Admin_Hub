@@ -78,13 +78,16 @@ export function ProjectScheduleHistory({ projectId }: ProjectScheduleHistoryProp
     ready_mix_invoice_number: "",
     ready_mix_invoice_amount: "",
     ready_mix_yards_billed: "",
+    concrete_notes: "",
     pump_vendor_id: "",
     pump_invoice_number: "",
     pump_invoice_amount: "",
+    pump_notes: "",
     inspection_type_id: "",
     inspector_id: "",
     inspection_invoice_number: "",
     inspection_amount: "",
+    inspection_notes: "",
     // Crew tab
     crew_yards_poured: "",
     crew_notes: "",
@@ -243,13 +246,16 @@ export function ProjectScheduleHistory({ projectId }: ProjectScheduleHistoryProp
       ready_mix_invoice_number: entry.ready_mix_invoice_number || "",
       ready_mix_invoice_amount: entry.ready_mix_invoice_amount?.toString() || "",
       ready_mix_yards_billed: entry.ready_mix_yards_billed?.toString() || "",
+      concrete_notes: (entry as any).concrete_notes || "",
       pump_vendor_id: entry.pump_vendor_id || "",
       pump_invoice_number: entry.pump_invoice_number || "",
       pump_invoice_amount: entry.pump_invoice_amount?.toString() || "",
+      pump_notes: (entry as any).pump_notes || "",
       inspection_type_id: entry.inspection_type_id || "",
       inspector_id: entry.inspector_id || "",
       inspection_invoice_number: entry.inspection_invoice_number || "",
       inspection_amount: entry.inspection_amount?.toString() || "",
+      inspection_notes: (entry as any).inspection_notes || "",
       crew_yards_poured: entry.crew_yards_poured?.toString() || "",
       crew_notes: entry.crew_notes || "",
     });
@@ -263,13 +269,16 @@ export function ProjectScheduleHistory({ projectId }: ProjectScheduleHistoryProp
       ready_mix_invoice_number: formData.ready_mix_invoice_number || null,
       ready_mix_invoice_amount: formData.ready_mix_invoice_amount ? parseFloat(formData.ready_mix_invoice_amount) : null,
       ready_mix_yards_billed: formData.ready_mix_yards_billed ? parseFloat(formData.ready_mix_yards_billed) : null,
+      concrete_notes: formData.concrete_notes || null,
       pump_vendor_id: formData.pump_vendor_id || null,
       pump_invoice_number: formData.pump_invoice_number || null,
       pump_invoice_amount: formData.pump_invoice_amount ? parseFloat(formData.pump_invoice_amount) : null,
+      pump_notes: formData.pump_notes || null,
       inspection_type_id: formData.inspection_type_id || null,
       inspector_id: formData.inspector_id || null,
       inspection_invoice_number: formData.inspection_invoice_number || null,
       inspection_amount: formData.inspection_amount ? parseFloat(formData.inspection_amount) : null,
+      inspection_notes: formData.inspection_notes || null,
       crew_yards_poured: formData.crew_yards_poured ? parseFloat(formData.crew_yards_poured) : null,
       crew_notes: formData.crew_notes || null,
     };
@@ -578,6 +587,16 @@ export function ProjectScheduleHistory({ projectId }: ProjectScheduleHistoryProp
                   />
                 </div>
               </div>
+              <div className="space-y-2">
+                <Label className="text-slate-300">Concrete Notes</Label>
+                <Textarea
+                  value={formData.concrete_notes}
+                  onChange={(e) => updateField("concrete_notes", e.target.value)}
+                  placeholder="Notes related to concrete/ready mix..."
+                  rows={3}
+                  className="bg-slate-700 border-slate-600 text-white"
+                />
+              </div>
             </TabsContent>
 
             <TabsContent value="pump" className="space-y-4 mt-4">
@@ -615,6 +634,16 @@ export function ProjectScheduleHistory({ projectId }: ProjectScheduleHistoryProp
                     className="bg-slate-700 border-slate-600 text-white"
                   />
                 </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-slate-300">Pump Notes</Label>
+                <Textarea
+                  value={formData.pump_notes}
+                  onChange={(e) => updateField("pump_notes", e.target.value)}
+                  placeholder="Notes related to pump vendor..."
+                  rows={3}
+                  className="bg-slate-700 border-slate-600 text-white"
+                />
               </div>
             </TabsContent>
 
@@ -668,6 +697,16 @@ export function ProjectScheduleHistory({ projectId }: ProjectScheduleHistoryProp
                     className="bg-slate-700 border-slate-600 text-white"
                   />
                 </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-slate-300">Inspection Notes</Label>
+                <Textarea
+                  value={formData.inspection_notes}
+                  onChange={(e) => updateField("inspection_notes", e.target.value)}
+                  placeholder="Notes related to inspection..."
+                  rows={3}
+                  className="bg-slate-700 border-slate-600 text-white"
+                />
               </div>
             </TabsContent>
 
