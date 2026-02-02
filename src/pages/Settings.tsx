@@ -2,14 +2,11 @@ import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ReferenceDataTable } from "@/components/settings/ReferenceDataTable";
-import { CrewMembersTable } from "@/components/settings/CrewMembersTable";
-import { CrewOrderTable } from "@/components/settings/CrewOrderTable";
+import { CrewsManagement } from "@/components/settings/CrewsManagement";
 import { ChangePassword } from "@/components/settings/ChangePassword";
 
 const tabs = [
-  { value: "crews", label: "Crews", table: "crews" },
-  { value: "crew_order", label: "Crew Order", table: null },
-  { value: "crew_members", label: "Crew Members", table: "crew_members" },
+  { value: "crews", label: "Crews", table: null },
   { value: "builders", label: "Builders", table: "builders" },
   { value: "locations", label: "Locations", table: "locations" },
   { value: "phases", label: "Phases", table: "phases" },
@@ -47,10 +44,8 @@ export default function Settings() {
 
           {tabs.map((tab) => (
             <TabsContent key={tab.value} value={tab.value} className="mt-6">
-              {tab.value === "crew_members" ? (
-                <CrewMembersTable />
-              ) : tab.value === "crew_order" ? (
-                <CrewOrderTable />
+              {tab.value === "crews" ? (
+                <CrewsManagement />
               ) : tab.value === "account" ? (
                 <ChangePassword />
               ) : (
