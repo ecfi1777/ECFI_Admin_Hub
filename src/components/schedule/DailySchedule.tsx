@@ -54,6 +54,7 @@ interface Crew {
   id: string;
   name: string;
   display_order: number;
+  is_active: boolean;
 }
 
 // Sort crews by display_order (set via drag-and-drop in Settings)
@@ -121,18 +122,22 @@ export function DailySchedule() {
   const dateStr = format(selectedDate, "yyyy-MM-dd");
 
   const { data: crews = [] } = useQuery({
-    queryKey: ["crews-active"],
+    queryKey: ["crews-all"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("crews")
-        .select("id, name, display_order")
-        .eq("is_active", true);
+        .select("id, name, display_order, is_active");
       if (error) throw error;
       return data as Crew[];
     },
   });
 
   const sortedCrews = sortCrews(crews);
+
+  // Filter crews to show: active crews always, inactive crews only if they have entries
+  const displayedCrews = sortedCrews.filter(
+    (crew) => crew.is_active || entries.some((e) => e.crew_id === crew.id)
+  );
 
   const { data: entries = [], isLoading } = useQuery({
     queryKey: ["schedule-entries", dateStr],
@@ -214,12 +219,14 @@ export function DailySchedule() {
     saveDailyNotesMutation.mutate(dailyNotes);
   };
 
-  const entriesByCrew = sortedCrews.reduce((acc, crew) => {
+  const entriesByCrew = displayedCrews.reduce((acc, crew) => {
     acc[crew.id] = entries.filter((e) => e.crew_id === crew.id);
     return acc;
   }, {} as Record<string, ScheduleEntry[]>);
 
-  const unassignedEntries = entries.filter((e) => !e.crew_id);
+  // Unassigned = no crew_id OR crew_id doesn't match any displayed crew
+  const displayedCrewIds = new Set(displayedCrews.map((c) => c.id));
+  const unassignedEntries = entries.filter((e) => !e.crew_id || !displayedCrewIds.has(e.crew_id));
 
   return (
     <div className="p-6">
@@ -270,11 +277,11 @@ export function DailySchedule() {
         <div className="text-muted-foreground text-center py-12">Loading schedule...</div>
       ) : (
         <div className="space-y-4">
-          {sortedCrews.map((crew) => (
+          {displayedCrews.map((crew) => (
             <Card key={crew.id} className="bg-card border-border">
               <CardHeader className="py-3 px-4 flex flex-row items-center justify-between">
-                <CardTitle className="text-lg font-semibold text-amber-500">
-                  Crew {crew.name}
+                <CardTitle className={`text-lg font-semibold ${crew.is_active ? "text-amber-500" : "text-muted-foreground"}`}>
+                  Crew {crew.name}{!crew.is_active && " (Inactive)"}
                 </CardTitle>
                 <Button
                   size="sm"

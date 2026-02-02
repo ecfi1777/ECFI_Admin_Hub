@@ -93,6 +93,7 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
     // Invoice tab
     to_be_invoiced: false,
     // Crew tab
+    crew_id: "",
     crew_yards_poured: "",
     crew_notes: "",
   });
@@ -122,6 +123,7 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
         inspection_amount: entry.inspection_amount?.toString() || "",
         inspection_notes: (entry as any).inspection_notes || "",
         to_be_invoiced: entry.to_be_invoiced,
+        crew_id: entry.crew_id || "",
         crew_yards_poured: (entry as any).crew_yards_poured?.toString() || "",
         crew_notes: (entry as any).crew_notes || "",
       });
@@ -175,13 +177,18 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
   });
 
   const { data: crews = [] } = useQuery({
-    queryKey: ["crews-active"],
+    queryKey: ["crews-all"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("crews").select("id, name").eq("is_active", true).order("display_order");
+      const { data, error } = await supabase.from("crews").select("id, name, is_active").order("display_order");
       if (error) throw error;
-      return data;
+      return data as { id: string; name: string; is_active: boolean }[];
     },
   });
+
+  // Filter to show active crews + the currently-assigned crew (even if inactive)
+  const crewOptions = crews.filter(
+    (c) => c.is_active || c.id === entry?.crew_id
+  );
 
   const updateMutation = useMutation({
     mutationFn: async (updates: Record<string, any>) => {
@@ -225,6 +232,7 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
       inspection_amount: formData.inspection_amount ? parseFloat(formData.inspection_amount) : null,
       inspection_notes: formData.inspection_notes || null,
       to_be_invoiced: formData.to_be_invoiced,
+      crew_id: formData.crew_id || null,
       crew_yards_poured: formData.crew_yards_poured ? parseFloat(formData.crew_yards_poured) : null,
       crew_notes: formData.crew_notes || null,
     };
@@ -493,6 +501,22 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
           </TabsContent>
           
           <TabsContent value="crew" className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label>Crew</Label>
+              <Select value={formData.crew_id} onValueChange={(v) => updateField("crew_id", v === "none" ? "" : v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select crew" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Unassigned</SelectItem>
+                  {crewOptions.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}{!c.is_active && " (Inactive)"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="space-y-2">
               <Label>Crew Yards Poured</Label>
               <Input
