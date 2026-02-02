@@ -40,10 +40,13 @@ interface ScheduleEntry {
   ready_mix_yards_billed: number | null;
   ready_mix_invoice_number: string | null;
   ready_mix_invoice_amount: number | null;
+  concrete_notes: string | null;
   pump_invoice_number: string | null;
   pump_invoice_amount: number | null;
+  pump_notes: string | null;
   inspection_invoice_number: string | null;
   inspection_amount: number | null;
+  inspection_notes: string | null;
   notes: string | null;
   supplier_id: string | null;
   pump_vendor_id: string | null;
@@ -107,10 +110,13 @@ export function ProjectScheduleHistory({ projectId }: ProjectScheduleHistoryProp
           ready_mix_yards_billed,
           ready_mix_invoice_number,
           ready_mix_invoice_amount,
+          concrete_notes,
           pump_invoice_number,
           pump_invoice_amount,
+          pump_notes,
           inspection_invoice_number,
           inspection_amount,
+          inspection_notes,
           notes,
           supplier_id,
           pump_vendor_id,
@@ -246,16 +252,16 @@ export function ProjectScheduleHistory({ projectId }: ProjectScheduleHistoryProp
       ready_mix_invoice_number: entry.ready_mix_invoice_number || "",
       ready_mix_invoice_amount: entry.ready_mix_invoice_amount?.toString() || "",
       ready_mix_yards_billed: entry.ready_mix_yards_billed?.toString() || "",
-      concrete_notes: (entry as any).concrete_notes || "",
+      concrete_notes: entry.concrete_notes || "",
       pump_vendor_id: entry.pump_vendor_id || "",
       pump_invoice_number: entry.pump_invoice_number || "",
       pump_invoice_amount: entry.pump_invoice_amount?.toString() || "",
-      pump_notes: (entry as any).pump_notes || "",
+      pump_notes: entry.pump_notes || "",
       inspection_type_id: entry.inspection_type_id || "",
       inspector_id: entry.inspector_id || "",
       inspection_invoice_number: entry.inspection_invoice_number || "",
       inspection_amount: entry.inspection_amount?.toString() || "",
-      inspection_notes: (entry as any).inspection_notes || "",
+      inspection_notes: entry.inspection_notes || "",
       crew_yards_poured: entry.crew_yards_poured?.toString() || "",
       crew_notes: entry.crew_notes || "",
     });
@@ -376,9 +382,9 @@ export function ProjectScheduleHistory({ projectId }: ProjectScheduleHistoryProp
                         </div>
 
                         {/* Vendor Details - only show if data exists */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
                           {/* Concrete/Ready Mix */}
-                          {(entry.suppliers || entry.crew_yards_poured || entry.ready_mix_yards_billed) && (
+                          {(entry.suppliers || entry.ready_mix_yards_billed || entry.concrete_notes) && (
                             <div className="bg-slate-900 rounded p-2 space-y-1">
                               <div className="flex items-center gap-1 text-slate-400 text-xs font-medium">
                                 <Truck className="w-3 h-3" />
@@ -387,11 +393,6 @@ export function ProjectScheduleHistory({ projectId }: ProjectScheduleHistoryProp
                               {entry.suppliers && (
                                 <div className="text-slate-300">
                                   {entry.suppliers.code || entry.suppliers.name}
-                                </div>
-                              )}
-                              {entry.crew_yards_poured !== null && entry.crew_yards_poured > 0 && (
-                                <div className="text-slate-400">
-                                  Poured: {entry.crew_yards_poured} yds
                                 </div>
                               )}
                               {entry.ready_mix_yards_billed !== null && entry.ready_mix_yards_billed > 0 && (
@@ -409,11 +410,16 @@ export function ProjectScheduleHistory({ projectId }: ProjectScheduleHistoryProp
                                   {formatCurrency(entry.ready_mix_invoice_amount)}
                                 </div>
                               )}
+                              {entry.concrete_notes && (
+                                <div className="text-slate-400 text-xs italic border-t border-slate-700 pt-1 mt-1">
+                                  {entry.concrete_notes}
+                                </div>
+                              )}
                             </div>
                           )}
 
                           {/* Pump */}
-                          {(entry.pump_vendors || entry.pump_invoice_number) && (
+                          {(entry.pump_vendors || entry.pump_invoice_number || entry.pump_notes) && (
                             <div className="bg-slate-900 rounded p-2 space-y-1">
                               <div className="flex items-center gap-1 text-slate-400 text-xs font-medium">
                                 <Building className="w-3 h-3" />
@@ -434,11 +440,16 @@ export function ProjectScheduleHistory({ projectId }: ProjectScheduleHistoryProp
                                   {formatCurrency(entry.pump_invoice_amount)}
                                 </div>
                               )}
+                              {entry.pump_notes && (
+                                <div className="text-slate-400 text-xs italic border-t border-slate-700 pt-1 mt-1">
+                                  {entry.pump_notes}
+                                </div>
+                              )}
                             </div>
                           )}
 
                           {/* Inspection */}
-                          {(entry.inspectors || entry.inspection_types || entry.inspection_invoice_number) && (
+                          {(entry.inspectors || entry.inspection_types || entry.inspection_invoice_number || entry.inspection_notes) && (
                             <div className="bg-slate-900 rounded p-2 space-y-1">
                               <div className="flex items-center gap-1 text-slate-400 text-xs font-medium">
                                 <ClipboardCheck className="w-3 h-3" />
@@ -462,6 +473,31 @@ export function ProjectScheduleHistory({ projectId }: ProjectScheduleHistoryProp
                               {formatCurrency(entry.inspection_amount) && (
                                 <div className="text-green-400">
                                   {formatCurrency(entry.inspection_amount)}
+                                </div>
+                              )}
+                              {entry.inspection_notes && (
+                                <div className="text-slate-400 text-xs italic border-t border-slate-700 pt-1 mt-1">
+                                  {entry.inspection_notes}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Crew */}
+                          {(entry.crew_yards_poured || entry.crew_notes) && (
+                            <div className="bg-slate-900 rounded p-2 space-y-1">
+                              <div className="flex items-center gap-1 text-slate-400 text-xs font-medium">
+                                <Users className="w-3 h-3" />
+                                Crew
+                              </div>
+                              {entry.crew_yards_poured !== null && entry.crew_yards_poured > 0 && (
+                                <div className="text-slate-300">
+                                  Poured: {entry.crew_yards_poured} yds
+                                </div>
+                              )}
+                              {entry.crew_notes && (
+                                <div className="text-slate-400 text-xs italic border-t border-slate-700 pt-1 mt-1">
+                                  {entry.crew_notes}
                                 </div>
                               )}
                             </div>
