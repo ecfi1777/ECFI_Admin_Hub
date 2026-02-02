@@ -224,7 +224,7 @@ export default function Discrepancies() {
                             onClick={() => navigate(`/?date=${dateForNav}`)}
                             className="text-white hover:text-blue-400 hover:underline transition-colors text-left"
                           >
-                            {new Date(entry.scheduled_date).toLocaleDateString()}
+                            {format(new Date(entry.scheduled_date + "T00:00:00"), "M/d/yyyy")}
                           </button>
                         </TableCell>
                         <TableCell>
