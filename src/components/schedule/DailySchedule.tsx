@@ -134,11 +134,6 @@ export function DailySchedule() {
 
   const sortedCrews = sortCrews(crews);
 
-  // Filter crews to show: active crews always, inactive crews only if they have entries
-  const displayedCrews = sortedCrews.filter(
-    (crew) => crew.is_active || entries.some((e) => e.crew_id === crew.id)
-  );
-
   const { data: entries = [], isLoading } = useQuery({
     queryKey: ["schedule-entries", dateStr],
     queryFn: async () => {
@@ -165,6 +160,11 @@ export function DailySchedule() {
       return data as ScheduleEntry[];
     },
   });
+
+  // Filter crews to show: active crews always, inactive crews only if they have entries
+  const displayedCrews = sortedCrews.filter(
+    (crew) => crew.is_active || entries.some((e) => e.crew_id === crew.id)
+  );
 
   // Fetch daily notes for the selected date
   const { data: dailyNotesData } = useQuery({
