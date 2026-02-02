@@ -414,6 +414,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           crew_id: string | null
+          crew_notes: string | null
           crew_yards_poured: number | null
           deleted: boolean
           deleted_at: string | null
@@ -447,6 +448,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           crew_id?: string | null
+          crew_notes?: string | null
           crew_yards_poured?: number | null
           deleted?: boolean
           deleted_at?: string | null
@@ -480,6 +482,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           crew_id?: string | null
+          crew_notes?: string | null
           crew_yards_poured?: number | null
           deleted?: boolean
           deleted_at?: string | null
