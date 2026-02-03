@@ -15,6 +15,7 @@ import {
   FileText,
   Sun,
   Moon,
+  ClipboardList,
 } from "lucide-react";
 
 interface AppLayoutProps {
@@ -27,6 +28,7 @@ const navItems = [
   { href: "/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/invoices", label: "Invoices", icon: FileText },
   { href: "/discrepancies", label: "Discrepancies", icon: AlertTriangle },
+  { href: "/reports", label: "Reports", icon: ClipboardList },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
