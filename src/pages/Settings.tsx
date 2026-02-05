@@ -4,8 +4,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ReferenceDataTable } from "@/components/settings/ReferenceDataTable";
 import { CrewsManagement } from "@/components/settings/CrewsManagement";
 import { ChangePassword } from "@/components/settings/ChangePassword";
+import { OrganizationSettings } from "@/components/settings/OrganizationSettings";
 
 const tabs = [
+  { value: "organization", label: "Organization", table: null },
   { value: "crews", label: "Crews", table: null },
   { value: "builders", label: "Builders", table: "builders" },
   { value: "locations", label: "Locations", table: "locations" },
@@ -20,7 +22,7 @@ const tabs = [
 ];
 
 export default function Settings() {
-  const [activeTab, setActiveTab] = useState("crews");
+  const [activeTab, setActiveTab] = useState("organization");
 
   return (
     <AppLayout>
@@ -45,7 +47,9 @@ export default function Settings() {
 
           {tabs.map((tab) => (
             <TabsContent key={tab.value} value={tab.value} className="mt-6">
-              {tab.value === "crews" ? (
+              {tab.value === "organization" ? (
+                <OrganizationSettings />
+              ) : tab.value === "crews" ? (
                 <CrewsManagement />
               ) : tab.value === "account" ? (
                 <ChangePassword />
