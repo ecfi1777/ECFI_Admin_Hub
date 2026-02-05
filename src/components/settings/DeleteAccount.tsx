@@ -15,22 +15,17 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Trash2, AlertTriangle } from "lucide-react";
 
 export function DeleteAccount() {
   const [confirmation, setConfirmation] = useState("");
   const [loading, setLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const { toast } = useToast();
 
   const handleDeleteAccount = async () => {
     if (confirmation !== "DELETE") {
-      toast({
-        title: "Invalid confirmation",
-        description: "Please type DELETE exactly to confirm account deletion.",
-        variant: "destructive",
-      });
+      toast.error("Please type DELETE exactly to confirm account deletion.");
       return;
     }
 
@@ -40,11 +35,7 @@ export function DeleteAccount() {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
-        toast({
-          title: "Session expired",
-          description: "Please log in again to delete your account.",
-          variant: "destructive",
-        });
+        toast.error("Please log in again to delete your account.");
         setLoading(false);
         return;
       }
@@ -58,33 +49,20 @@ export function DeleteAccount() {
       }
 
       if (response.data?.error) {
-        toast({
-          title: "Cannot delete account",
-          description: response.data.error,
-          variant: "destructive",
-        });
+        toast.error(response.data.error);
         setLoading(false);
         return;
       }
 
-      // Sign out and redirect
       await supabase.auth.signOut();
       
-      toast({
-        title: "Account deleted",
-        description: "Your account has been permanently deleted.",
-      });
+      toast.success("Your account has been permanently deleted.");
 
-      // Redirect to auth page
       window.location.href = "/auth";
       
     } catch (error: any) {
       console.error("Delete account error:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to delete account. Please try again.",
-        variant: "destructive",
-      });
+      toast.error(error.message || "Failed to delete account. Please try again.");
     } finally {
       setLoading(false);
       setDialogOpen(false);

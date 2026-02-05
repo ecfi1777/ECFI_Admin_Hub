@@ -21,7 +21,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Plus, Pencil } from "lucide-react";
 import { useOrganization } from "@/hooks/useOrganization";
 
@@ -49,7 +49,6 @@ export function ReferenceDataTable({ tableName, displayName, hasCode, hasOrder }
   const [code, setCode] = useState("");
   const [displayOrder, setDisplayOrder] = useState(0);
   
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const { organizationId } = useOrganization();
 
@@ -80,11 +79,11 @@ export function ReferenceDataTable({ tableName, displayName, hasCode, hasOrder }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [tableName] });
-      toast({ title: "Created successfully" });
+      toast.success("Created successfully");
       closeDialog();
     },
     onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast.error(error.message);
     },
   });
 
@@ -95,11 +94,11 @@ export function ReferenceDataTable({ tableName, displayName, hasCode, hasOrder }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [tableName] });
-      toast({ title: "Updated successfully" });
+      toast.success("Updated successfully");
       closeDialog();
     },
     onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast.error(error.message);
     },
   });
 
@@ -112,7 +111,7 @@ export function ReferenceDataTable({ tableName, displayName, hasCode, hasOrder }
       queryClient.invalidateQueries({ queryKey: [tableName] });
     },
     onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast.error(error.message);
     },
   });
 

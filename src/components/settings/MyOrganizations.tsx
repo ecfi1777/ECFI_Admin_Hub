@@ -9,7 +9,7 @@ import { JoinOrganizationDialog } from "./JoinOrganizationDialog";
 import { CreateOrganizationDialog } from "./CreateOrganizationDialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { format } from "date-fns";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 
 export function MyOrganizations() {
@@ -19,7 +19,6 @@ export function MyOrganizations() {
   const [leaveOrgId, setLeaveOrgId] = useState<string | null>(null);
   const [leaveOrgName, setLeaveOrgName] = useState<string>("");
   const [isLeaving, setIsLeaving] = useState(false);
-  const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const handleLeaveOrganization = async () => {
@@ -38,10 +37,7 @@ export function MyOrganizations() {
 
       if (error) throw error;
 
-      toast({
-        title: "Left organization",
-        description: `You have left "${leaveOrgName}".`,
-      });
+      toast.success(`You have left "${leaveOrgName}".`);
 
       // If leaving the active org, switch to another one
       if (leaveOrgId === organizationId) {
@@ -58,11 +54,7 @@ export function MyOrganizations() {
       queryClient.invalidateQueries({ queryKey: ["organization-memberships"] });
     } catch (error: any) {
       console.error("Leave org error:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to leave organization.",
-        variant: "destructive",
-      });
+      toast.error(error.message || "Failed to leave organization.");
     } finally {
       setIsLeaving(false);
       setLeaveOrgId(null);

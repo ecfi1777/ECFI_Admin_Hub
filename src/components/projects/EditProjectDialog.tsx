@@ -8,7 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { ProjectFormFields } from "./ProjectFormFields";
 
 interface Builder {
@@ -75,7 +75,6 @@ export function EditProjectDialog({
     googleDriveUrl: "",
   });
 
-  const { toast } = useToast();
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -122,11 +121,11 @@ export function EditProjectDialog({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       queryClient.invalidateQueries({ queryKey: ["project", project?.id] });
-      toast({ title: "Project updated" });
+      toast.success("Project updated");
       onClose();
     },
     onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast.error(error.message);
     },
   });
 

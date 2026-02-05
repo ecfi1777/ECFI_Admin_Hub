@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { HardHat, Eye, EyeOff } from "lucide-react";
 
 export default function ResetPassword() {
@@ -16,7 +16,6 @@ export default function ResetPassword() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigate = useNavigate();
-  const { toast } = useToast();
 
   useEffect(() => {
     // Check if we have a valid recovery session
@@ -33,20 +32,12 @@ export default function ResetPassword() {
     e.preventDefault();
     
     if (password !== confirmPassword) {
-      toast({
-        title: "Passwords don't match",
-        description: "Please make sure both passwords are the same.",
-        variant: "destructive",
-      });
+      toast.error("Please make sure both passwords are the same.");
       return;
     }
 
     if (password.length < 6) {
-      toast({
-        title: "Password too short",
-        description: "Password must be at least 6 characters.",
-        variant: "destructive",
-      });
+      toast.error("Password must be at least 6 characters.");
       return;
     }
 
@@ -57,16 +48,9 @@ export default function ResetPassword() {
     });
 
     if (error) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error(error.message);
     } else {
-      toast({
-        title: "Password updated",
-        description: "Your password has been successfully changed.",
-      });
+      toast.success("Your password has been successfully changed.");
       navigate("/");
     }
     setLoading(false);

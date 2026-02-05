@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import {
   Table,
   TableBody,
@@ -31,7 +31,6 @@ interface TeamMember {
 export function TeamMembersTable() {
   const { organization, isOwner, refetch: refetchOrg } = useOrganization();
   const { user } = useAuth();
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const [memberToRemove, setMemberToRemove] = useState<TeamMember | null>(null);
   const [memberToTransfer, setMemberToTransfer] = useState<TeamMember | null>(null);
@@ -84,19 +83,12 @@ export function TeamMembersTable() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["team-members"] });
-      toast({
-        title: "Member removed",
-        description: "The team member has been removed from the organization.",
-      });
+      toast.success("The team member has been removed from the organization.");
       setMemberToRemove(null);
     },
     onError: (error) => {
       console.error("Failed to remove member:", error);
-      toast({
-        title: "Failed to remove member",
-        description: "Please try again later.",
-        variant: "destructive",
-      });
+      toast.error("Failed to remove member. Please try again later.");
     },
   });
 
@@ -136,19 +128,12 @@ export function TeamMembersTable() {
       queryClient.invalidateQueries({ queryKey: ["team-members"] });
       queryClient.invalidateQueries({ queryKey: ["organizations"] });
       refetchOrg();
-      toast({
-        title: "Ownership transferred",
-        description: `${memberToTransfer?.email || "The member"} is now the owner of this organization.`,
-      });
+      toast.success(`${memberToTransfer?.email || "The member"} is now the owner of this organization.`);
       setMemberToTransfer(null);
     },
     onError: (error) => {
       console.error("Failed to transfer ownership:", error);
-      toast({
-        title: "Failed to transfer ownership",
-        description: "Please try again later.",
-        variant: "destructive",
-      });
+      toast.error("Failed to transfer ownership. Please try again later.");
     },
   });
 

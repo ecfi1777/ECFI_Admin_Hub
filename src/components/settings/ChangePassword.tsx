@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Lock, Eye, EyeOff } from "lucide-react";
 import { PasswordStrength, getPasswordStrength } from "@/components/ui/password-strength";
 import { getUserFriendlyError } from "@/lib/errorHandler";
@@ -16,27 +16,18 @@ export function ChangePassword() {
   const [loading, setLoading] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const { toast } = useToast();
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (newPassword !== confirmPassword) {
-      toast({
-        title: "Passwords don't match",
-        description: "Please make sure both new passwords are the same.",
-        variant: "destructive",
-      });
+      toast.error("Please make sure both new passwords are the same.");
       return;
     }
 
     const { isValid } = getPasswordStrength(newPassword);
     if (!isValid) {
-      toast({
-        title: "Password too weak",
-        description: "Please meet at least 4 of the 5 password requirements.",
-        variant: "destructive",
-      });
+      toast.error("Please meet at least 4 of the 5 password requirements.");
       return;
     }
 
@@ -47,16 +38,9 @@ export function ChangePassword() {
     });
 
     if (error) {
-      toast({
-        title: "Error",
-        description: getUserFriendlyError(error, "ChangePassword"),
-        variant: "destructive",
-      });
+      toast.error(getUserFriendlyError(error, "ChangePassword"));
     } else {
-      toast({
-        title: "Password changed",
-        description: "Your password has been successfully updated.",
-      });
+      toast.success("Your password has been successfully updated.");
       setNewPassword("");
       setConfirmPassword("");
     }

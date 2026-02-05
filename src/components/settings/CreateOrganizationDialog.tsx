@@ -2,7 +2,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useOrganization } from "@/hooks/useOrganization";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -25,7 +25,6 @@ export function CreateOrganizationDialog({ open, onOpenChange }: CreateOrganizat
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
   const { refetch } = useOrganization();
-  const { toast } = useToast();
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,20 +77,13 @@ export function CreateOrganizationDialog({ open, onOpenChange }: CreateOrganizat
         // Don't throw - org was created successfully
       }
 
-      toast({
-        title: "Organization created!",
-        description: `${companyName} has been created. Your invite code is: ${generatedCode}`,
-      });
+      toast.success(`${companyName} has been created. Your invite code is: ${generatedCode}`);
 
       await refetch();
       setCompanyName("");
       onOpenChange(false);
     } catch (error: any) {
-      toast({
-        title: "Failed to create organization",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error(error.message);
     } finally {
       setLoading(false);
     }

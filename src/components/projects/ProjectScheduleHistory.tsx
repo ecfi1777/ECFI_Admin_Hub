@@ -26,7 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
 import { Calendar, Users, Truck, Building, ClipboardCheck, Pencil, FileText } from "lucide-react";
@@ -72,7 +72,6 @@ interface ProjectScheduleHistoryProps {
 
 export function ProjectScheduleHistory({ projectId }: ProjectScheduleHistoryProps) {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const { organizationId } = useOrganization();
   const [editingEntry, setEditingEntry] = useState<ScheduleEntry | null>(null);
@@ -200,11 +199,11 @@ export function ProjectScheduleHistory({ projectId }: ProjectScheduleHistoryProp
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["project-schedule-history", projectId] });
-      toast({ title: "Entry updated" });
+      toast.success("Entry updated");
       setEditingEntry(null);
     },
     onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast.error(error.message);
     },
   });
 

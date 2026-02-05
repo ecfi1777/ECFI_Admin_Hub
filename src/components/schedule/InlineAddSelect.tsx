@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useOrganization } from "@/hooks/useOrganization";
 
 interface Option {
@@ -47,7 +47,6 @@ export function InlineAddSelect({
   const [showNew, setShowNew] = useState(false);
   const [newName, setNewName] = useState("");
   const [newCode, setNewCode] = useState("");
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const { organizationId } = useOrganization();
 
@@ -71,10 +70,10 @@ export function InlineAddSelect({
       setShowNew(false);
       setNewName("");
       setNewCode("");
-      toast({ title: `${label} created` });
+      toast.success(`${label} created`);
     },
     onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast.error(error.message);
     },
   });
 

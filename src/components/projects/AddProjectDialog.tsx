@@ -9,7 +9,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Plus } from "lucide-react";
 import { ProjectFormFields } from "./ProjectFormFields";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -53,7 +53,6 @@ export function AddProjectDialog({ builders, locations, statuses }: AddProjectDi
     googleDriveUrl: "",
   });
 
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const { organizationId } = useOrganization();
 
@@ -79,7 +78,7 @@ export function AddProjectDialog({ builders, locations, statuses }: AddProjectDi
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
-      toast({ title: "Project created" });
+      toast.success("Project created");
       setIsOpen(false);
       setFormData({
         builderId: "",
@@ -97,7 +96,7 @@ export function AddProjectDialog({ builders, locations, statuses }: AddProjectDi
       });
     },
     onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast.error(error.message);
     },
   });
 

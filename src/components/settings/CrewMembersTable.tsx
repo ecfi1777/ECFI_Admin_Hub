@@ -28,7 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Plus, Pencil } from "lucide-react";
 import { useOrganization } from "@/hooks/useOrganization";
 
@@ -51,7 +51,6 @@ export function CrewMembersTable() {
   const [name, setName] = useState("");
   const [crewId, setCrewId] = useState<string>("");
   
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const { organizationId } = useOrganization();
 
@@ -88,11 +87,11 @@ export function CrewMembersTable() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["crew_members"] });
-      toast({ title: "Created successfully" });
+      toast.success("Created successfully");
       closeDialog();
     },
     onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast.error(error.message);
     },
   });
 
@@ -103,11 +102,11 @@ export function CrewMembersTable() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["crew_members"] });
-      toast({ title: "Updated successfully" });
+      toast.success("Updated successfully");
       closeDialog();
     },
     onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast.error(error.message);
     },
   });
 
@@ -120,7 +119,7 @@ export function CrewMembersTable() {
       queryClient.invalidateQueries({ queryKey: ["crew_members"] });
     },
     onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast.error(error.message);
     },
   });
 
