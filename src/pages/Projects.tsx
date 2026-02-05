@@ -31,8 +31,10 @@ import { Search, Paperclip, X, FileText, ExternalLink } from "lucide-react";
 import { AddProjectDialog } from "@/components/projects/AddProjectDialog";
 import { EditProjectDialog } from "@/components/projects/EditProjectDialog";
 import { ProjectDetailsSheet } from "@/components/projects/ProjectDetailsSheet";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useOrganization } from "@/hooks/useOrganization";
+import { useBuilders, useLocations, useProjectStatuses } from "@/hooks/useReferenceData";
+import { getStatusColor } from "@/lib/statusColors";
 
 interface Project {
   id: string;
@@ -63,7 +65,6 @@ export default function Projects() {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
-  const { toast } = useToast();
   const { organizationId } = useOrganization();
 
   const { data: projects = [], isLoading } = useQuery({
@@ -117,7 +118,7 @@ export default function Projects() {
       .createSignedUrl(filePath, 3600);
     
     if (error) {
-      toast({ title: "Failed to open file", description: error.message, variant: "destructive" });
+      toast.error(`Failed to open file: ${error.message}`);
       return;
     }
     
@@ -139,53 +140,10 @@ export default function Projects() {
     setFilterStatus("all");
   };
 
-  const { data: builders = [] } = useQuery({
-    queryKey: ["builders-active", organizationId],
-    queryFn: async () => {
-      if (!organizationId) return [];
-      const { data, error } = await supabase
-        .from("builders")
-        .select("id, name, code")
-        .eq("organization_id", organizationId)
-        .eq("is_active", true)
-        .order("name");
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!organizationId,
-  });
-
-  const { data: locations = [] } = useQuery({
-    queryKey: ["locations-active", organizationId],
-    queryFn: async () => {
-      if (!organizationId) return [];
-      const { data, error } = await supabase
-        .from("locations")
-        .select("id, name")
-        .eq("organization_id", organizationId)
-        .eq("is_active", true)
-        .order("name");
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!organizationId,
-  });
-
-  const { data: statuses = [] } = useQuery({
-    queryKey: ["statuses-active", organizationId],
-    queryFn: async () => {
-      if (!organizationId) return [];
-      const { data, error } = await supabase
-        .from("project_statuses")
-        .select("id, name")
-        .eq("organization_id", organizationId)
-        .eq("is_active", true)
-        .order("display_order");
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!organizationId,
-  });
+  // Use shared reference data hooks
+  const { data: builders = [] } = useBuilders();
+  const { data: locations = [] } = useLocations();
+  const { data: statuses = [] } = useProjectStatuses();
 
   const selectedProject = projects.find((p) => p.id === selectedProjectId) || null;
 
@@ -204,23 +162,6 @@ export default function Projects() {
 
     return matchesSearch && matchesBuilder && matchesLocation && matchesStatus;
   });
-
-  const getStatusColor = (status: string | undefined) => {
-    switch (status) {
-      case "Upcoming":
-        return "bg-blue-500/20 text-blue-600 dark:text-blue-400 border-blue-500/30";
-      case "Ready to Start":
-        return "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border-yellow-500/30";
-      case "In Progress":
-        return "bg-green-500/20 text-green-600 dark:text-green-400 border-green-500/30";
-      case "Ready to Invoice":
-        return "bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30";
-      case "Invoice Complete - Archive":
-        return "bg-muted text-muted-foreground border-border";
-      default:
-        return "bg-muted text-muted-foreground border-border";
-    }
-  };
 
   const handleRowClick = (projectId: string) => {
     setSelectedProjectId(projectId);

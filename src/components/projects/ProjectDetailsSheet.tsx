@@ -13,7 +13,8 @@ import { Pencil, ExternalLink, MapPin, FileText, Building, Home, Download } from
 import { ProjectScheduleHistory } from "./ProjectScheduleHistory";
 import { ProjectDocuments } from "./ProjectDocuments";
 import { generateProjectPdf } from "@/lib/generateProjectPdf";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
+import { getStatusColor } from "@/lib/statusColors";
 
 interface ProjectDetailsSheetProps {
   projectId: string | null;
@@ -28,7 +29,6 @@ export function ProjectDetailsSheet({
   onClose,
   onEdit,
 }: ProjectDetailsSheetProps) {
-  const { toast } = useToast();
 
   const { data: project, isLoading } = useQuery({
     queryKey: ["project", projectId],
@@ -97,26 +97,9 @@ export function ProjectDetailsSheet({
     if (!project) return;
     try {
       generateProjectPdf(project, scheduleEntries);
-      toast({ title: "PDF exported successfully" });
+      toast.success("PDF exported successfully");
     } catch (error) {
-      toast({ title: "Error exporting PDF", variant: "destructive" });
-    }
-  };
-
-  const getStatusColor = (status: string | undefined) => {
-    switch (status) {
-      case "Upcoming":
-        return "bg-blue-500/20 text-blue-400 border-blue-500/30";
-      case "Ready to Start":
-        return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30";
-      case "In Progress":
-        return "bg-green-500/20 text-green-400 border-green-500/30";
-      case "Ready to Invoice":
-        return "bg-amber-500/20 text-amber-400 border-amber-500/30";
-      case "Invoice Complete - Archive":
-        return "bg-slate-500/20 text-slate-400 border-slate-500/30";
-      default:
-        return "bg-slate-500/20 text-slate-400 border-slate-500/30";
+      toast.error("Error exporting PDF");
     }
   };
 

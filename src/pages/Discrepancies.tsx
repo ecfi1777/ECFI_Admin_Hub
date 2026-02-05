@@ -18,7 +18,8 @@ import { AlertTriangle, TrendingDown, TrendingUp } from "lucide-react";
 import { ProjectDetailsSheet } from "@/components/projects/ProjectDetailsSheet";
 import { useOrganization } from "@/hooks/useOrganization";
 
-interface ScheduleEntry {
+// Define inline type that matches the query shape
+interface DiscrepancyEntry {
   id: string;
   scheduled_date: string;
   crew_yards_poured: number | null;
@@ -70,7 +71,7 @@ export default function Discrepancies() {
       if (error) throw error;
       
       // Filter to only entries with discrepancies
-      return (data as ScheduleEntry[]).filter(
+      return (data as DiscrepancyEntry[]).filter(
         (e) => e.crew_yards_poured !== e.ready_mix_yards_billed
       );
     },

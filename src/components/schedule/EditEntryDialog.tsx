@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
@@ -20,41 +20,18 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { InlineAddSelect } from "./InlineAddSelect";
-import { useOrganization } from "@/hooks/useOrganization";
-
-interface ScheduleEntry {
-  id: string;
-  project_id: string | null;
-  crew_id: string | null;
-  phase_id: string | null;
-  scheduled_date: string;
-  start_time: string | null;
-  order_status: string | null;
-  notes: string | null;
-  supplier_id: string | null;
-  ready_mix_invoice_number: string | null;
-  ready_mix_invoice_amount: number | null;
-  ready_mix_yards_billed: number | null;
-  qty_ordered: string | null;
-  order_number: string | null;
-  pump_vendor_id: string | null;
-  pump_invoice_number: string | null;
-  pump_invoice_amount: number | null;
-  inspection_type_id: string | null;
-  inspector_id: string | null;
-  inspection_invoice_number: string | null;
-  inspection_amount: number | null;
-  to_be_invoiced: boolean;
-  invoice_complete: boolean;
-  invoice_number: string | null;
-  projects: {
-    lot_number: string;
-    builders: { name: string; code: string | null } | null;
-    locations: { name: string } | null;
-  } | null;
-}
+import {
+  usePhases,
+  useSuppliers,
+  usePumpVendors,
+  useInspectionTypes,
+  useInspectors,
+  useCrewsAll,
+  useConcreteMixes,
+} from "@/hooks/useReferenceData";
+import type { ScheduleEntry } from "@/types/schedule";
 
 interface EditEntryDialogProps {
   entry: ScheduleEntry | null;
@@ -64,9 +41,7 @@ interface EditEntryDialogProps {
 }
 
 export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "general" }: EditEntryDialogProps) {
-  const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { organizationId } = useOrganization();
   
   // Form state
   const [formData, setFormData] = useState({
@@ -141,83 +116,14 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
     }
   }, [entry]);
 
-  // Fetch reference data
-  const { data: phases = [] } = useQuery({
-    queryKey: ["phases-active", organizationId],
-    queryFn: async () => {
-      if (!organizationId) return [];
-      const { data, error } = await supabase.from("phases").select("id, name").eq("organization_id", organizationId).eq("is_active", true).order("display_order");
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!organizationId,
-  });
-
-  const { data: suppliers = [] } = useQuery({
-    queryKey: ["suppliers-active", organizationId],
-    queryFn: async () => {
-      if (!organizationId) return [];
-      const { data, error } = await supabase.from("suppliers").select("id, name, code").eq("organization_id", organizationId).eq("is_active", true).order("name");
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!organizationId,
-  });
-
-  const { data: pumpVendors = [] } = useQuery({
-    queryKey: ["pump-vendors-active", organizationId],
-    queryFn: async () => {
-      if (!organizationId) return [];
-      const { data, error } = await supabase.from("pump_vendors").select("id, name, code").eq("organization_id", organizationId).eq("is_active", true).order("name");
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!organizationId,
-  });
-
-  const { data: inspectionTypes = [] } = useQuery({
-    queryKey: ["inspection-types-active", organizationId],
-    queryFn: async () => {
-      if (!organizationId) return [];
-      const { data, error } = await supabase.from("inspection_types").select("id, name").eq("organization_id", organizationId).eq("is_active", true).order("name");
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!organizationId,
-  });
-
-  const { data: inspectors = [] } = useQuery({
-    queryKey: ["inspectors-active", organizationId],
-    queryFn: async () => {
-      if (!organizationId) return [];
-      const { data, error } = await supabase.from("inspectors").select("id, name").eq("organization_id", organizationId).eq("is_active", true).order("name");
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!organizationId,
-  });
-
-  const { data: crews = [] } = useQuery({
-    queryKey: ["crews-all", organizationId],
-    queryFn: async () => {
-      if (!organizationId) return [];
-      const { data, error } = await supabase.from("crews").select("id, name, is_active").eq("organization_id", organizationId).order("display_order");
-      if (error) throw error;
-      return data as { id: string; name: string; is_active: boolean }[];
-    },
-    enabled: !!organizationId,
-  });
-
-  const { data: concreteMixes = [] } = useQuery({
-    queryKey: ["concrete-mixes-active", organizationId],
-    queryFn: async () => {
-      if (!organizationId) return [];
-      const { data, error } = await supabase.from("concrete_mixes").select("id, name").eq("organization_id", organizationId).eq("is_active", true).order("display_order");
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!organizationId,
-  });
+  // Fetch reference data using shared hooks
+  const { data: phases = [] } = usePhases();
+  const { data: suppliers = [] } = useSuppliers();
+  const { data: pumpVendors = [] } = usePumpVendors();
+  const { data: inspectionTypes = [] } = useInspectionTypes();
+  const { data: inspectors = [] } = useInspectors();
+  const { data: crews = [] } = useCrewsAll();
+  const { data: concreteMixes = [] } = useConcreteMixes();
 
   // Filter to show active crews + the currently-assigned crew (even if inactive)
   const crewOptions = crews.filter(
@@ -235,11 +141,11 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["schedule-entries"] });
-      toast({ title: "Entry updated" });
+      toast.success("Entry updated");
       onOpenChange(false);
     },
     onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast.error(error.message);
     },
   });
 

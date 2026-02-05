@@ -28,8 +28,10 @@ import { FileText, Check, Search, X } from "lucide-react";
 import { toast } from "sonner";
 import { ProjectDetailsSheet } from "@/components/projects/ProjectDetailsSheet";
 import { useOrganization } from "@/hooks/useOrganization";
+import { useBuilders, useCrews, useLocations, usePhases } from "@/hooks/useReferenceData";
 
-interface ScheduleEntry {
+// Use inline type that matches the query shape - ScheduleEntryForInvoice doesn't include all fields
+interface InvoiceEntry {
   id: string;
   scheduled_date: string;
   crew_yards_poured: number | null;
@@ -80,7 +82,7 @@ export default function Invoices() {
         .eq("deleted", false)
         .order("scheduled_date", { ascending: false });
       if (error) throw error;
-      return data as ScheduleEntry[];
+      return data as InvoiceEntry[];
     },
     enabled: !!organizationId,
   });
@@ -103,54 +105,16 @@ export default function Invoices() {
         .order("scheduled_date", { ascending: false })
         .limit(100);
       if (error) throw error;
-      return data as ScheduleEntry[];
+      return data as InvoiceEntry[];
     },
     enabled: !!organizationId,
   });
 
-  const { data: builders = [] } = useQuery({
-    queryKey: ["builders-active", organizationId],
-    queryFn: async () => {
-      if (!organizationId) return [];
-      const { data, error } = await supabase.from("builders").select("id, name, code").eq("organization_id", organizationId).eq("is_active", true).order("name");
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!organizationId,
-  });
-
-  const { data: crews = [] } = useQuery({
-    queryKey: ["crews-active", organizationId],
-    queryFn: async () => {
-      if (!organizationId) return [];
-      const { data, error } = await supabase.from("crews").select("id, name").eq("organization_id", organizationId).eq("is_active", true).order("name");
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!organizationId,
-  });
-
-  const { data: locations = [] } = useQuery({
-    queryKey: ["locations-active", organizationId],
-    queryFn: async () => {
-      if (!organizationId) return [];
-      const { data, error } = await supabase.from("locations").select("id, name").eq("organization_id", organizationId).eq("is_active", true).order("name");
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!organizationId,
-  });
-
-  const { data: phases = [] } = useQuery({
-    queryKey: ["phases-active", organizationId],
-    queryFn: async () => {
-      if (!organizationId) return [];
-      const { data, error } = await supabase.from("phases").select("id, name").eq("organization_id", organizationId).eq("is_active", true).order("display_order");
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!organizationId,
-  });
+  // Use shared reference data hooks
+  const { data: builders = [] } = useBuilders();
+  const { data: crews = [] } = useCrews();
+  const { data: locations = [] } = useLocations();
+  const { data: phases = [] } = usePhases();
 
   const toggleCompleteMutation = useMutation({
     mutationFn: async ({ entryId, complete }: { entryId: string; complete: boolean }) => {
@@ -190,7 +154,7 @@ export default function Invoices() {
     },
   });
 
-  const filterEntries = (entries: ScheduleEntry[]) => {
+  const filterEntries = (entries: InvoiceEntry[]) => {
     return entries.filter((entry) => {
       // Search across builder, location, crew, phase
       const searchLower = searchQuery.toLowerCase();
@@ -222,7 +186,7 @@ export default function Invoices() {
     setFilterPhase("all");
   };
 
-  const handleStartEditInvoice = (entry: ScheduleEntry) => {
+  const handleStartEditInvoice = (entry: InvoiceEntry) => {
     setEditingInvoiceId(entry.id);
     setInvoiceNumberValue(entry.invoice_number || "");
   };
@@ -247,7 +211,7 @@ export default function Invoices() {
     navigate(`/?date=${date}`);
   };
 
-  const renderTable = (entries: ScheduleEntry[], isLoading: boolean) => {
+  const renderTable = (entries: InvoiceEntry[], isLoading: boolean) => {
     const filtered = filterEntries(entries);
     
     if (isLoading) {
