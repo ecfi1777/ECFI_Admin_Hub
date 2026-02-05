@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { InlineAddSelect } from "./InlineAddSelect";
 
@@ -73,6 +74,10 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
     notes: "",
     // Concrete tab
     supplier_id: "",
+    concrete_mix_id: "",
+    additive_hot_water: false,
+    additive_1_percent_he: false,
+    additive_2_percent_he: false,
     qty_ordered: "",
     order_number: "",
     ready_mix_invoice_number: "",
@@ -107,6 +112,10 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
         order_status: entry.order_status || "",
         notes: entry.notes || "",
         supplier_id: entry.supplier_id || "",
+        concrete_mix_id: (entry as any).concrete_mix_id || "",
+        additive_hot_water: (entry as any).additive_hot_water || false,
+        additive_1_percent_he: (entry as any).additive_1_percent_he || false,
+        additive_2_percent_he: (entry as any).additive_2_percent_he || false,
         qty_ordered: entry.qty_ordered || "",
         order_number: entry.order_number || "",
         ready_mix_invoice_number: entry.ready_mix_invoice_number || "",
@@ -185,6 +194,15 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
     },
   });
 
+  const { data: concreteMixes = [] } = useQuery({
+    queryKey: ["concrete-mixes-active"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("concrete_mixes").select("id, name").eq("is_active", true).order("display_order");
+      if (error) throw error;
+      return data;
+    },
+  });
+
   // Filter to show active crews + the currently-assigned crew (even if inactive)
   const crewOptions = crews.filter(
     (c) => c.is_active || c.id === entry?.crew_id
@@ -216,6 +234,10 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
       order_status: formData.order_status || null,
       notes: formData.notes || null,
       supplier_id: formData.supplier_id || null,
+      concrete_mix_id: formData.concrete_mix_id || null,
+      additive_hot_water: formData.additive_hot_water,
+      additive_1_percent_he: formData.additive_1_percent_he,
+      additive_2_percent_he: formData.additive_2_percent_he,
       qty_ordered: formData.qty_ordered || null,
       order_number: formData.order_number || null,
       ready_mix_invoice_number: formData.ready_mix_invoice_number || null,
@@ -330,6 +352,21 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
                 showCode={true}
               />
               <div className="space-y-2">
+                <Label>Concrete Mix</Label>
+                <Select value={formData.concrete_mix_id} onValueChange={(v) => updateField("concrete_mix_id", v)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select mix" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {concreteMixes.map((m) => (
+                      <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
                 <Label>Qty Ordered</Label>
                 <Input
                   value={formData.qty_ordered}
@@ -337,14 +374,43 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
                   placeholder="e.g. 10+ or 8+2"
                 />
               </div>
+              <div className="space-y-2">
+                <Label>Order Number</Label>
+                <Input
+                  value={formData.order_number}
+                  onChange={(e) => updateField("order_number", e.target.value)}
+                  placeholder="Order #"
+                />
+              </div>
             </div>
             <div className="space-y-2">
-              <Label>Order Number</Label>
-              <Input
-                value={formData.order_number}
-                onChange={(e) => updateField("order_number", e.target.value)}
-                placeholder="Order #"
-              />
+              <Label>Additives</Label>
+              <div className="flex flex-wrap gap-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="additive_hot_water"
+                    checked={formData.additive_hot_water}
+                    onCheckedChange={(checked) => updateField("additive_hot_water", checked === true)}
+                  />
+                  <label htmlFor="additive_hot_water" className="text-sm">Hot Water</label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="additive_1_percent_he"
+                    checked={formData.additive_1_percent_he}
+                    onCheckedChange={(checked) => updateField("additive_1_percent_he", checked === true)}
+                  />
+                  <label htmlFor="additive_1_percent_he" className="text-sm">1% HE</label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="additive_2_percent_he"
+                    checked={formData.additive_2_percent_he}
+                    onCheckedChange={(checked) => updateField("additive_2_percent_he", checked === true)}
+                  />
+                  <label htmlFor="additive_2_percent_he" className="text-sm">2% HE</label>
+                </div>
+              </div>
             </div>
             <hr className="border-border my-4" />
             <h4 className="text-sm font-medium text-muted-foreground">Ready Mix Invoice</h4>
