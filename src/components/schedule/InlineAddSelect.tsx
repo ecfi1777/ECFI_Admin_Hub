@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useOrganization } from "@/hooks/useOrganization";
 
 interface Option {
   id: string;
@@ -48,12 +49,14 @@ export function InlineAddSelect({
   const [newCode, setNewCode] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { organizationId } = useOrganization();
 
   const createMutation = useMutation({
     mutationFn: async () => {
+      if (!organizationId) throw new Error("No organization found");
       const insertData = hasCode 
-        ? { name: newName, code: newCode || null }
-        : { name: newName };
+        ? { name: newName, code: newCode || null, organization_id: organizationId }
+        : { name: newName, organization_id: organizationId };
       const { data, error } = await supabase
         .from(tableName)
         .insert(insertData as any)

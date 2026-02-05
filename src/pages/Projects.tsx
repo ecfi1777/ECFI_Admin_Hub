@@ -32,6 +32,7 @@ import { AddProjectDialog } from "@/components/projects/AddProjectDialog";
 import { EditProjectDialog } from "@/components/projects/EditProjectDialog";
 import { ProjectDetailsSheet } from "@/components/projects/ProjectDetailsSheet";
 import { useToast } from "@/hooks/use-toast";
+import { useOrganization } from "@/hooks/useOrganization";
 
 interface Project {
   id: string;
@@ -63,9 +64,12 @@ export default function Projects() {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const { toast } = useToast();
+  const { organizationId } = useOrganization();
+
   const { data: projects = [], isLoading } = useQuery({
-    queryKey: ["projects"],
+    queryKey: ["projects", organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
       const { data, error } = await supabase
         .from("projects")
         .select(`
@@ -74,23 +78,28 @@ export default function Projects() {
           locations(id, name),
           project_statuses(id, name)
         `)
+        .eq("organization_id", organizationId)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as Project[];
     },
+    enabled: !!organizationId,
   });
 
   // Fetch all documents to show attachment indicator and list
   const { data: projectDocuments = [] } = useQuery({
-    queryKey: ["project-documents-all"],
+    queryKey: ["project-documents-all", organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
       const { data, error } = await supabase
         .from("project_documents")
         .select("id, project_id, file_name, file_path, category")
+        .eq("organization_id", organizationId)
         .order("category");
       if (error) throw error;
       return data;
     },
+    enabled: !!organizationId,
   });
 
   // Group documents by project ID
@@ -131,42 +140,51 @@ export default function Projects() {
   };
 
   const { data: builders = [] } = useQuery({
-    queryKey: ["builders-active"],
+    queryKey: ["builders-active", organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
       const { data, error } = await supabase
         .from("builders")
         .select("id, name, code")
+        .eq("organization_id", organizationId)
         .eq("is_active", true)
         .order("name");
       if (error) throw error;
       return data;
     },
+    enabled: !!organizationId,
   });
 
   const { data: locations = [] } = useQuery({
-    queryKey: ["locations-active"],
+    queryKey: ["locations-active", organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
       const { data, error } = await supabase
         .from("locations")
         .select("id, name")
+        .eq("organization_id", organizationId)
         .eq("is_active", true)
         .order("name");
       if (error) throw error;
       return data;
     },
+    enabled: !!organizationId,
   });
 
   const { data: statuses = [] } = useQuery({
-    queryKey: ["statuses-active"],
+    queryKey: ["statuses-active", organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
       const { data, error } = await supabase
         .from("project_statuses")
         .select("id, name")
+        .eq("organization_id", organizationId)
         .eq("is_active", true)
         .order("display_order");
       if (error) throw error;
       return data;
     },
+    enabled: !!organizationId,
   });
 
   const selectedProject = projects.find((p) => p.id === selectedProjectId) || null;

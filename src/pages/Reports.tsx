@@ -10,6 +10,7 @@ import { generateScheduleExcel } from "@/lib/generateScheduleExcel";
 import { Download, FileSpreadsheet, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { format, startOfMonth, endOfMonth } from "date-fns";
+import { useOrganization } from "@/hooks/useOrganization";
 
 const months = [
   { value: "1", label: "January" },
@@ -37,8 +38,13 @@ export default function Reports() {
   const [selectedMonth, setSelectedMonth] = useState(String(new Date().getMonth() + 1));
   const [selectedYear, setSelectedYear] = useState(String(currentYear));
   const [isExporting, setIsExporting] = useState(false);
+  const { organizationId } = useOrganization();
 
   const handleExport = async () => {
+    if (!organizationId) {
+      toast.error("No organization selected");
+      return;
+    }
     setIsExporting(true);
     
     try {
@@ -82,6 +88,7 @@ export default function Reports() {
           invoice_complete,
           invoice_number
         `)
+        .eq("organization_id", organizationId)
         .eq("deleted", false)
         .gte("scheduled_date", startDate)
         .lte("scheduled_date", endDate)

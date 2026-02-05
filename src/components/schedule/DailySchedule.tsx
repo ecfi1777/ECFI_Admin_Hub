@@ -124,21 +124,25 @@ export function DailySchedule() {
   const dateStr = format(selectedDate, "yyyy-MM-dd");
 
   const { data: crews = [] } = useQuery({
-    queryKey: ["crews-all"],
+    queryKey: ["crews-all", organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
       const { data, error } = await supabase
         .from("crews")
-        .select("id, name, display_order, is_active");
+        .select("id, name, display_order, is_active")
+        .eq("organization_id", organizationId);
       if (error) throw error;
       return data as Crew[];
     },
+    enabled: !!organizationId,
   });
 
   const sortedCrews = sortCrews(crews);
 
   const { data: entries = [], isLoading } = useQuery({
-    queryKey: ["schedule-entries", dateStr],
+    queryKey: ["schedule-entries", dateStr, organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
       const { data, error } = await supabase
         .from("schedule_entries")
         .select(`
@@ -155,12 +159,14 @@ export function DailySchedule() {
             locations(name)
           )
         `)
+        .eq("organization_id", organizationId)
         .eq("scheduled_date", dateStr)
         .eq("deleted", false)
         .order("start_time", { ascending: true, nullsFirst: false });
       if (error) throw error;
       return data as ScheduleEntry[];
     },
+    enabled: !!organizationId,
   });
 
   // Filter crews to show: active crews always, inactive crews only if they have entries
@@ -170,16 +176,19 @@ export function DailySchedule() {
 
   // Fetch daily notes for the selected date
   const { data: dailyNotesData } = useQuery({
-    queryKey: ["daily-notes", dateStr],
+    queryKey: ["daily-notes", dateStr, organizationId],
     queryFn: async () => {
+      if (!organizationId) return null;
       const { data, error } = await supabase
         .from("daily_notes")
         .select("*")
+        .eq("organization_id", organizationId)
         .eq("note_date", dateStr)
         .maybeSingle();
       if (error) throw error;
       return data;
     },
+    enabled: !!organizationId,
   });
 
   // Update local state when daily notes data changes

@@ -269,11 +269,13 @@ export function CrewsManagement() {
 
   // Fetch crews
   const { isLoading: crewsLoading } = useQuery({
-    queryKey: ["crews-management"],
+    queryKey: ["crews-management", organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
       const { data, error } = await supabase
         .from("crews")
         .select("id, name, display_order, is_active")
+        .eq("organization_id", organizationId)
         .order("display_order")
         .order("name");
       if (error) throw error;
@@ -300,19 +302,23 @@ export function CrewsManagement() {
       setOrderedCrews(sorted);
       return sorted;
     },
+    enabled: !!organizationId,
   });
 
   // Fetch crew members
   const { data: members = [] } = useQuery({
-    queryKey: ["crew-members-management"],
+    queryKey: ["crew-members-management", organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
       const { data, error } = await supabase
         .from("crew_members")
         .select("id, name, crew_id, is_active")
+        .eq("organization_id", organizationId)
         .order("name");
       if (error) throw error;
       return data as CrewMember[];
     },
+    enabled: !!organizationId,
   });
 
   // Mutations
