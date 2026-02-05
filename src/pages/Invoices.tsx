@@ -235,30 +235,30 @@ export default function Invoices() {
     const filtered = filterEntries(entries);
     
     if (isLoading) {
-      return <div className="text-slate-400 text-center py-12">Loading...</div>;
+      return <div className="text-muted-foreground text-center py-12">Loading...</div>;
     }
 
     if (filtered.length === 0) {
-      return <div className="text-slate-400 text-center py-12">No entries found</div>;
+      return <div className="text-muted-foreground text-center py-12">No entries found</div>;
     }
 
     return (
       <Table>
         <TableHeader>
-          <TableRow className="border-slate-700 hover:bg-transparent">
-            <TableHead className="text-slate-400 w-16">Inv Complete</TableHead>
-            <TableHead className="text-slate-400">Date Completed</TableHead>
-            <TableHead className="text-slate-400">Builder</TableHead>
-            <TableHead className="text-slate-400">Location</TableHead>
-            <TableHead className="text-slate-400">Lot</TableHead>
-            <TableHead className="text-slate-400">Phase</TableHead>
-            <TableHead className="text-slate-400">Crew</TableHead>
-            <TableHead className="text-slate-400">Invoice #</TableHead>
+          <TableRow className="hover:bg-transparent">
+            <TableHead className="text-muted-foreground w-16">Inv Complete</TableHead>
+            <TableHead className="text-muted-foreground">Date Completed</TableHead>
+            <TableHead className="text-muted-foreground">Builder</TableHead>
+            <TableHead className="text-muted-foreground">Location</TableHead>
+            <TableHead className="text-muted-foreground">Lot</TableHead>
+            <TableHead className="text-muted-foreground">Phase</TableHead>
+            <TableHead className="text-muted-foreground">Crew</TableHead>
+            <TableHead className="text-muted-foreground">Invoice #</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {filtered.map((entry) => (
-            <TableRow key={entry.id} className="border-slate-700">
+            <TableRow key={entry.id}>
               <TableCell>
                 <Checkbox
                   checked={entry.invoice_complete}
@@ -272,7 +272,7 @@ export default function Invoices() {
               <TableCell>
                 <button
                   onClick={() => handleDateClick(entry.scheduled_date)}
-                  className="text-white hover:text-amber-400 hover:underline transition-colors cursor-pointer"
+                  className="text-foreground hover:text-primary hover:underline transition-colors cursor-pointer"
                 >
                   {format(new Date(entry.scheduled_date + "T00:00:00"), "M/d/yyyy")}
                 </button>
@@ -280,7 +280,7 @@ export default function Invoices() {
               <TableCell>
                 <button
                   onClick={() => handleProjectClick(entry.projects?.id || entry.project_id)}
-                  className="text-white font-medium hover:text-primary hover:underline transition-colors text-left"
+                  className="text-foreground font-medium hover:text-primary hover:underline transition-colors text-left"
                 >
                   {entry.projects?.builders?.code || entry.projects?.builders?.name || "-"}
                 </button>
@@ -288,7 +288,7 @@ export default function Invoices() {
               <TableCell>
                 <button
                   onClick={() => handleProjectClick(entry.projects?.id || entry.project_id)}
-                  className="text-slate-300 hover:text-primary hover:underline transition-colors text-left"
+                  className="text-muted-foreground hover:text-primary hover:underline transition-colors text-left"
                 >
                   {entry.projects?.locations?.name || "-"}
                 </button>
@@ -296,15 +296,15 @@ export default function Invoices() {
               <TableCell>
                 <button
                   onClick={() => handleProjectClick(entry.projects?.id || entry.project_id)}
-                  className="text-amber-500 font-medium hover:text-primary hover:underline transition-colors text-left"
+                  className="text-primary font-medium hover:underline transition-colors text-left"
                 >
                   {entry.projects?.lot_number || "-"}
                 </button>
               </TableCell>
-              <TableCell className="text-slate-300">
+              <TableCell className="text-muted-foreground">
                 {entry.phases?.name || "-"}
               </TableCell>
-              <TableCell className="text-slate-300">
+              <TableCell className="text-muted-foreground">
                 {entry.crews?.name || "-"}
               </TableCell>
               <TableCell>
@@ -313,7 +313,7 @@ export default function Invoices() {
                     <Input
                       value={invoiceNumberValue}
                       onChange={(e) => setInvoiceNumberValue(e.target.value)}
-                      className="h-8 w-28 bg-slate-700 border-slate-600 text-white"
+                      className="h-8 w-28"
                       placeholder="Invoice #"
                       autoFocus
                       onKeyDown={(e) => {
@@ -333,7 +333,7 @@ export default function Invoices() {
                 ) : (
                   <button
                     onClick={() => handleStartEditInvoice(entry)}
-                    className="text-slate-400 hover:text-white transition-colors text-left min-w-[80px]"
+                    className="text-muted-foreground hover:text-foreground transition-colors text-left min-w-[80px]"
                   >
                     {entry.invoice_number || "Add #"}
                   </button>
@@ -350,69 +350,69 @@ export default function Invoices() {
     <AppLayout>
       <div className="p-6">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-white">Invoice Tracking</h1>
-          <p className="text-slate-400">Track pending and completed invoices</p>
+          <h1 className="text-2xl font-bold text-foreground">Invoice Tracking</h1>
+          <p className="text-muted-foreground">Track pending and completed invoices</p>
         </div>
 
         {/* Filters */}
-        <Card className="bg-slate-800 border-slate-700 mb-6">
+        <Card className="mb-6">
           <CardContent className="p-4">
             <div className="flex flex-wrap gap-4 items-center">
               {/* Search box */}
               <div className="relative flex-1 min-w-[200px] max-w-sm">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                 <Input
                   placeholder="Search builder, location, crew, phase..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 bg-slate-700 border-slate-600 text-white"
+                  className="pl-10"
                 />
               </div>
               
               <Select value={filterBuilder} onValueChange={setFilterBuilder}>
-                <SelectTrigger className="w-40 bg-slate-700 border-slate-600 text-white">
+                <SelectTrigger className="w-40">
                   <SelectValue placeholder="All Builders" />
                 </SelectTrigger>
-                <SelectContent className="bg-slate-700 border-slate-600">
-                  <SelectItem value="all" className="text-white">All Builders</SelectItem>
+                <SelectContent>
+                  <SelectItem value="all">All Builders</SelectItem>
                   {builders.map((b) => (
-                    <SelectItem key={b.id} value={b.code || b.name} className="text-white">{b.name}</SelectItem>
+                    <SelectItem key={b.id} value={b.code || b.name}>{b.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               
               <Select value={filterLocation} onValueChange={setFilterLocation}>
-                <SelectTrigger className="w-40 bg-slate-700 border-slate-600 text-white">
+                <SelectTrigger className="w-40">
                   <SelectValue placeholder="All Locations" />
                 </SelectTrigger>
-                <SelectContent className="bg-slate-700 border-slate-600">
-                  <SelectItem value="all" className="text-white">All Locations</SelectItem>
+                <SelectContent>
+                  <SelectItem value="all">All Locations</SelectItem>
                   {locations.map((l) => (
-                    <SelectItem key={l.id} value={l.name} className="text-white">{l.name}</SelectItem>
+                    <SelectItem key={l.id} value={l.name}>{l.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               
               <Select value={filterCrew} onValueChange={setFilterCrew}>
-                <SelectTrigger className="w-40 bg-slate-700 border-slate-600 text-white">
+                <SelectTrigger className="w-40">
                   <SelectValue placeholder="All Crews" />
                 </SelectTrigger>
-                <SelectContent className="bg-slate-700 border-slate-600">
-                  <SelectItem value="all" className="text-white">All Crews</SelectItem>
+                <SelectContent>
+                  <SelectItem value="all">All Crews</SelectItem>
                   {crews.map((c) => (
-                    <SelectItem key={c.id} value={c.name} className="text-white">{c.name}</SelectItem>
+                    <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               
               <Select value={filterPhase} onValueChange={setFilterPhase}>
-                <SelectTrigger className="w-40 bg-slate-700 border-slate-600 text-white">
+                <SelectTrigger className="w-40">
                   <SelectValue placeholder="All Phases" />
                 </SelectTrigger>
-                <SelectContent className="bg-slate-700 border-slate-600">
-                  <SelectItem value="all" className="text-white">All Phases</SelectItem>
+                <SelectContent>
+                  <SelectItem value="all">All Phases</SelectItem>
                   {phases.map((p) => (
-                    <SelectItem key={p.id} value={p.name} className="text-white">{p.name}</SelectItem>
+                    <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -421,7 +421,7 @@ export default function Invoices() {
                 <Button
                   variant="ghost"
                   onClick={clearFilters}
-                  className="text-slate-400 hover:text-white"
+                  className="text-muted-foreground hover:text-foreground"
                 >
                   <X className="w-4 h-4 mr-2" />
                   Clear Filters
@@ -432,19 +432,19 @@ export default function Invoices() {
         </Card>
 
         <Tabs defaultValue="pending">
-          <TabsList className="bg-slate-800 border border-slate-700 mb-4">
-            <TabsTrigger value="pending" className="data-[state=active]:bg-amber-500 data-[state=active]:text-slate-900 text-slate-400">
+          <TabsList className="bg-muted border border-border mb-4">
+            <TabsTrigger value="pending" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-muted-foreground">
               <FileText className="w-4 h-4 mr-2" />
               Pending ({filterEntries(pendingEntries).length})
             </TabsTrigger>
-            <TabsTrigger value="completed" className="data-[state=active]:bg-amber-500 data-[state=active]:text-slate-900 text-slate-400">
+            <TabsTrigger value="completed" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-muted-foreground">
               <Check className="w-4 h-4 mr-2" />
               Completed
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="pending">
-            <Card className="bg-slate-800 border-slate-700">
+            <Card>
               <CardContent className="p-0">
                 {renderTable(pendingEntries, loadingPending)}
               </CardContent>
@@ -452,7 +452,7 @@ export default function Invoices() {
           </TabsContent>
 
           <TabsContent value="completed">
-            <Card className="bg-slate-800 border-slate-700">
+            <Card>
               <CardContent className="p-0">
                 {renderTable(completedEntries, loadingCompleted)}
               </CardContent>
