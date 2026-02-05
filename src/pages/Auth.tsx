@@ -78,10 +78,10 @@ export default function Auth() {
         description: getUserFriendlyError(error, "Auth"),
         variant: "destructive",
       });
-    } else {
-      navigate("/");
+      setLoading(false);
     }
-    setLoading(false);
+    // On success, auth state change will trigger redirect via AuthRoute
+    // Don't set loading to false here - let the redirect happen
   };
 
   const handleTabChange = (value: string) => {

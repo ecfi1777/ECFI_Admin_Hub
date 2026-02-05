@@ -17,7 +17,7 @@ export default function Onboarding() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, loading: authLoading } = useAuth();
+  const { user, initialized: authInitialized } = useAuth();
   const queryClient = useQueryClient();
 
   const handleCreateOrganization = async (e: React.FormEvent) => {
@@ -106,9 +106,9 @@ export default function Onboarding() {
         console.log("Default data seeded");
       }
 
-      // Step 5: Invalidate organization query and navigate
+      // Step 5: Invalidate organization queries and navigate
       console.log("Step 5: Completing setup...");
-      queryClient.invalidateQueries({ queryKey: ["organization"] });
+      await queryClient.invalidateQueries({ queryKey: ["organizations"] });
 
       toast({
         title: "Organization created!",
@@ -193,8 +193,8 @@ export default function Onboarding() {
 
       if (membershipError) throw membershipError;
 
-      // Invalidate organization query and navigate
-      queryClient.invalidateQueries({ queryKey: ["organization"] });
+      // Invalidate organization queries and navigate
+      await queryClient.invalidateQueries({ queryKey: ["organizations"] });
 
       toast({
         title: "Joined organization!",
@@ -214,8 +214,8 @@ export default function Onboarding() {
     }
   };
 
-  // Show loading state while auth is loading
-  if (authLoading) {
+  // Show loading state while auth is initializing
+  if (!authInitialized) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
         <div className="flex flex-col items-center gap-4">

@@ -2,12 +2,13 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@/hooks/useTheme";
 import { useAuth } from "@/hooks/useAuth";
 import { useOrganization, OrganizationProvider } from "@/hooks/useOrganization";
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { LoadingScreen } from "@/components/ui/loading-screen";
 import Auth from "./pages/Auth";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
@@ -22,135 +23,84 @@ import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
+// Unified route guard that handles all auth/org states in one render
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading: authLoading } = useAuth();
-  const { hasOrganization, isLoading: orgLoading, error: orgError } = useOrganization();
-  const [redirecting, setRedirecting] = useState(false);
+  const { user, initialized: authInitialized } = useAuth();
+  const { hasOrganization, isLoading: orgLoading } = useOrganization();
 
-  useEffect(() => {
-    console.log("ProtectedRoute state:", { 
-      user: user?.id, 
-      authLoading, 
-      hasOrganization, 
-      orgLoading,
-      orgError: orgError?.message 
-    });
-  }, [user, authLoading, hasOrganization, orgLoading, orgError]);
+  // Single loading state check
+  const isLoading = !authInitialized || (user && orgLoading);
 
-  // Handle redirects using window.location to avoid SecurityError in iframes
-  useEffect(() => {
-    if (authLoading || orgLoading) return;
-    
-    if (!user) {
-      console.log("ProtectedRoute: No user, redirecting to auth");
-      setRedirecting(true);
-      window.location.href = "/auth";
-      return;
-    }
-    
-    if (!hasOrganization) {
-      console.log("ProtectedRoute: No org, redirecting to onboarding");
-      setRedirecting(true);
-      window.location.href = "/onboarding";
-      return;
-    }
-  }, [user, authLoading, hasOrganization, orgLoading]);
+  // Memoize the render decision to prevent unnecessary recalculations
+  const renderState = useMemo(() => {
+    if (isLoading) return "loading";
+    if (!user) return "redirect-auth";
+    if (!hasOrganization) return "redirect-onboarding";
+    return "render";
+  }, [isLoading, user, hasOrganization]);
 
-  if (authLoading || orgLoading || redirecting) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-foreground">Loading...</div>
-      </div>
-    );
+  if (renderState === "loading") {
+    return <LoadingScreen message="Loading your workspace..." />;
   }
 
-  if (!user || !hasOrganization) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-foreground">Redirecting...</div>
-      </div>
-    );
+  if (renderState === "redirect-auth") {
+    return <Navigate to="/auth" replace />;
+  }
+
+  if (renderState === "redirect-onboarding") {
+    return <Navigate to="/onboarding" replace />;
   }
 
   return <>{children}</>;
 }
 
 function OnboardingRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading: authLoading } = useAuth();
+  const { user, initialized: authInitialized } = useAuth();
   const { hasOrganization, isLoading: orgLoading } = useOrganization();
-  const [redirecting, setRedirecting] = useState(false);
 
-  useEffect(() => {
-    console.log("OnboardingRoute state:", { user: user?.id, authLoading, hasOrganization, orgLoading });
-  }, [user, authLoading, hasOrganization, orgLoading]);
+  const isLoading = !authInitialized || (user && orgLoading);
 
-  useEffect(() => {
-    if (authLoading || orgLoading) return;
-    
-    if (!user) {
-      console.log("OnboardingRoute: No user, redirecting to auth");
-      setRedirecting(true);
-      window.location.href = "/auth";
-      return;
-    }
-    
-    if (hasOrganization) {
-      console.log("OnboardingRoute: Has org, redirecting to dashboard");
-      setRedirecting(true);
-      window.location.href = "/";
-      return;
-    }
-  }, [user, authLoading, hasOrganization, orgLoading]);
+  const renderState = useMemo(() => {
+    if (isLoading) return "loading";
+    if (!user) return "redirect-auth";
+    if (hasOrganization) return "redirect-dashboard";
+    return "render";
+  }, [isLoading, user, hasOrganization]);
 
-  if (authLoading || orgLoading || redirecting) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-foreground">Loading...</div>
-      </div>
-    );
+  if (renderState === "loading") {
+    return <LoadingScreen message="Checking your account..." />;
   }
 
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-foreground">Redirecting to login...</div>
-      </div>
-    );
+  if (renderState === "redirect-auth") {
+    return <Navigate to="/auth" replace />;
+  }
+
+  if (renderState === "redirect-dashboard") {
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;
 }
 
 function AuthRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
-  const [redirecting, setRedirecting] = useState(false);
+  const { user, initialized } = useAuth();
 
-  useEffect(() => {
-    if (loading) return;
-    
-    if (user) {
-      console.log("AuthRoute: Has user, redirecting to dashboard");
-      setRedirecting(true);
-      window.location.href = "/";
-    }
-  }, [user, loading]);
-
-  if (loading || redirecting) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-foreground">Loading...</div>
-      </div>
-    );
+  if (!initialized) {
+    return <LoadingScreen message="Initializing..." />;
   }
 
   if (user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-foreground">Redirecting...</div>
-      </div>
-    );
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;
