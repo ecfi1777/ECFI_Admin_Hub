@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Building2, Copy, Check, Users, RefreshCw } from "lucide-react";
+import { Building2, Copy, Check, Users, RefreshCw, Pencil, X } from "lucide-react";
 import { TeamMembersTable } from "./TeamMembersTable";
 import { MyOrganizations } from "./MyOrganizations";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,6 +18,8 @@ export function OrganizationSettings() {
   const queryClient = useQueryClient();
   const [copied, setCopied] = useState(false);
   const [regenerateDialogOpen, setRegenerateDialogOpen] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState("");
 
   const regenerateMutation = useMutation({
     mutationFn: async () => {
@@ -47,6 +49,34 @@ export function OrganizationSettings() {
     onError: (error: any) => {
       toast({
         title: "Failed to regenerate invite code",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateNameMutation = useMutation({
+    mutationFn: async (newName: string) => {
+      if (!organization?.id) throw new Error("No organization");
+      
+      const { error } = await supabase
+        .from("organizations")
+        .update({ name: newName.trim() })
+        .eq("id", organization.id);
+      
+      if (error) throw error;
+    },
+    onSuccess: async () => {
+      await queryClient.resetQueries({ queryKey: ["organizations"] });
+      setIsEditingName(false);
+      toast({
+        title: "Organization name updated",
+        description: "Your organization name has been changed successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to update name",
         description: error.message,
         variant: "destructive",
       });
@@ -108,18 +138,70 @@ export function OrganizationSettings() {
             <CardTitle>Organization Details</CardTitle>
           </div>
           <CardDescription>
-            View your organization information
+            {isOwner ? "Manage your organization information" : "View your organization information"}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="org-name">Organization Name</Label>
-            <Input
-              id="org-name"
-              value={organization.name}
-              disabled
-              className="bg-muted"
-            />
+            {isEditingName ? (
+              <div className="flex gap-2">
+                <Input
+                  id="org-name"
+                  value={editedName}
+                  onChange={(e) => setEditedName(e.target.value)}
+                  placeholder="Enter organization name"
+                  autoFocus
+                />
+                <Button
+                  type="button"
+                  onClick={() => {
+                    if (editedName.trim()) {
+                      updateNameMutation.mutate(editedName);
+                    }
+                  }}
+                  disabled={!editedName.trim() || updateNameMutation.isPending}
+                  size="sm"
+                >
+                  {updateNameMutation.isPending ? "Saving..." : "Save"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => {
+                    setIsEditingName(false);
+                    setEditedName(organization.name);
+                  }}
+                  disabled={updateNameMutation.isPending}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <Input
+                  id="org-name"
+                  value={organization.name}
+                  disabled
+                  className="bg-muted"
+                />
+                {isOwner && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => {
+                      setEditedName(organization.name);
+                      setIsEditingName(true);
+                    }}
+                    title="Edit organization name"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
