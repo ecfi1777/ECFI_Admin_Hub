@@ -22,6 +22,7 @@ export function useOrganization() {
     queryFn: async () => {
       if (!user?.id) return null;
 
+      // Use maybeSingle or limit 1 to handle users with multiple memberships
       const { data, error } = await supabase
         .from("organization_memberships")
         .select(`
@@ -34,10 +35,17 @@ export function useOrganization() {
           )
         `)
         .eq("user_id", user.id)
-        .single();
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
 
-      if (error) throw error;
-      return data as unknown as OrganizationMembership;
+      if (error) {
+        console.error("Organization fetch error:", error);
+        throw error;
+      }
+      
+      console.log("Organization data fetched:", data);
+      return data as unknown as OrganizationMembership | null;
     },
     enabled: !!user?.id,
     staleTime: 5 * 60 * 1000, // 5 minutes - prevents refetching on tab focus
