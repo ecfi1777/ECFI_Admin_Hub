@@ -93,26 +93,26 @@ export function DeleteAccount() {
   };
 
   return (
-    <Card className="border-destructive/50 bg-card mt-6">
+    <Card className="bg-card mt-6">
       <CardHeader>
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-destructive/10 rounded-lg">
-            <Trash2 className="w-5 h-5 text-destructive" />
+          <div className="p-2 bg-muted rounded-lg">
+            <Trash2 className="w-5 h-5 text-muted-foreground" />
           </div>
           <div>
-            <CardTitle className="text-lg text-destructive">Delete Account</CardTitle>
+            <CardTitle className="text-lg">Delete Account</CardTitle>
             <CardDescription>Permanently delete your account and all data</CardDescription>
           </div>
         </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+          <div className="p-4 bg-muted border border-border rounded-lg">
             <div className="flex gap-3">
-              <AlertTriangle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
-              <div className="text-sm text-destructive">
-                <p className="font-semibold mb-1">Warning: This action cannot be undone</p>
-                <p className="text-destructive/80">
+              <AlertTriangle className="w-5 h-5 text-muted-foreground flex-shrink-0 mt-0.5" />
+              <div className="text-sm text-muted-foreground">
+                <p className="font-semibold mb-1 text-foreground">Warning: This action cannot be undone</p>
+                <p>
                   Deleting your account will permanently remove all your data, including projects, 
                   schedules, and organization memberships. This data cannot be restored.
                 </p>
