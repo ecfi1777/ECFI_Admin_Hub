@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 interface Organization {
   id: string;
@@ -83,13 +83,22 @@ export function useOrganization() {
     }
   }, [allMemberships, activeOrgId]);
 
+  // Track previous org to detect changes
+  const previousOrgIdRef = useRef<string | null>(null);
+
+  // Invalidate queries AFTER organizationId has changed (not during setState)
+  useEffect(() => {
+    if (previousOrgIdRef.current !== null && previousOrgIdRef.current !== currentMembership?.organization_id && currentMembership?.organization_id) {
+      queryClient.invalidateQueries();
+    }
+    previousOrgIdRef.current = currentMembership?.organization_id ?? null;
+  }, [currentMembership?.organization_id, queryClient]);
+
   // Switch organization
   const switchOrganization = useCallback((orgId: string) => {
     setActiveOrgIdState(orgId);
     localStorage.setItem(ACTIVE_ORG_KEY, orgId);
-    // Invalidate all queries to refetch data for new org
-    queryClient.invalidateQueries();
-  }, [queryClient]);
+  }, []);
 
   return {
     // Current active organization
