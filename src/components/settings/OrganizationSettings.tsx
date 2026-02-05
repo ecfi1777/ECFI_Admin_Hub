@@ -13,7 +13,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 export function OrganizationSettings() {
-  const { organization, isOwner, isLoading, refetch: refetchOrg } = useOrganization();
+  const { organization, isOwner, isLoading } = useOrganization();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [copied, setCopied] = useState(false);
@@ -36,9 +36,9 @@ export function OrganizationSettings() {
       if (updateError) throw updateError;
       return newCode;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["organizations"] });
-      refetchOrg();
+    onSuccess: async () => {
+      // Remove cached data and force immediate refetch
+      await queryClient.resetQueries({ queryKey: ["organizations"] });
       toast({
         title: "Invite code regenerated",
         description: "The old invite code is no longer valid. Share the new code with team members.",
