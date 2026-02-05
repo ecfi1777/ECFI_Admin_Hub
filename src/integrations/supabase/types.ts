@@ -137,6 +137,7 @@ export type Database = {
       }
       crews: {
         Row: {
+          color: string | null
           created_at: string
           display_order: number
           id: string
@@ -146,6 +147,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          color?: string | null
           created_at?: string
           display_order?: number
           id?: string
@@ -155,6 +157,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          color?: string | null
           created_at?: string
           display_order?: number
           id?: string

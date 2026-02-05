@@ -52,6 +52,7 @@ export interface Crew {
   name: string;
   display_order?: number;
   is_active?: boolean;
+  color?: string | null;
 }
 
 export interface ConcreteMix {
@@ -246,7 +247,7 @@ export function useCrewsAll() {
       if (!organizationId) return [];
       const { data, error } = await supabase
         .from("crews")
-        .select("id, name, display_order, is_active")
+        .select("id, name, display_order, is_active, color")
         .eq("organization_id", organizationId);
       if (error) throw error;
       return data as Crew[];
