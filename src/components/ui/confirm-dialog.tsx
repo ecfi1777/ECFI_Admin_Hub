@@ -1,3 +1,4 @@
+import { ReactNode } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,12 +14,13 @@ interface ConfirmDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
-  description: string;
+  description: ReactNode;
   confirmLabel?: string;
   cancelLabel?: string;
   variant?: "default" | "destructive";
   onConfirm: () => void;
   isLoading?: boolean;
+  confirmDisabled?: boolean;
 }
 
 export function ConfirmDialog({
@@ -31,6 +33,7 @@ export function ConfirmDialog({
   variant = "destructive",
   onConfirm,
   isLoading = false,
+  confirmDisabled = false,
 }: ConfirmDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -47,7 +50,7 @@ export function ConfirmDialog({
           </AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirm}
-            disabled={isLoading}
+            disabled={isLoading || confirmDisabled}
             className={
               variant === "destructive"
                 ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground"

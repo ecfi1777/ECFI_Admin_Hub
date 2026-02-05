@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Building2, Copy, Check, Users, RefreshCw, Pencil, X } from "lucide-react";
+import { Building2, Copy, Check, Users, RefreshCw, Pencil, X, Trash2, AlertTriangle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { TeamMembersTable } from "./TeamMembersTable";
 import { MyOrganizations } from "./MyOrganizations";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,10 +17,13 @@ export function OrganizationSettings() {
   const { organization, isOwner, isLoading } = useOrganization();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
   const [regenerateDialogOpen, setRegenerateDialogOpen] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState("");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
 
   const regenerateMutation = useMutation({
     mutationFn: async () => {
@@ -77,6 +81,44 @@ export function OrganizationSettings() {
     onError: (error: any) => {
       toast({
         title: "Failed to update name",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteOrgMutation = useMutation({
+    mutationFn: async () => {
+      if (!organization?.id) throw new Error("No organization");
+      
+      // First delete all memberships for this organization
+      const { error: membershipsError } = await supabase
+        .from("organization_memberships")
+        .delete()
+        .eq("organization_id", organization.id);
+      
+      if (membershipsError) throw membershipsError;
+      
+      // Then delete the organization itself
+      const { error: orgError } = await supabase
+        .from("organizations")
+        .delete()
+        .eq("id", organization.id);
+      
+      if (orgError) throw orgError;
+    },
+    onSuccess: async () => {
+      await queryClient.resetQueries({ queryKey: ["organizations"] });
+      toast({
+        title: "Organization deleted",
+        description: "Your organization has been permanently deleted.",
+      });
+      // Navigate to onboarding since user no longer has an organization
+      navigate("/onboarding");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to delete organization",
         description: error.message,
         variant: "destructive",
       });
@@ -285,6 +327,80 @@ export function OrganizationSettings() {
           </CardHeader>
           <CardContent>
             <TeamMembersTable />
+          </CardContent>
+        </Card>
+      )}
+
+      {isOwner && (
+        <Card className="border-destructive/50">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Trash2 className="w-5 h-5 text-destructive" />
+              <CardTitle className="text-destructive">Danger Zone</CardTitle>
+            </div>
+            <CardDescription>
+              Permanently delete this organization and all its data
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-destructive mt-0.5 shrink-0" />
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">This action cannot be undone</p>
+                  <p className="text-sm text-muted-foreground">
+                    Deleting this organization will permanently remove:
+                  </p>
+                  <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
+                    <li>All projects and schedule entries</li>
+                    <li>All team members' access</li>
+                    <li>All reference data (crews, phases, suppliers, etc.)</li>
+                    <li>All uploaded documents</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <Button
+              variant="destructive"
+              onClick={() => setDeleteDialogOpen(true)}
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete Organization
+            </Button>
+
+            <ConfirmDialog
+              open={deleteDialogOpen}
+              onOpenChange={(open) => {
+                setDeleteDialogOpen(open);
+                if (!open) setDeleteConfirmation("");
+              }}
+              title="Delete Organization Permanently?"
+              description={
+                <div className="space-y-4">
+                  <p>
+                    You are about to permanently delete <strong>"{organization.name}"</strong> and all associated data. 
+                    This action cannot be undone.
+                  </p>
+                  <div className="space-y-2">
+                    <Label htmlFor="delete-confirm">
+                      Type <span className="font-mono font-bold">DELETE</span> to confirm:
+                    </Label>
+                    <Input
+                      id="delete-confirm"
+                      value={deleteConfirmation}
+                      onChange={(e) => setDeleteConfirmation(e.target.value)}
+                      placeholder="DELETE"
+                      className="font-mono"
+                    />
+                  </div>
+                </div>
+              }
+              confirmLabel="Delete Organization"
+              onConfirm={() => deleteOrgMutation.mutate()}
+              variant="destructive"
+              isLoading={deleteOrgMutation.isPending}
+              confirmDisabled={deleteConfirmation !== "DELETE"}
+            />
           </CardContent>
         </Card>
       )}
