@@ -12,9 +12,10 @@ import { MyOrganizations } from "./MyOrganizations";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-
+import { useAuth } from "@/hooks/useAuth";
 export function OrganizationSettings() {
-  const { organization, isOwner, isLoading } = useOrganization();
+  const { organization, allOrganizations, switchOrganization, isOwner, isLoading } = useOrganization();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
@@ -73,7 +74,7 @@ export function OrganizationSettings() {
 
   const deleteOrgMutation = useMutation({
     mutationFn: async () => {
-      if (!organization?.id) throw new Error("No organization");
+      if (!organization?.id || !user?.id) throw new Error("No organization or user");
       
       // First delete all memberships for this organization
       const { error: membershipsError } = await supabase
@@ -90,11 +91,27 @@ export function OrganizationSettings() {
         .eq("id", organization.id);
       
       if (orgError) throw orgError;
+      
+      // Return info about remaining orgs for navigation
+      const remainingOrgs = allOrganizations.filter(
+        o => o.organization_id !== organization.id
+      );
+      return { remainingOrgs };
     },
-    onSuccess: async () => {
+    onSuccess: async ({ remainingOrgs }) => {
       await queryClient.resetQueries({ queryKey: ["organizations"] });
+      await queryClient.resetQueries({ queryKey: ["organization-memberships"] });
       toast.success("Your organization has been permanently deleted.");
-      navigate("/onboarding");
+      
+      // If user has other orgs, switch to one of them
+      if (remainingOrgs.length > 0) {
+        switchOrganization(remainingOrgs[0].organization_id);
+        // Reload to ensure clean state
+        window.location.href = "/settings";
+      } else {
+        // No orgs left - redirect to onboarding
+        navigate("/onboarding");
+      }
     },
     onError: (error: any) => {
       toast.error(error.message);
@@ -347,19 +364,19 @@ export function OrganizationSettings() {
               description={
                 <div className="space-y-4">
                   <p>
-                    You are about to permanently delete <strong>"{organization.name}"</strong> and all associated data. 
-                    This action cannot be undone.
+                    Are you sure you want to delete <strong>"{organization.name}"</strong>? 
+                    This will permanently delete all projects, schedules, and data. 
+                    All team members will lose access. This cannot be undone.
                   </p>
                   <div className="space-y-2">
                     <Label htmlFor="delete-confirm">
-                      Type <span className="font-mono font-bold">DELETE</span> to confirm:
+                      Type <span className="font-mono font-bold">{organization.name}</span> to confirm:
                     </Label>
                     <Input
                       id="delete-confirm"
                       value={deleteConfirmation}
                       onChange={(e) => setDeleteConfirmation(e.target.value)}
-                      placeholder="DELETE"
-                      className="font-mono"
+                      placeholder={organization.name}
                     />
                   </div>
                 </div>
@@ -368,7 +385,7 @@ export function OrganizationSettings() {
               onConfirm={() => deleteOrgMutation.mutate()}
               variant="destructive"
               isLoading={deleteOrgMutation.isPending}
-              confirmDisabled={deleteConfirmation !== "DELETE"}
+              confirmDisabled={deleteConfirmation !== organization.name}
             />
           </CardContent>
         </Card>
