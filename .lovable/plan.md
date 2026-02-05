@@ -1,155 +1,144 @@
 
 
-# Fix Inactive Crew Behavior
-
-## Overview
-
-This plan addresses two issues with inactive crews:
-
-1. **Daily Schedule**: Entries assigned to inactive crews are currently shown in "Unassigned" because the inactive crew's card is not rendered
-2. **Edit Entry Dialog**: The crew dropdown only shows active crews, which means you cannot see/keep the currently assigned inactive crew when editing an existing entry
+# Fix: Organization Switcher Data Refresh
 
 ## Problem Analysis
 
-### Issue 1: Daily Schedule Missing Inactive Crew Cards
+When switching organizations, the data on the current page doesn't refresh immediately. The console logs show "Organization switched... invalidating queries" is being called, but network requests show queries are still fetching with the OLD organization ID.
 
-**Current Behavior:**
-- `DailySchedule.tsx` fetches only active crews (line 129: `.eq("is_active", true)`)
-- If an entry is assigned to an inactive crew, no card exists for that crew
-- The entry falls into "Unassigned" section (line 222: entries where `crew_id` doesn't match any sorted crew)
+### Root Cause
 
-**Desired Behavior:**
-- Show inactive crew cards only if they have entries on the selected date
-- Historical entries remain visible under their original crew assignment
+There's a **timing/state propagation issue** in the React lifecycle:
 
-### Issue 2: Edit Dialog Hides Currently-Assigned Inactive Crew
+1. User clicks to switch organization in `OrganizationSwitcher`
+2. `switchOrganization(newOrgId)` is called, which sets `activeOrgId` state
+3. The `useEffect` in `useOrganization` detects `currentMembership?.organization_id` changed and calls `queryClient.invalidateQueries()`
+4. **Problem**: At this point, the child components (like `DailySchedule`) haven't re-rendered yet with the new `organizationId`
+5. When TanStack Query refetches the invalidated queries, the query functions still have the OLD `organizationId` in their closure from the previous render
+6. Result: Data is fetched for the wrong organization
 
-**Current Behavior:**
-- `EditEntryDialog.tsx` fetches only active crews (line 180: `.eq("is_active", true)`)
-- If editing an entry assigned to an inactive crew, that crew is not in the dropdown
-- User cannot see or maintain the original crew assignment
+### Evidence from Network Logs
 
-**Desired Behavior:**
-- Dropdown shows all active crews PLUS the currently-assigned crew (even if inactive)
-- User can change to any active crew, or keep the inactive crew assignment
-
----
+All requests after switching still show:
+```
+organization_id=eq.9e6edef7-b918-401c-9d96-8952cc66ec6b
+```
+Even though the organization visually switched in the sidebar.
 
 ## Solution
 
-### File 1: `src/components/schedule/DailySchedule.tsx`
+Instead of calling `invalidateQueries()` immediately in a `useEffect`, we need to ensure queries refetch **after** the new `organizationId` has propagated to all components. There are two approaches:
 
-**Changes:**
+### Approach: Force Component Re-render First, Then Invalidate
 
-1. Remove `is_active` filter from crews query - fetch all crews
-2. Add `is_active` field to the Crew interface
-3. Filter the crews to display based on:
-   - Active crews (always shown)
-   - Inactive crews that have at least one entry on the selected date
+The cleanest fix is to:
 
-**Logic:**
-```text
-displayedCrews = crews.filter(crew => 
-  crew.is_active || 
-  entries.some(entry => entry.crew_id === crew.id)
-)
+1. **Remove** the query invalidation from `useOrganization` hook's `useEffect`
+2. **Add a "key" prop** to the main content area that changes when `organizationId` changes
+
+This forces React to unmount and remount the entire content tree with fresh state and the correct `organizationId`.
+
+## Implementation
+
+### Step 1: Remove Query Invalidation from useOrganization
+
+Remove the `useEffect` that calls `queryClient.invalidateQueries()` since it's causing the race condition.
+
+**File: `src/hooks/useOrganization.tsx`**
+
+```typescript
+// REMOVE this entire useEffect block (lines 86-106):
+// Track previous org to detect changes and invalidate queries
+const previousOrgIdRef = useRef<string | null>(null);
+const isInitializedRef = useRef(false);
+
+// Invalidate queries when organizationId changes (after initial load)
+useEffect(() => {
+  const currentOrgId = currentMembership?.organization_id ?? null;
+  
+  if (isInitializedRef.current && previousOrgIdRef.current !== currentOrgId && currentOrgId) {
+    console.log("Organization switched from", previousOrgIdRef.current, "to", currentOrgId, "- invalidating queries");
+    queryClient.invalidateQueries();
+  }
+  
+  if (currentOrgId && !isInitializedRef.current) {
+    isInitializedRef.current = true;
+  }
+  
+  previousOrgIdRef.current = currentOrgId;
+}, [currentMembership?.organization_id, queryClient]);
 ```
 
-### File 2: `src/components/schedule/EditEntryDialog.tsx`
+Also remove the now-unused imports and `useQueryClient` call if no longer needed.
 
-**Changes:**
+### Step 2: Add Key Prop to Force Re-mount in AppLayout
 
-1. Modify the crews query to fetch all crews (remove `is_active` filter)
-2. Add `is_active` field to the crew data
-3. Filter the dropdown options to show:
-   - All active crews
-   - The currently-assigned crew if it exists (even if inactive)
-4. Mark inactive crews in the dropdown with "(Inactive)" label
+Use React's `key` prop to force a complete re-render of the main content area when `organizationId` changes. This guarantees all child components unmount and remount with the new context.
 
-**Logic:**
-```text
-crewOptions = crews.filter(crew =>
-  crew.is_active ||
-  crew.id === entry.crew_id
-)
+**File: `src/components/layout/AppLayout.tsx`**
+
+Wrap the main content area with a `key={organizationId}`:
+
+```tsx
+export function AppLayout({ children }: AppLayoutProps) {
+  const { organizationId } = useOrganization();
+  
+  return (
+    <SidebarProvider>
+      <div className="flex min-h-screen w-full bg-background">
+        <AppSidebar />
+        <main key={organizationId || "loading"} className="flex-1">
+          {children}
+        </main>
+      </div>
+    </SidebarProvider>
+  );
+}
 ```
 
----
+When `organizationId` changes:
+- React sees a different `key` on `<main>`
+- It unmounts the old tree and mounts a fresh one
+- All `useQuery` hooks re-run with the correct `organizationId`
+- No stale closures, no race conditions
+
+## Why This Works
+
+1. **No timing issues**: React's key-based remounting is synchronous and deterministic
+2. **Clean state**: Each organization gets a fresh component tree with no stale data
+3. **Simpler code**: Removes complex effect-based invalidation logic
+4. **Guaranteed correctness**: Queries always run with the correct `organizationId` from their initial mount
 
 ## Technical Details
 
-### DailySchedule.tsx Changes
+The key change is conceptually simple but has significant impact:
 
-```typescript
-// Update Crew interface (line ~53-57)
-interface Crew {
-  id: string;
-  name: string;
-  display_order: number;
-  is_active: boolean;  // Add this field
-}
+```text
+Before (race condition):
+┌──────────────────────────────────────────────────────┐
+│ 1. switchOrganization(newId)                         │
+│ 2. activeOrgId state updates                         │
+│ 3. useEffect detects change                          │
+│ 4. invalidateQueries() called                        │
+│ 5. TanStack refetches with OLD organizationId ❌     │
+│ 6. Components re-render with new organizationId      │
+│ 7. User sees stale data                              │
+└──────────────────────────────────────────────────────┘
 
-// Update query (lines 123-133)
-const { data: crews = [] } = useQuery({
-  queryKey: ["crews-all"],  // Change query key
-  queryFn: async () => {
-    const { data, error } = await supabase
-      .from("crews")
-      .select("id, name, display_order, is_active");  // Remove .eq filter, add is_active
-    if (error) throw error;
-    return data as Crew[];
-  },
-});
-
-// Filter crews for display (after sortCrews, before entriesByCrew)
-const displayedCrews = sortedCrews.filter(
-  (crew) => crew.is_active || entries.some((e) => e.crew_id === crew.id)
-);
-
-// Use displayedCrews instead of sortedCrews in the render
+After (key-based remount):
+┌──────────────────────────────────────────────────────┐
+│ 1. switchOrganization(newId)                         │
+│ 2. activeOrgId state updates                         │
+│ 3. AppLayout re-renders with new organizationId      │
+│ 4. key={organizationId} changes                      │
+│ 5. React unmounts old <main>, mounts new <main>      │
+│ 6. All children mount fresh with correct context     │
+│ 7. useQuery hooks run with correct organizationId ✓  │
+└──────────────────────────────────────────────────────┘
 ```
 
-### EditEntryDialog.tsx Changes
+## Files to Modify
 
-```typescript
-// Update query (lines 177-184)
-const { data: crews = [] } = useQuery({
-  queryKey: ["crews-all"],  // Change query key
-  queryFn: async () => {
-    const { data, error } = await supabase
-      .from("crews")
-      .select("id, name, is_active")  // Add is_active, remove .eq filter
-      .order("display_order");
-    if (error) throw error;
-    return data;
-  },
-});
-
-// Filter for dropdown options
-const crewOptions = crews.filter(
-  (c) => c.is_active || c.id === entry?.crew_id
-);
-
-// Update SelectItem rendering to show inactive label
-{crewOptions.map((c) => (
-  <SelectItem key={c.id} value={c.id}>
-    {c.name}{!c.is_active && " (Inactive)"}
-  </SelectItem>
-))}
-```
-
----
-
-## Summary of Changes
-
-| File | Changes |
-|------|---------|
-| `src/components/schedule/DailySchedule.tsx` | Fetch all crews with `is_active` field; filter to show active crews + inactive crews with entries for the selected date |
-| `src/components/schedule/EditEntryDialog.tsx` | Fetch all crews with `is_active` field; filter dropdown to show active crews + currently-assigned crew; add "(Inactive)" label |
-
----
-
-## No Database Changes Required
-
-Both fixes only require frontend query and filtering changes. The existing `is_active` column on the `crews` table already stores the necessary data.
+1. **`src/hooks/useOrganization.tsx`** - Remove the query invalidation effect and related refs
+2. **`src/components/layout/AppLayout.tsx`** - Add `key={organizationId}` to main content wrapper
 
