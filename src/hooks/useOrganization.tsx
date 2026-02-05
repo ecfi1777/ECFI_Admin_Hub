@@ -83,15 +83,26 @@ export function useOrganization() {
     }
   }, [allMemberships, activeOrgId]);
 
-  // Track previous org to detect changes
+  // Track previous org to detect changes and invalidate queries
   const previousOrgIdRef = useRef<string | null>(null);
+  const isInitializedRef = useRef(false);
 
-  // Invalidate queries AFTER organizationId has changed (not during setState)
+  // Invalidate queries when organizationId changes (after initial load)
   useEffect(() => {
-    if (previousOrgIdRef.current !== null && previousOrgIdRef.current !== currentMembership?.organization_id && currentMembership?.organization_id) {
+    const currentOrgId = currentMembership?.organization_id ?? null;
+    
+    if (isInitializedRef.current && previousOrgIdRef.current !== currentOrgId && currentOrgId) {
+      // Organization actually changed - invalidate all queries
+      console.log("Organization switched from", previousOrgIdRef.current, "to", currentOrgId, "- invalidating queries");
       queryClient.invalidateQueries();
     }
-    previousOrgIdRef.current = currentMembership?.organization_id ?? null;
+    
+    // Mark as initialized after first valid org is set
+    if (currentOrgId && !isInitializedRef.current) {
+      isInitializedRef.current = true;
+    }
+    
+    previousOrgIdRef.current = currentOrgId;
   }, [currentMembership?.organization_id, queryClient]);
 
   // Switch organization
