@@ -106,19 +106,17 @@ export default function Onboarding() {
         console.log("Default data seeded");
       }
 
-      // Step 5: Invalidate organization query and wait for it to complete
+      // Step 5: Invalidate organization query and navigate
       console.log("Step 5: Completing setup...");
-      await queryClient.invalidateQueries({ queryKey: ["organization"] });
-      // Wait for the query to refetch before navigating
-      await queryClient.refetchQueries({ queryKey: ["organization", user.id] });
+      queryClient.invalidateQueries({ queryKey: ["organization"] });
 
       toast({
         title: "Organization created!",
         description: `Welcome to ${companyName}. Your invite code is: ${generatedCode}`,
       });
 
-      // Small delay to ensure state is updated before navigation
-      setTimeout(() => navigate("/"), 100);
+      // Force a page reload to ensure clean state
+      window.location.href = "/";
     } catch (error: any) {
       console.error("Organization creation failed:", error);
       toast({
@@ -195,17 +193,16 @@ export default function Onboarding() {
 
       if (membershipError) throw membershipError;
 
-      // Invalidate organization query and wait for refetch
-      await queryClient.invalidateQueries({ queryKey: ["organization"] });
-      await queryClient.refetchQueries({ queryKey: ["organization", user.id] });
+      // Invalidate organization query and navigate
+      queryClient.invalidateQueries({ queryKey: ["organization"] });
 
       toast({
         title: "Joined organization!",
         description: `Welcome to ${org.name}.`,
       });
 
-      // Small delay to ensure state is updated before navigation
-      setTimeout(() => navigate("/"), 100);
+      // Force a page reload to ensure clean state
+      window.location.href = "/";
     } catch (error: any) {
       toast({
         title: "Failed to join organization",
