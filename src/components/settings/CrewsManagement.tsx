@@ -52,6 +52,7 @@ interface Crew {
   name: string;
   display_order: number;
   is_active: boolean;
+  color: string | null;
 }
 
 interface CrewMember {
@@ -137,13 +138,20 @@ function SortableCrewRow({
             {index + 1}
           </span>
 
-          {/* Crew Name */}
-          <span className="flex-1 font-medium text-foreground">
-            {crew.name}
-            {!crew.is_active && (
-              <span className="ml-2 text-xs text-muted-foreground">(Inactive)</span>
-            )}
-          </span>
+          {/* Color Indicator & Crew Name */}
+          <div className="flex items-center gap-2 flex-1">
+            <div
+              className="w-3 h-3 rounded-sm flex-shrink-0"
+              style={{ backgroundColor: crew.color || "#6b7280" }}
+              title={crew.color ? `Color: ${crew.color}` : "No color set"}
+            />
+            <span className="font-medium text-foreground">
+              {crew.name}
+              {!crew.is_active && (
+                <span className="ml-2 text-xs text-muted-foreground">(Inactive)</span>
+              )}
+            </span>
+          </div>
 
           {/* Member Count */}
           <span className="flex items-center gap-1 text-sm text-muted-foreground mr-2">
@@ -245,6 +253,7 @@ export function CrewsManagement() {
   const [crewDialogOpen, setCrewDialogOpen] = useState(false);
   const [editingCrew, setEditingCrew] = useState<Crew | null>(null);
   const [crewName, setCrewName] = useState("");
+  const [crewColor, setCrewColor] = useState<string>("");
 
   // Member dialog state
   const [memberDialogOpen, setMemberDialogOpen] = useState(false);
@@ -273,7 +282,7 @@ export function CrewsManagement() {
       if (!organizationId) return [];
       const { data, error } = await supabase
         .from("crews")
-        .select("id, name, display_order, is_active")
+        .select("id, name, display_order, is_active, color")
         .eq("organization_id", organizationId)
         .order("display_order")
         .order("name");
@@ -365,12 +374,13 @@ export function CrewsManagement() {
   });
 
   const updateCrewMutation = useMutation({
-    mutationFn: async ({ id, name }: { id: string; name: string }) => {
-      const { error } = await supabase.from("crews").update({ name }).eq("id", id);
+    mutationFn: async ({ id, name, color }: { id: string; name: string; color: string | null }) => {
+      const { error } = await supabase.from("crews").update({ name, color }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["crews-management"] });
+      queryClient.invalidateQueries({ queryKey: ["crews-with-colors"] });
       toast.success("Crew updated");
       closeCrewDialog();
     },
@@ -478,9 +488,11 @@ export function CrewsManagement() {
     if (crew) {
       setEditingCrew(crew);
       setCrewName(crew.name);
+      setCrewColor(crew.color || "");
     } else {
       setEditingCrew(null);
       setCrewName("");
+      setCrewColor("");
     }
     setCrewDialogOpen(true);
   };
@@ -489,12 +501,14 @@ export function CrewsManagement() {
     setCrewDialogOpen(false);
     setEditingCrew(null);
     setCrewName("");
+    setCrewColor("");
   };
 
   const handleCrewSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const colorValue = crewColor.trim() || null;
     if (editingCrew) {
-      updateCrewMutation.mutate({ id: editingCrew.id, name: crewName });
+      updateCrewMutation.mutate({ id: editingCrew.id, name: crewName, color: colorValue });
     } else {
       createCrewMutation.mutate(crewName);
     }
@@ -633,6 +647,40 @@ export function CrewsManagement() {
                 placeholder="Enter crew name"
               />
             </div>
+            {editingCrew && (
+              <div className="space-y-2">
+                <Label>Calendar Color</Label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="color"
+                    value={crewColor || "#3b82f6"}
+                    onChange={(e) => setCrewColor(e.target.value)}
+                    className="w-10 h-10 rounded cursor-pointer border border-border"
+                    title="Choose crew color"
+                  />
+                  <Input
+                    value={crewColor}
+                    onChange={(e) => setCrewColor(e.target.value)}
+                    placeholder="#3b82f6"
+                    className="flex-1"
+                  />
+                  {crewColor && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setCrewColor("")}
+                      className="text-muted-foreground"
+                    >
+                      Clear
+                    </Button>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Color used in calendar view. Leave empty for auto-generated color.
+                </p>
+              </div>
+            )}
             <Button
               type="submit"
               className="w-full"
