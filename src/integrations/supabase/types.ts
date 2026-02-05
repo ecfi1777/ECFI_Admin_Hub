@@ -901,7 +901,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_invite_code: { Args: never; Returns: string }
       get_user_organization_id: { Args: { p_user_id: string }; Returns: string }
+      seed_organization_defaults: {
+        Args: { p_organization_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
