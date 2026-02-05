@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { OrganizationSwitcher } from "./OrganizationSwitcher";
 import {
   HardHat,
   Calendar,
@@ -53,6 +54,9 @@ export function AppLayout({ children }: AppLayoutProps) {
             </div>
           </div>
         </div>
+
+        {/* Organization Switcher */}
+        <OrganizationSwitcher />
 
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-1">

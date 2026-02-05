@@ -1,0 +1,126 @@
+import { useState } from "react";
+import { useOrganization } from "@/hooks/useOrganization";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Building2, Plus, Users, Check } from "lucide-react";
+import { JoinOrganizationDialog } from "./JoinOrganizationDialog";
+import { CreateOrganizationDialog } from "./CreateOrganizationDialog";
+import { format } from "date-fns";
+
+export function MyOrganizations() {
+  const { allOrganizations, organizationId, switchOrganization, isLoading } = useOrganization();
+  const [joinOpen, setJoinOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="animate-pulse space-y-4">
+            <div className="h-4 bg-muted rounded w-1/4"></div>
+            <div className="h-16 bg-muted rounded"></div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Building2 className="w-5 h-5 text-primary" />
+            <CardTitle>My Organizations</CardTitle>
+          </div>
+          <CardDescription>
+            Organizations you belong to. Click to switch between them.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {allOrganizations.length === 0 ? (
+            <p className="text-muted-foreground text-sm">
+              You don't belong to any organizations yet.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {allOrganizations.map((membership) => {
+                const isActive = membership.organization_id === organizationId;
+                return (
+                  <div
+                    key={membership.organization_id}
+                    onClick={() => !isActive && switchOrganization(membership.organization_id)}
+                    className={`
+                      flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors
+                      ${isActive 
+                        ? "border-primary bg-primary/5" 
+                        : "border-border hover:bg-muted/50"
+                      }
+                    `}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`
+                        w-10 h-10 rounded-lg flex items-center justify-center
+                        ${isActive ? "bg-primary text-primary-foreground" : "bg-muted"}
+                      `}>
+                        <Building2 className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">
+                            {membership.organizations.name}
+                          </span>
+                          {isActive && (
+                            <Badge variant="secondary" className="text-xs">
+                              <Check className="w-3 h-3 mr-1" />
+                              Active
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Badge variant="outline" className="text-xs capitalize">
+                            {membership.role}
+                          </Badge>
+                          <span>·</span>
+                          <span>
+                            Joined {format(new Date(membership.created_at), "MMM d, yyyy")}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    {isActive && (
+                      <Check className="w-5 h-5 text-primary" />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="flex gap-2 pt-2">
+            <Button
+              variant="outline"
+              onClick={() => setJoinOpen(true)}
+              className="flex-1"
+            >
+              <Users className="w-4 h-4 mr-2" />
+              Join Organization
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setCreateOpen(true)}
+              className="flex-1"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Create Organization
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <JoinOrganizationDialog open={joinOpen} onOpenChange={setJoinOpen} />
+      <CreateOrganizationDialog open={createOpen} onOpenChange={setCreateOpen} />
+    </>
+  );
+}

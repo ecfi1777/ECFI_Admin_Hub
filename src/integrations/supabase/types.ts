@@ -907,6 +907,10 @@ export type Database = {
         Args: { p_organization_id: string }
         Returns: undefined
       }
+      user_has_organization_access: {
+        Args: { p_organization_id: string; p_user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
