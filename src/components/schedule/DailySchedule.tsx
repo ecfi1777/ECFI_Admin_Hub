@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useCrewsAll, type Crew } from "@/hooks/useReferenceData";
 import type { ScheduleEntry } from "@/types/schedule";
+import { SchedulePageSkeleton } from "@/components/ui/loading-screen";
 
 // Sort crews by display_order (set via drag-and-drop in Settings)
 function sortCrews(crews: Crew[]): Crew[] {
@@ -231,7 +232,7 @@ export function DailySchedule() {
 
       {/* Schedule Grid */}
       {isLoading ? (
-        <div className="text-muted-foreground text-center py-12">Loading schedule...</div>
+        <SchedulePageSkeleton />
       ) : (
         <div className="space-y-4">
           {displayedCrews.map((crew) => (

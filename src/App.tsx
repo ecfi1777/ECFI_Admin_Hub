@@ -1,11 +1,11 @@
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { ThemeProvider } from "@/hooks/useTheme";
 import { useAuth } from "@/hooks/useAuth";
 import { useOrganization, OrganizationProvider } from "@/hooks/useOrganization";
-import { useMemo } from "react";
+import { useMemo, memo } from "react";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import Auth from "./pages/Auth";
@@ -32,24 +32,35 @@ const queryClient = new QueryClient({
   },
 });
 
-// Unified route guard that handles all auth/org states in one render
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
+// Single unified auth check component - memoized to prevent re-renders
+const ProtectedRoute = memo(function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, initialized: authInitialized } = useAuth();
   const { hasOrganization, isLoading: orgLoading } = useOrganization();
 
-  // Single loading state check
-  const isLoading = !authInitialized || (user && orgLoading);
-
-  // Memoize the render decision to prevent unnecessary recalculations
+  // Compute render state once
   const renderState = useMemo(() => {
-    if (isLoading) return "loading";
+    // Auth not ready yet
+    if (!authInitialized) return "loading-auth";
+    
+    // No user - redirect to auth
     if (!user) return "redirect-auth";
+    
+    // User exists but org check still loading
+    if (orgLoading) return "loading-org";
+    
+    // User exists, org check complete, but no org
     if (!hasOrganization) return "redirect-onboarding";
+    
+    // All good
     return "render";
-  }, [isLoading, user, hasOrganization]);
+  }, [authInitialized, user, orgLoading, hasOrganization]);
 
-  if (renderState === "loading") {
-    return <LoadingScreen message="Loading your workspace..." />;
+  if (renderState === "loading-auth") {
+    return <LoadingScreen message="Initializing..." />;
+  }
+
+  if (renderState === "loading-org") {
+    return <LoadingScreen message="Loading workspace..." />;
   }
 
   if (renderState === "redirect-auth") {
@@ -61,20 +72,19 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   return <>{children}</>;
-}
+});
 
-function OnboardingRoute({ children }: { children: React.ReactNode }) {
+const OnboardingRoute = memo(function OnboardingRoute({ children }: { children: React.ReactNode }) {
   const { user, initialized: authInitialized } = useAuth();
   const { hasOrganization, isLoading: orgLoading } = useOrganization();
 
-  const isLoading = !authInitialized || (user && orgLoading);
-
   const renderState = useMemo(() => {
-    if (isLoading) return "loading";
+    if (!authInitialized) return "loading";
     if (!user) return "redirect-auth";
+    if (orgLoading) return "loading";
     if (hasOrganization) return "redirect-dashboard";
     return "render";
-  }, [isLoading, user, hasOrganization]);
+  }, [authInitialized, user, orgLoading, hasOrganization]);
 
   if (renderState === "loading") {
     return <LoadingScreen message="Checking your account..." />;
@@ -89,21 +99,23 @@ function OnboardingRoute({ children }: { children: React.ReactNode }) {
   }
 
   return <>{children}</>;
-}
+});
 
-function AuthRoute({ children }: { children: React.ReactNode }) {
+const AuthRoute = memo(function AuthRoute({ children }: { children: React.ReactNode }) {
   const { user, initialized } = useAuth();
 
+  // Show nothing during init to prevent flash
   if (!initialized) {
     return <LoadingScreen message="Initializing..." />;
   }
 
+  // User already logged in - redirect to dashboard
   if (user) {
     return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;
-}
+});
 
 const App = () => (
   <ErrorBoundary>
