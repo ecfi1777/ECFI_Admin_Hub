@@ -106,16 +106,19 @@ export default function Onboarding() {
         console.log("Default data seeded");
       }
 
-      // Step 5: Invalidate organization query and navigate
+      // Step 5: Invalidate organization query and wait for it to complete
       console.log("Step 5: Completing setup...");
       await queryClient.invalidateQueries({ queryKey: ["organization"] });
+      // Wait for the query to refetch before navigating
+      await queryClient.refetchQueries({ queryKey: ["organization", user.id] });
 
       toast({
         title: "Organization created!",
         description: `Welcome to ${companyName}. Your invite code is: ${generatedCode}`,
       });
 
-      navigate("/");
+      // Small delay to ensure state is updated before navigation
+      setTimeout(() => navigate("/"), 100);
     } catch (error: any) {
       console.error("Organization creation failed:", error);
       toast({
@@ -149,15 +152,23 @@ export default function Onboarding() {
     }
 
     setLoading(true);
+    console.log("Attempting to join with code:", inviteCode.trim());
+    
     try {
-      // Find organization by invite code
+      // Find organization by invite code (case-insensitive search)
+      const codeToSearch = inviteCode.trim();
+      console.log("Searching for invite code:", codeToSearch);
+      
       const { data: org, error: orgError } = await supabase
         .from("organizations")
-        .select("id, name")
-        .eq("invite_code", inviteCode.toUpperCase().trim())
+        .select("id, name, invite_code")
+        .ilike("invite_code", codeToSearch)
         .single();
 
+      console.log("Organization lookup result:", { org, orgError });
+
       if (orgError || !org) {
+        console.error("Invite code lookup failed:", orgError);
         throw new Error("Invalid invite code. Please check and try again.");
       }
 
@@ -184,15 +195,17 @@ export default function Onboarding() {
 
       if (membershipError) throw membershipError;
 
-      // Invalidate organization query
+      // Invalidate organization query and wait for refetch
       await queryClient.invalidateQueries({ queryKey: ["organization"] });
+      await queryClient.refetchQueries({ queryKey: ["organization", user.id] });
 
       toast({
         title: "Joined organization!",
         description: `Welcome to ${org.name}.`,
       });
 
-      navigate("/");
+      // Small delay to ensure state is updated before navigation
+      setTimeout(() => navigate("/"), 100);
     } catch (error: any) {
       toast({
         title: "Failed to join organization",

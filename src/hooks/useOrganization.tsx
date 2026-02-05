@@ -17,7 +17,7 @@ interface OrganizationMembership {
 export function useOrganization() {
   const { user } = useAuth();
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["organization", user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
@@ -40,6 +40,9 @@ export function useOrganization() {
       return data as unknown as OrganizationMembership;
     },
     enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000, // 5 minutes - prevents refetching on tab focus
+    refetchOnWindowFocus: false, // Prevent refetch when switching tabs
+    retry: false, // Don't retry on error (user might not have org yet)
   });
 
   return {
@@ -49,5 +52,6 @@ export function useOrganization() {
     isLoading,
     error,
     isOwner: data?.role === "owner",
+    refetch,
   };
 }
