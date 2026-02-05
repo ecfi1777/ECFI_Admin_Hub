@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -23,13 +23,22 @@ interface CreateOrganizationDialogProps {
 export function CreateOrganizationDialog({ open, onOpenChange }: CreateOrganizationDialogProps) {
   const [companyName, setCompanyName] = useState("");
   const [loading, setLoading] = useState(false);
+  const isSubmittingRef = useRef(false);
   const { user } = useAuth();
   const { refetch } = useOrganization();
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Prevent double-submission with ref (survives re-renders)
+    if (isSubmittingRef.current) {
+      console.log("Already submitting, ignoring duplicate click");
+      return;
+    }
+    
     if (!user || !companyName.trim()) return;
 
+    isSubmittingRef.current = true;
     setLoading(true);
     try {
       // Generate invite code
@@ -84,13 +93,23 @@ export function CreateOrganizationDialog({ open, onOpenChange }: CreateOrganizat
       onOpenChange(false);
     } catch (error: any) {
       toast.error(error.message);
+      isSubmittingRef.current = false;
     } finally {
       setLoading(false);
     }
   };
+  
+  // Reset ref when dialog closes
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen) {
+      isSubmittingRef.current = false;
+      setCompanyName("");
+    }
+    onOpenChange(newOpen);
+  };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <div className="flex items-center gap-2">

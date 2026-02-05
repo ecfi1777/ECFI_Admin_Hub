@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -15,12 +15,20 @@ export default function Onboarding() {
   const [companyName, setCompanyName] = useState("");
   const [inviteCode, setInviteCode] = useState("");
   const [loading, setLoading] = useState(false);
+  const isSubmittingRef = useRef(false);
   const navigate = useNavigate();
   const { user, initialized: authInitialized } = useAuth();
   const queryClient = useQueryClient();
 
   const handleCreateOrganization = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Prevent double-submission with ref (survives re-renders)
+    if (isSubmittingRef.current) {
+      console.log("Already submitting, ignoring duplicate click");
+      return;
+    }
+    
     if (!user) {
       toast.error("Please sign in to create an organization.");
       return;
@@ -31,6 +39,7 @@ export default function Onboarding() {
       return;
     }
 
+    isSubmittingRef.current = true;
     setLoading(true);
     console.log("Starting organization creation for user:", user.id);
     
@@ -102,6 +111,7 @@ export default function Onboarding() {
     } catch (error: any) {
       console.error("Organization creation failed:", error);
       toast.error(error.message || "An unexpected error occurred.");
+      isSubmittingRef.current = false;
     } finally {
       setLoading(false);
     }
