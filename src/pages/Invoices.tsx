@@ -27,6 +27,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileText, Check, Search, X } from "lucide-react";
 import { toast } from "sonner";
 import { ProjectDetailsSheet } from "@/components/projects/ProjectDetailsSheet";
+import { useOrganization } from "@/hooks/useOrganization";
 
 interface ScheduleEntry {
   id: string;
@@ -59,10 +60,12 @@ export default function Invoices() {
   const [isProjectSheetOpen, setIsProjectSheetOpen] = useState(false);
 
   const queryClient = useQueryClient();
+  const { organizationId } = useOrganization();
 
   const { data: pendingEntries = [], isLoading: loadingPending } = useQuery({
-    queryKey: ["invoice-pending"],
+    queryKey: ["invoice-pending", organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
       const { data, error } = await supabase
         .from("schedule_entries")
         .select(`
@@ -71,6 +74,7 @@ export default function Invoices() {
           phases(name),
           projects(id, lot_number, builders(name, code), locations(name))
         `)
+        .eq("organization_id", organizationId)
         .eq("to_be_invoiced", true)
         .eq("invoice_complete", false)
         .eq("deleted", false)
@@ -78,11 +82,13 @@ export default function Invoices() {
       if (error) throw error;
       return data as ScheduleEntry[];
     },
+    enabled: !!organizationId,
   });
 
   const { data: completedEntries = [], isLoading: loadingCompleted } = useQuery({
-    queryKey: ["invoice-completed"],
+    queryKey: ["invoice-completed", organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
       const { data, error } = await supabase
         .from("schedule_entries")
         .select(`
@@ -91,6 +97,7 @@ export default function Invoices() {
           phases(name),
           projects(id, lot_number, builders(name, code), locations(name))
         `)
+        .eq("organization_id", organizationId)
         .eq("invoice_complete", true)
         .eq("deleted", false)
         .order("scheduled_date", { ascending: false })
@@ -98,42 +105,51 @@ export default function Invoices() {
       if (error) throw error;
       return data as ScheduleEntry[];
     },
+    enabled: !!organizationId,
   });
 
   const { data: builders = [] } = useQuery({
-    queryKey: ["builders-active"],
+    queryKey: ["builders-active", organizationId],
     queryFn: async () => {
-      const { data, error } = await supabase.from("builders").select("id, name, code").eq("is_active", true).order("name");
+      if (!organizationId) return [];
+      const { data, error } = await supabase.from("builders").select("id, name, code").eq("organization_id", organizationId).eq("is_active", true).order("name");
       if (error) throw error;
       return data;
     },
+    enabled: !!organizationId,
   });
 
   const { data: crews = [] } = useQuery({
-    queryKey: ["crews-active"],
+    queryKey: ["crews-active", organizationId],
     queryFn: async () => {
-      const { data, error } = await supabase.from("crews").select("id, name").eq("is_active", true).order("name");
+      if (!organizationId) return [];
+      const { data, error } = await supabase.from("crews").select("id, name").eq("organization_id", organizationId).eq("is_active", true).order("name");
       if (error) throw error;
       return data;
     },
+    enabled: !!organizationId,
   });
 
   const { data: locations = [] } = useQuery({
-    queryKey: ["locations-active"],
+    queryKey: ["locations-active", organizationId],
     queryFn: async () => {
-      const { data, error } = await supabase.from("locations").select("id, name").eq("is_active", true).order("name");
+      if (!organizationId) return [];
+      const { data, error } = await supabase.from("locations").select("id, name").eq("organization_id", organizationId).eq("is_active", true).order("name");
       if (error) throw error;
       return data;
     },
+    enabled: !!organizationId,
   });
 
   const { data: phases = [] } = useQuery({
-    queryKey: ["phases-active"],
+    queryKey: ["phases-active", organizationId],
     queryFn: async () => {
-      const { data, error } = await supabase.from("phases").select("id, name").eq("is_active", true).order("display_order");
+      if (!organizationId) return [];
+      const { data, error } = await supabase.from("phases").select("id, name").eq("organization_id", organizationId).eq("is_active", true).order("display_order");
       if (error) throw error;
       return data;
     },
+    enabled: !!organizationId,
   });
 
   const toggleCompleteMutation = useMutation({

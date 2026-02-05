@@ -22,6 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { InlineAddSelect } from "./InlineAddSelect";
+import { useOrganization } from "@/hooks/useOrganization";
 
 interface ScheduleEntry {
   id: string;
@@ -65,6 +66,7 @@ interface EditEntryDialogProps {
 export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "general" }: EditEntryDialogProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { organizationId } = useOrganization();
   
   // Form state
   const [formData, setFormData] = useState({
@@ -141,66 +143,80 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
 
   // Fetch reference data
   const { data: phases = [] } = useQuery({
-    queryKey: ["phases-active"],
+    queryKey: ["phases-active", organizationId],
     queryFn: async () => {
-      const { data, error } = await supabase.from("phases").select("id, name").eq("is_active", true).order("display_order");
+      if (!organizationId) return [];
+      const { data, error } = await supabase.from("phases").select("id, name").eq("organization_id", organizationId).eq("is_active", true).order("display_order");
       if (error) throw error;
       return data;
     },
+    enabled: !!organizationId,
   });
 
   const { data: suppliers = [] } = useQuery({
-    queryKey: ["suppliers-active"],
+    queryKey: ["suppliers-active", organizationId],
     queryFn: async () => {
-      const { data, error } = await supabase.from("suppliers").select("id, name, code").eq("is_active", true).order("name");
+      if (!organizationId) return [];
+      const { data, error } = await supabase.from("suppliers").select("id, name, code").eq("organization_id", organizationId).eq("is_active", true).order("name");
       if (error) throw error;
       return data;
     },
+    enabled: !!organizationId,
   });
 
   const { data: pumpVendors = [] } = useQuery({
-    queryKey: ["pump-vendors-active"],
+    queryKey: ["pump-vendors-active", organizationId],
     queryFn: async () => {
-      const { data, error } = await supabase.from("pump_vendors").select("id, name, code").eq("is_active", true).order("name");
+      if (!organizationId) return [];
+      const { data, error } = await supabase.from("pump_vendors").select("id, name, code").eq("organization_id", organizationId).eq("is_active", true).order("name");
       if (error) throw error;
       return data;
     },
+    enabled: !!organizationId,
   });
 
   const { data: inspectionTypes = [] } = useQuery({
-    queryKey: ["inspection-types-active"],
+    queryKey: ["inspection-types-active", organizationId],
     queryFn: async () => {
-      const { data, error } = await supabase.from("inspection_types").select("id, name").eq("is_active", true).order("name");
+      if (!organizationId) return [];
+      const { data, error } = await supabase.from("inspection_types").select("id, name").eq("organization_id", organizationId).eq("is_active", true).order("name");
       if (error) throw error;
       return data;
     },
+    enabled: !!organizationId,
   });
 
   const { data: inspectors = [] } = useQuery({
-    queryKey: ["inspectors-active"],
+    queryKey: ["inspectors-active", organizationId],
     queryFn: async () => {
-      const { data, error } = await supabase.from("inspectors").select("id, name").eq("is_active", true).order("name");
+      if (!organizationId) return [];
+      const { data, error } = await supabase.from("inspectors").select("id, name").eq("organization_id", organizationId).eq("is_active", true).order("name");
       if (error) throw error;
       return data;
     },
+    enabled: !!organizationId,
   });
 
   const { data: crews = [] } = useQuery({
-    queryKey: ["crews-all"],
+    queryKey: ["crews-all", organizationId],
     queryFn: async () => {
-      const { data, error } = await supabase.from("crews").select("id, name, is_active").order("display_order");
+      if (!organizationId) return [];
+      const { data, error } = await supabase.from("crews").select("id, name, is_active").eq("organization_id", organizationId).order("display_order");
       if (error) throw error;
       return data as { id: string; name: string; is_active: boolean }[];
     },
+    enabled: !!organizationId,
   });
 
   const { data: concreteMixes = [] } = useQuery({
-    queryKey: ["concrete-mixes-active"],
+    queryKey: ["concrete-mixes-active", organizationId],
     queryFn: async () => {
-      const { data, error } = await supabase.from("concrete_mixes").select("id, name").eq("is_active", true).order("display_order");
+      if (!organizationId) return [];
+      const { data, error } = await supabase.from("concrete_mixes").select("id, name").eq("organization_id", organizationId).eq("is_active", true).order("display_order");
       if (error) throw error;
       return data;
     },
+    enabled: !!organizationId,
   });
 
   // Filter to show active crews + the currently-assigned crew (even if inactive)

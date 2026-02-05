@@ -30,6 +30,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
 import { Calendar, Users, Truck, Building, ClipboardCheck, Pencil, FileText } from "lucide-react";
+import { useOrganization } from "@/hooks/useOrganization";
 
 interface ScheduleEntry {
   id: string;
@@ -73,6 +74,7 @@ export function ProjectScheduleHistory({ projectId }: ProjectScheduleHistoryProp
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { organizationId } = useOrganization();
   const [editingEntry, setEditingEntry] = useState<ScheduleEntry | null>(null);
   const [formData, setFormData] = useState({
     supplier_id: "",
@@ -144,39 +146,47 @@ export function ProjectScheduleHistory({ projectId }: ProjectScheduleHistoryProp
 
   // Fetch reference data for edit modal
   const { data: suppliers = [] } = useQuery({
-    queryKey: ["suppliers-active"],
+    queryKey: ["suppliers-active", organizationId],
     queryFn: async () => {
-      const { data, error } = await supabase.from("suppliers").select("id, name, code").eq("is_active", true).order("name");
+      if (!organizationId) return [];
+      const { data, error } = await supabase.from("suppliers").select("id, name, code").eq("organization_id", organizationId).eq("is_active", true).order("name");
       if (error) throw error;
       return data;
     },
+    enabled: !!organizationId,
   });
 
   const { data: pumpVendors = [] } = useQuery({
-    queryKey: ["pump-vendors-active"],
+    queryKey: ["pump-vendors-active", organizationId],
     queryFn: async () => {
-      const { data, error } = await supabase.from("pump_vendors").select("id, name, code").eq("is_active", true).order("name");
+      if (!organizationId) return [];
+      const { data, error } = await supabase.from("pump_vendors").select("id, name, code").eq("organization_id", organizationId).eq("is_active", true).order("name");
       if (error) throw error;
       return data;
     },
+    enabled: !!organizationId,
   });
 
   const { data: inspectionTypes = [] } = useQuery({
-    queryKey: ["inspection-types-active"],
+    queryKey: ["inspection-types-active", organizationId],
     queryFn: async () => {
-      const { data, error } = await supabase.from("inspection_types").select("id, name").eq("is_active", true).order("name");
+      if (!organizationId) return [];
+      const { data, error } = await supabase.from("inspection_types").select("id, name").eq("organization_id", organizationId).eq("is_active", true).order("name");
       if (error) throw error;
       return data;
     },
+    enabled: !!organizationId,
   });
 
   const { data: inspectors = [] } = useQuery({
-    queryKey: ["inspectors-active"],
+    queryKey: ["inspectors-active", organizationId],
     queryFn: async () => {
-      const { data, error } = await supabase.from("inspectors").select("id, name").eq("is_active", true).order("name");
+      if (!organizationId) return [];
+      const { data, error } = await supabase.from("inspectors").select("id, name").eq("organization_id", organizationId).eq("is_active", true).order("name");
       if (error) throw error;
       return data;
     },
+    enabled: !!organizationId,
   });
 
   const updateMutation = useMutation({

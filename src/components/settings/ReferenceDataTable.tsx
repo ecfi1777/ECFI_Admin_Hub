@@ -54,9 +54,10 @@ export function ReferenceDataTable({ tableName, displayName, hasCode, hasOrder }
   const { organizationId } = useOrganization();
 
   const { data: items = [], isLoading } = useQuery({
-    queryKey: [tableName],
+    queryKey: [tableName, organizationId],
     queryFn: async () => {
-      const query = supabase.from(tableName).select("*");
+      if (!organizationId) return [];
+      const query = supabase.from(tableName).select("*").eq("organization_id", organizationId);
       
       if (hasOrder) {
         query.order("display_order", { ascending: true });
@@ -68,6 +69,7 @@ export function ReferenceDataTable({ tableName, displayName, hasCode, hasOrder }
       if (error) throw error;
       return data as ReferenceItem[];
     },
+    enabled: !!organizationId,
   });
 
   const createMutation = useMutation({

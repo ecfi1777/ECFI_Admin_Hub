@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/table";
 import { AlertTriangle, TrendingDown, TrendingUp } from "lucide-react";
 import { ProjectDetailsSheet } from "@/components/projects/ProjectDetailsSheet";
+import { useOrganization } from "@/hooks/useOrganization";
 
 interface ScheduleEntry {
   id: string;
@@ -46,10 +47,12 @@ interface SupplierSummary {
 export default function Discrepancies() {
   const navigate = useNavigate();
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const { organizationId } = useOrganization();
 
   const { data: discrepancyEntries = [], isLoading } = useQuery({
-    queryKey: ["discrepancies"],
+    queryKey: ["discrepancies", organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
       const { data, error } = await supabase
         .from("schedule_entries")
         .select(`
@@ -59,6 +62,7 @@ export default function Discrepancies() {
           suppliers(name, code),
           projects(id, lot_number, builders(name, code), locations(name))
         `)
+        .eq("organization_id", organizationId)
         .eq("deleted", false)
         .not("crew_yards_poured", "is", null)
         .not("ready_mix_yards_billed", "is", null)
@@ -70,11 +74,13 @@ export default function Discrepancies() {
         (e) => e.crew_yards_poured !== e.ready_mix_yards_billed
       );
     },
+    enabled: !!organizationId,
   });
 
   const { data: allEntries = [] } = useQuery({
-    queryKey: ["all-entries-for-summary"],
+    queryKey: ["all-entries-for-summary", organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
       const { data, error } = await supabase
         .from("schedule_entries")
         .select(`
@@ -82,10 +88,12 @@ export default function Discrepancies() {
           crews(name),
           suppliers(name)
         `)
+        .eq("organization_id", organizationId)
         .eq("deleted", false);
       if (error) throw error;
       return data;
     },
+    enabled: !!organizationId,
   });
 
   // Calculate crew totals
