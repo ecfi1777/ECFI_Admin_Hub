@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { HardHat, Building2, Users } from "lucide-react";
+import { HardHat, Building2, Users, Loader2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 export default function Onboarding() {
@@ -17,35 +17,64 @@ export default function Onboarding() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const queryClient = useQueryClient();
 
   const handleCreateOrganization = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user) {
+      toast({
+        title: "Not authenticated",
+        description: "Please sign in to create an organization.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!companyName.trim()) {
+      toast({
+        title: "Company name required",
+        description: "Please enter a company name.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setLoading(true);
+    console.log("Starting organization creation for user:", user.id);
+    
     try {
-      // Generate invite code
+      // Step 1: Generate invite code
+      console.log("Step 1: Generating invite code...");
       const { data: generatedCode, error: codeError } = await supabase
         .rpc("generate_invite_code");
 
-      if (codeError) throw codeError;
+      if (codeError) {
+        console.error("Failed to generate invite code:", codeError);
+        throw new Error(`Failed to generate invite code: ${codeError.message}`);
+      }
+      console.log("Invite code generated:", generatedCode);
 
-      // Create organization
+      // Step 2: Create organization
+      console.log("Step 2: Creating organization...");
       const { data: org, error: orgError } = await supabase
         .from("organizations")
         .insert({
-          name: companyName,
+          name: companyName.trim(),
           invite_code: generatedCode,
           created_by: user.id,
         })
         .select()
         .single();
 
-      if (orgError) throw orgError;
+      if (orgError) {
+        console.error("Failed to create organization:", orgError);
+        throw new Error(`Failed to create organization: ${orgError.message}`);
+      }
+      console.log("Organization created:", org.id);
 
-      // Create membership as owner
+      // Step 3: Create membership as owner
+      console.log("Step 3: Creating membership...");
       const { error: membershipError } = await supabase
         .from("organization_memberships")
         .insert({
@@ -54,15 +83,31 @@ export default function Onboarding() {
           role: "owner",
         });
 
-      if (membershipError) throw membershipError;
+      if (membershipError) {
+        console.error("Failed to create membership:", membershipError);
+        throw new Error(`Failed to create membership: ${membershipError.message}`);
+      }
+      console.log("Membership created");
 
-      // Seed default reference data
+      // Step 4: Seed default reference data
+      console.log("Step 4: Seeding default data...");
       const { error: seedError } = await supabase
         .rpc("seed_organization_defaults", { p_organization_id: org.id });
 
-      if (seedError) throw seedError;
+      if (seedError) {
+        console.error("Failed to seed defaults:", seedError);
+        // Don't throw here - the org was created successfully
+        toast({
+          title: "Warning",
+          description: "Organization created but some default data may be missing.",
+          variant: "destructive",
+        });
+      } else {
+        console.log("Default data seeded");
+      }
 
-      // Invalidate organization query
+      // Step 5: Invalidate organization query and navigate
+      console.log("Step 5: Completing setup...");
       await queryClient.invalidateQueries({ queryKey: ["organization"] });
 
       toast({
@@ -72,9 +117,10 @@ export default function Onboarding() {
 
       navigate("/");
     } catch (error: any) {
+      console.error("Organization creation failed:", error);
       toast({
         title: "Failed to create organization",
-        description: error.message,
+        description: error.message || "An unexpected error occurred.",
         variant: "destructive",
       });
     } finally {
@@ -84,7 +130,23 @@ export default function Onboarding() {
 
   const handleJoinOrganization = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user) {
+      toast({
+        title: "Not authenticated",
+        description: "Please sign in to join an organization.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!inviteCode.trim()) {
+      toast({
+        title: "Invite code required",
+        description: "Please enter an invite code.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setLoading(true);
     try {
@@ -142,6 +204,18 @@ export default function Onboarding() {
     }
   };
 
+  // Show loading state while auth is loading
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
+          <p className="text-slate-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
       <Card className="w-full max-w-md border-slate-700 bg-slate-800/50 backdrop-blur">
@@ -186,6 +260,7 @@ export default function Onboarding() {
                     value={companyName}
                     onChange={(e) => setCompanyName(e.target.value)}
                     required
+                    disabled={loading}
                     className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
                   />
                 </div>
@@ -196,9 +271,16 @@ export default function Onboarding() {
                 <Button 
                   type="submit" 
                   className="w-full bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold"
-                  disabled={loading}
+                  disabled={loading || !companyName.trim()}
                 >
-                  {loading ? "Creating..." : "Create Organization"}
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    "Create Organization"
+                  )}
                 </Button>
               </form>
             </TabsContent>
@@ -214,6 +296,7 @@ export default function Onboarding() {
                     value={inviteCode}
                     onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
                     required
+                    disabled={loading}
                     maxLength={8}
                     className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400 uppercase"
                   />
@@ -224,9 +307,16 @@ export default function Onboarding() {
                 <Button 
                   type="submit" 
                   className="w-full bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold"
-                  disabled={loading}
+                  disabled={loading || !inviteCode.trim()}
                 >
-                  {loading ? "Joining..." : "Join Organization"}
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Joining...
+                    </>
+                  ) : (
+                    "Join Organization"
+                  )}
                 </Button>
               </form>
             </TabsContent>
