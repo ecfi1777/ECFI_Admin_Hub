@@ -37,6 +37,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
   const { user, initialized: authInitialized } = useAuth();
   const queryClient = useQueryClient();
   const hasInitializedActiveOrg = useRef(false);
+  const previousUserId = useRef<string | null>(null);
   
   // Get active org from localStorage, with fallback to first org
   const [activeOrgId, setActiveOrgIdState] = useState<string | null>(() => {
@@ -46,8 +47,11 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
     return null;
   });
 
+  // Only enable query when auth is fully ready AND we have a user
+  const shouldFetchOrgs = authInitialized && !!user?.id;
+
   // Fetch ALL organizations the user belongs to
-  const { data: allMemberships, isLoading: queryLoading, error, refetch } = useQuery({
+  const { data: allMemberships, isLoading: queryLoading, error, refetch, isFetched } = useQuery({
     queryKey: ["organizations", user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
@@ -74,7 +78,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
       
       return (data || []) as unknown as OrganizationMembership[];
     },
-    enabled: !!user?.id && authInitialized,
+    enabled: shouldFetchOrgs,
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
     retry: false,
@@ -89,7 +93,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
   // Sync activeOrgId with localStorage and ensure it's valid - only run once per data load
   useEffect(() => {
     if (!allMemberships || allMemberships.length === 0) return;
-    if (hasInitializedActiveOrg.current) return;
+    if (hasInitializedActiveOrg.current && previousUserId.current === user?.id) return;
     
     const validOrg = allMemberships.find(m => m.organization_id === activeOrgId);
     if (!validOrg) {
@@ -99,11 +103,14 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
       localStorage.setItem(ACTIVE_ORG_KEY, firstOrgId);
     }
     hasInitializedActiveOrg.current = true;
-  }, [allMemberships, activeOrgId]);
+    previousUserId.current = user?.id ?? null;
+  }, [allMemberships, activeOrgId, user?.id]);
 
   // Reset initialization flag when user changes
   useEffect(() => {
-    hasInitializedActiveOrg.current = false;
+    if (user?.id !== previousUserId.current) {
+      hasInitializedActiveOrg.current = false;
+    }
   }, [user?.id]);
 
   // Switch organization - updates state and invalidates queries
@@ -115,8 +122,14 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
     queryClient.invalidateQueries();
   }, [queryClient, activeOrgId]);
 
-  // Combined loading state - loading if auth not initialized OR if query is loading
-  const isLoading = !authInitialized || (!!user?.id && queryLoading);
+  // Simplified loading state:
+  // - If auth isn't initialized, we're loading
+  // - If we have a user and haven't fetched orgs yet, we're loading
+  const isLoading = useMemo(() => {
+    if (!authInitialized) return true;
+    if (user && !isFetched) return true;
+    return false;
+  }, [authInitialized, user, isFetched]);
 
   // Memoize the context value to prevent unnecessary re-renders
   const value = useMemo<OrganizationContextValue>(() => ({
