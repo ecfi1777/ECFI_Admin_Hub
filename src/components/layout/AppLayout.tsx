@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
+import { useOrganization } from "@/hooks/useOrganization";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { OrganizationSwitcher } from "./OrganizationSwitcher";
@@ -36,6 +37,7 @@ const navItems = [
 export function AppLayout({ children }: AppLayoutProps) {
   const { user, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { organizationId } = useOrganization();
   const location = useLocation();
 
   return (
@@ -119,8 +121,8 @@ export function AppLayout({ children }: AppLayoutProps) {
         </div>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-auto">
+      {/* Main Content - key forces remount when organization changes */}
+      <main key={organizationId || "loading"} className="flex-1 overflow-auto">
         {children}
       </main>
     </div>
