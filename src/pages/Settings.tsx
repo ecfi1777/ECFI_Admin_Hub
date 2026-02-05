@@ -36,7 +36,7 @@ export default function Settings() {
               <TabsTrigger
                 key={tab.value}
                 value={tab.value}
-                className="data-[state=active]:bg-amber-500 data-[state=active]:text-slate-900 text-muted-foreground"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-muted-foreground"
               >
                 {tab.label}
               </TabsTrigger>

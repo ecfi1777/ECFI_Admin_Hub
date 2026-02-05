@@ -24,7 +24,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil } from "lucide-react";
 
-type TableName = "crews" | "builders" | "locations" | "phases" | "project_statuses" | "suppliers" | "pump_vendors" | "inspection_types" | "inspectors";
+type TableName = "crews" | "builders" | "locations" | "phases" | "project_statuses" | "suppliers" | "pump_vendors" | "inspection_types" | "inspectors" | "concrete_mixes";
 
 interface ReferenceDataTableProps {
   tableName: TableName;
@@ -149,59 +149,56 @@ export function ReferenceDataTable({ tableName, displayName, hasCode, hasOrder }
   };
 
   return (
-    <Card className="bg-slate-800 border-slate-700">
+    <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-white">{displayName}</CardTitle>
+        <CardTitle className="text-foreground">{displayName}</CardTitle>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button 
               onClick={() => openDialog()} 
-              className="bg-amber-500 hover:bg-amber-600 text-slate-900"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
             >
               <Plus className="w-4 h-4 mr-2" />
               Add {displayName.slice(0, -1)}
             </Button>
           </DialogTrigger>
-          <DialogContent className="bg-slate-800 border-slate-700">
+          <DialogContent>
             <DialogHeader>
-              <DialogTitle className="text-white">
+              <DialogTitle>
                 {editingItem ? "Edit" : "Add"} {displayName.slice(0, -1)}
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label className="text-slate-300">Name</Label>
+                <Label>Name</Label>
                 <Input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
-                  className="bg-slate-700 border-slate-600 text-white"
                 />
               </div>
               {hasCode && (
                 <div className="space-y-2">
-                  <Label className="text-slate-300">Code (optional)</Label>
+                  <Label>Code (optional)</Label>
                   <Input
                     value={code}
                     onChange={(e) => setCode(e.target.value)}
-                    className="bg-slate-700 border-slate-600 text-white"
                   />
                 </div>
               )}
               {hasOrder && (
                 <div className="space-y-2">
-                  <Label className="text-slate-300">Display Order</Label>
+                  <Label>Display Order</Label>
                   <Input
                     type="number"
                     value={displayOrder}
                     onChange={(e) => setDisplayOrder(parseInt(e.target.value) || 0)}
-                    className="bg-slate-700 border-slate-600 text-white"
                   />
                 </div>
               )}
               <Button 
                 type="submit" 
-                className="w-full bg-amber-500 hover:bg-amber-600 text-slate-900"
+                className="w-full"
                 disabled={createMutation.isPending || updateMutation.isPending}
               >
                 {editingItem ? "Update" : "Create"}
@@ -212,29 +209,29 @@ export function ReferenceDataTable({ tableName, displayName, hasCode, hasOrder }
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="text-slate-400 text-center py-8">Loading...</div>
+          <div className="text-muted-foreground text-center py-8">Loading...</div>
         ) : items.length === 0 ? (
-          <div className="text-slate-400 text-center py-8">No items yet</div>
+          <div className="text-muted-foreground text-center py-8">No items yet</div>
         ) : (
           <Table>
             <TableHeader>
-              <TableRow className="border-slate-700 hover:bg-transparent">
-                <TableHead className="text-slate-400">Name</TableHead>
-                {hasCode && <TableHead className="text-slate-400">Code</TableHead>}
-                {hasOrder && <TableHead className="text-slate-400">Order</TableHead>}
-                <TableHead className="text-slate-400">Active</TableHead>
-                <TableHead className="text-slate-400 w-20">Edit</TableHead>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="text-muted-foreground">Name</TableHead>
+                {hasCode && <TableHead className="text-muted-foreground">Code</TableHead>}
+                {hasOrder && <TableHead className="text-muted-foreground">Order</TableHead>}
+                <TableHead className="text-muted-foreground">Active</TableHead>
+                <TableHead className="text-muted-foreground w-20">Edit</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {items.map((item) => (
-                <TableRow key={item.id} className="border-slate-700">
-                  <TableCell className="text-white font-medium">{item.name}</TableCell>
+                <TableRow key={item.id}>
+                  <TableCell className="text-foreground font-medium">{item.name}</TableCell>
                   {hasCode && (
-                    <TableCell className="text-slate-400">{item.code || "-"}</TableCell>
+                    <TableCell className="text-muted-foreground">{item.code || "-"}</TableCell>
                   )}
                   {hasOrder && (
-                    <TableCell className="text-slate-400">{item.display_order}</TableCell>
+                    <TableCell className="text-muted-foreground">{item.display_order}</TableCell>
                   )}
                   <TableCell>
                     <Switch
@@ -249,7 +246,7 @@ export function ReferenceDataTable({ tableName, displayName, hasCode, hasOrder }
                       variant="ghost"
                       size="icon"
                       onClick={() => openDialog(item)}
-                      className="text-slate-400 hover:text-white"
+                      className="text-muted-foreground hover:text-foreground"
                     >
                       <Pencil className="w-4 h-4" />
                     </Button>

@@ -190,17 +190,17 @@ export default function Projects() {
   const getStatusColor = (status: string | undefined) => {
     switch (status) {
       case "Upcoming":
-        return "bg-blue-500/20 text-blue-400 border-blue-500/30";
+        return "bg-blue-500/20 text-blue-600 dark:text-blue-400 border-blue-500/30";
       case "Ready to Start":
-        return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30";
+        return "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border-yellow-500/30";
       case "In Progress":
-        return "bg-green-500/20 text-green-400 border-green-500/30";
+        return "bg-green-500/20 text-green-600 dark:text-green-400 border-green-500/30";
       case "Ready to Invoice":
-        return "bg-amber-500/20 text-amber-400 border-amber-500/30";
+        return "bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30";
       case "Invoice Complete - Archive":
-        return "bg-slate-500/20 text-slate-400 border-slate-500/30";
+        return "bg-muted text-muted-foreground border-border";
       default:
-        return "bg-slate-500/20 text-slate-400 border-slate-500/30";
+        return "bg-muted text-muted-foreground border-border";
     }
   };
 
@@ -219,8 +219,8 @@ export default function Projects() {
       <div className="p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-white">Projects</h1>
-            <p className="text-slate-400">Manage all your jobs and projects</p>
+            <h1 className="text-2xl font-bold text-foreground">Projects</h1>
+            <p className="text-muted-foreground">Manage all your jobs and projects</p>
           </div>
           <AddProjectDialog
             builders={builders}
@@ -230,62 +230,50 @@ export default function Projects() {
         </div>
 
         {/* Filters */}
-        <Card className="bg-slate-800 border-slate-700 mb-6">
+        <Card className="mb-6">
           <CardContent className="p-4">
             <div className="flex flex-wrap gap-4 items-center">
               <div className="flex-1 min-w-[200px]">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
                     placeholder="Search projects..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 bg-slate-700 border-slate-600 text-white"
+                    className="pl-10"
                   />
                 </div>
               </div>
               <Select value={filterBuilder} onValueChange={setFilterBuilder}>
-                <SelectTrigger className="w-40 bg-slate-700 border-slate-600 text-white">
+                <SelectTrigger className="w-40">
                   <SelectValue placeholder="All Builders" />
                 </SelectTrigger>
-                <SelectContent className="bg-slate-700 border-slate-600">
-                  <SelectItem value="all" className="text-white">
-                    All Builders
-                  </SelectItem>
+                <SelectContent>
+                  <SelectItem value="all">All Builders</SelectItem>
                   {builders.map((b) => (
-                    <SelectItem key={b.id} value={b.id} className="text-white">
-                      {b.name}
-                    </SelectItem>
+                    <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               <Select value={filterLocation} onValueChange={setFilterLocation}>
-                <SelectTrigger className="w-44 bg-slate-700 border-slate-600 text-white">
+                <SelectTrigger className="w-44">
                   <SelectValue placeholder="All Locations" />
                 </SelectTrigger>
-                <SelectContent className="bg-slate-700 border-slate-600">
-                  <SelectItem value="all" className="text-white">
-                    All Locations
-                  </SelectItem>
+                <SelectContent>
+                  <SelectItem value="all">All Locations</SelectItem>
                   {locations.map((l) => (
-                    <SelectItem key={l.id} value={l.id} className="text-white">
-                      {l.name}
-                    </SelectItem>
+                    <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="w-48 bg-slate-700 border-slate-600 text-white">
+                <SelectTrigger className="w-48">
                   <SelectValue placeholder="All Statuses" />
                 </SelectTrigger>
-                <SelectContent className="bg-slate-700 border-slate-600">
-                  <SelectItem value="all" className="text-white">
-                    All Statuses
-                  </SelectItem>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
                   {statuses.map((s) => (
-                    <SelectItem key={s.id} value={s.id} className="text-white">
-                      {s.name}
-                    </SelectItem>
+                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -294,7 +282,7 @@ export default function Projects() {
                   variant="ghost"
                   size="sm"
                   onClick={clearAllFilters}
-                  className="text-slate-400 hover:text-white"
+                  className="text-muted-foreground hover:text-foreground"
                 >
                   <X className="w-4 h-4 mr-1" />
                   Clear Filters
@@ -305,38 +293,38 @@ export default function Projects() {
         </Card>
 
         {/* Projects Table */}
-        <Card className="bg-slate-800 border-slate-700">
+        <Card>
           <CardContent className="p-0">
             {isLoading ? (
-              <div className="text-slate-400 text-center py-12">Loading projects...</div>
+              <div className="text-muted-foreground text-center py-12">Loading projects...</div>
             ) : filteredProjects.length === 0 ? (
-              <div className="text-slate-400 text-center py-12">No projects found</div>
+              <div className="text-muted-foreground text-center py-12">No projects found</div>
             ) : (
               <Table>
                 <TableHeader>
-                  <TableRow className="border-slate-700 hover:bg-transparent">
-                    <TableHead className="text-slate-400">Builder</TableHead>
-                    <TableHead className="text-slate-400">Location</TableHead>
-                    <TableHead className="text-slate-400">Lot #</TableHead>
-                    <TableHead className="text-slate-400">Status</TableHead>
-                    <TableHead className="text-slate-400">Created</TableHead>
-                    <TableHead className="text-slate-400 w-16 text-center">Docs</TableHead>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="text-muted-foreground">Builder</TableHead>
+                    <TableHead className="text-muted-foreground">Location</TableHead>
+                    <TableHead className="text-muted-foreground">Lot #</TableHead>
+                    <TableHead className="text-muted-foreground">Status</TableHead>
+                    <TableHead className="text-muted-foreground">Created</TableHead>
+                    <TableHead className="text-muted-foreground w-16 text-center">Docs</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredProjects.map((project) => (
                     <TableRow
                       key={project.id}
-                      className="border-slate-700 hover:bg-slate-700/50 cursor-pointer"
+                      className="cursor-pointer"
                       onClick={() => handleRowClick(project.id)}
                     >
-                      <TableCell className="text-white font-medium">
+                      <TableCell className="text-foreground font-medium">
                         {project.builders?.code || project.builders?.name || "-"}
                       </TableCell>
-                      <TableCell className="text-slate-300">
+                      <TableCell className="text-muted-foreground">
                         {project.locations?.name || "-"}
                       </TableCell>
-                      <TableCell className="text-amber-500 font-medium">
+                      <TableCell className="text-primary font-medium">
                         {project.lot_number}
                       </TableCell>
                       <TableCell>
@@ -347,7 +335,7 @@ export default function Projects() {
                           {project.project_statuses?.name || "No Status"}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-slate-400">
+                      <TableCell className="text-muted-foreground">
                         {format(new Date(project.created_at), "M/d/yyyy")}
                       </TableCell>
                       <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
@@ -357,17 +345,17 @@ export default function Projects() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-8 w-8 p-0 hover:bg-slate-700"
+                                className="h-8 w-8 p-0"
                               >
-                                <Paperclip className="w-4 h-4 text-amber-500" />
+                                <Paperclip className="w-4 h-4 text-primary" />
                               </Button>
                             </PopoverTrigger>
                             <PopoverContent
-                              className="w-64 bg-slate-800 border-slate-700 p-3"
+                              className="w-64 p-3"
                               align="end"
                             >
                               <div className="space-y-2">
-                                <h4 className="font-medium text-white text-sm">
+                                <h4 className="font-medium text-foreground text-sm">
                                   Attached Documents ({documentsByProject[project.id].length})
                                 </h4>
                                 <div className="space-y-1 max-h-48 overflow-y-auto">
@@ -375,11 +363,11 @@ export default function Projects() {
                                     <button
                                       key={doc.id}
                                       onClick={() => openDocument(doc.file_path)}
-                                      className="flex items-center gap-2 text-sm text-slate-300 py-1 w-full hover:text-amber-500 transition-colors text-left group"
+                                      className="flex items-center gap-2 text-sm text-muted-foreground py-1 w-full hover:text-primary transition-colors text-left group"
                                     >
-                                      <FileText className="w-3 h-3 text-slate-400 flex-shrink-0 group-hover:text-amber-500" />
+                                      <FileText className="w-3 h-3 flex-shrink-0 group-hover:text-primary" />
                                       <span className="truncate flex-1">{doc.file_name}</span>
-                                      <ExternalLink className="w-3 h-3 text-slate-500 flex-shrink-0 opacity-0 group-hover:opacity-100" />
+                                      <ExternalLink className="w-3 h-3 flex-shrink-0 opacity-0 group-hover:opacity-100" />
                                     </button>
                                   ))}
                                 </div>

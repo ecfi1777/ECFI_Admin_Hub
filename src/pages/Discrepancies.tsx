@@ -112,36 +112,36 @@ export default function Discrepancies() {
     <AppLayout>
       <div className="p-6">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-white">Yards Discrepancies</h1>
-          <p className="text-slate-400">Track differences between crew-reported and supplier-billed yards</p>
+          <h1 className="text-2xl font-bold text-foreground">Yards Discrepancies</h1>
+          <p className="text-muted-foreground">Track differences between crew-reported and supplier-billed yards</p>
         </div>
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <Card className="bg-slate-800 border-slate-700">
+          <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-slate-400">Total Crew Yards</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Crew Yards</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-white">{totalCrewYards.toFixed(1)}</div>
+              <div className="text-2xl font-bold text-foreground">{totalCrewYards.toFixed(1)}</div>
             </CardContent>
           </Card>
 
-          <Card className="bg-slate-800 border-slate-700">
+          <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-slate-400">Total Supplier Yards</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Supplier Yards</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-white">{totalSupplierYards.toFixed(1)}</div>
+              <div className="text-2xl font-bold text-foreground">{totalSupplierYards.toFixed(1)}</div>
             </CardContent>
           </Card>
 
-          <Card className={`border ${overallDiscrepancy !== 0 ? "bg-red-500/10 border-red-500/30" : "bg-green-500/10 border-green-500/30"}`}>
+          <Card className={`${overallDiscrepancy !== 0 ? "bg-red-500/10 border-red-500/30" : "bg-green-500/10 border-green-500/30"}`}>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-slate-400">Overall Discrepancy</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Overall Discrepancy</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className={`text-2xl font-bold flex items-center gap-2 ${overallDiscrepancy !== 0 ? "text-red-400" : "text-green-400"}`}>
+              <div className={`text-2xl font-bold flex items-center gap-2 ${overallDiscrepancy !== 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}>
                 {overallDiscrepancy > 0 ? <TrendingUp className="w-5 h-5" /> : overallDiscrepancy < 0 ? <TrendingDown className="w-5 h-5" /> : null}
                 {overallDiscrepancy > 0 ? "+" : ""}{overallDiscrepancy.toFixed(1)}
               </div>
@@ -151,32 +151,32 @@ export default function Discrepancies() {
 
         {/* Summary by Crew and Supplier */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <Card className="bg-slate-800 border-slate-700">
+          <Card>
             <CardHeader>
-              <CardTitle className="text-white">Yards by Crew</CardTitle>
+              <CardTitle className="text-foreground">Yards by Crew</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
                 {Object.entries(crewTotals).map(([name, total]) => (
                   <div key={name} className="flex justify-between items-center">
-                    <span className="text-slate-300">Crew {name}</span>
-                    <span className="text-white font-medium">{total.toFixed(1)} yds</span>
+                    <span className="text-muted-foreground">Crew {name}</span>
+                    <span className="text-foreground font-medium">{total.toFixed(1)} yds</span>
                   </div>
                 ))}
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-slate-800 border-slate-700">
+          <Card>
             <CardHeader>
-              <CardTitle className="text-white">Yards by Supplier</CardTitle>
+              <CardTitle className="text-foreground">Yards by Supplier</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
                 {Object.entries(supplierTotals).map(([name, total]) => (
                   <div key={name} className="flex justify-between items-center">
-                    <span className="text-slate-300">{name}</span>
-                    <span className="text-white font-medium">{total.toFixed(1)} yds</span>
+                    <span className="text-muted-foreground">{name}</span>
+                    <span className="text-foreground font-medium">{total.toFixed(1)} yds</span>
                   </div>
                 ))}
               </div>
@@ -185,32 +185,32 @@ export default function Discrepancies() {
         </div>
 
         {/* Discrepancy Entries */}
-        <Card className="bg-slate-800 border-slate-700">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-amber-500" />
+            <CardTitle className="text-foreground flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-primary" />
               Entries with Discrepancies ({discrepancyEntries.length})
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             {isLoading ? (
-              <div className="text-slate-400 text-center py-12">Loading...</div>
+              <div className="text-muted-foreground text-center py-12">Loading...</div>
             ) : discrepancyEntries.length === 0 ? (
-              <div className="text-green-400 text-center py-12">
+              <div className="text-green-600 dark:text-green-400 text-center py-12">
                 ✓ No discrepancies found
               </div>
             ) : (
               <Table>
                 <TableHeader>
-                  <TableRow className="border-slate-700 hover:bg-transparent">
-                    <TableHead className="text-slate-400">Date</TableHead>
-                    <TableHead className="text-slate-400">Project</TableHead>
-                    <TableHead className="text-slate-400">Phase</TableHead>
-                    <TableHead className="text-slate-400">Crew</TableHead>
-                    <TableHead className="text-slate-400">Supplier</TableHead>
-                    <TableHead className="text-slate-400">Crew Yds</TableHead>
-                    <TableHead className="text-slate-400">Billed Yds</TableHead>
-                    <TableHead className="text-slate-400">Diff</TableHead>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="text-muted-foreground">Date</TableHead>
+                    <TableHead className="text-muted-foreground">Project</TableHead>
+                    <TableHead className="text-muted-foreground">Phase</TableHead>
+                    <TableHead className="text-muted-foreground">Crew</TableHead>
+                    <TableHead className="text-muted-foreground">Supplier</TableHead>
+                    <TableHead className="text-muted-foreground">Crew Yds</TableHead>
+                    <TableHead className="text-muted-foreground">Billed Yds</TableHead>
+                    <TableHead className="text-muted-foreground">Diff</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -218,11 +218,11 @@ export default function Discrepancies() {
                     const diff = (entry.crew_yards_poured || 0) - (entry.ready_mix_yards_billed || 0);
                     const dateForNav = format(new Date(entry.scheduled_date + "T00:00:00"), "yyyy-MM-dd");
                     return (
-                      <TableRow key={entry.id} className="border-slate-700">
+                      <TableRow key={entry.id}>
                         <TableCell>
                           <button
                             onClick={() => navigate(`/?date=${dateForNav}`)}
-                            className="text-white hover:text-blue-400 hover:underline transition-colors text-left"
+                            className="text-foreground hover:text-primary hover:underline transition-colors text-left"
                           >
                             {format(new Date(entry.scheduled_date + "T00:00:00"), "M/d/yyyy")}
                           </button>
@@ -230,28 +230,28 @@ export default function Discrepancies() {
                         <TableCell>
                           <button
                             onClick={() => entry.projects?.id && setSelectedProjectId(entry.projects.id)}
-                            className="text-slate-300 hover:text-blue-400 hover:underline transition-colors text-left"
+                            className="text-muted-foreground hover:text-primary hover:underline transition-colors text-left"
                           >
                             {entry.projects?.builders?.code || entry.projects?.builders?.name} - {entry.projects?.lot_number}
                           </button>
                         </TableCell>
-                        <TableCell className="text-slate-300">
+                        <TableCell className="text-muted-foreground">
                           {entry.phases?.name || "-"}
                         </TableCell>
-                        <TableCell className="text-slate-300">
+                        <TableCell className="text-muted-foreground">
                           {entry.crews?.name || "-"}
                         </TableCell>
-                        <TableCell className="text-slate-300">
+                        <TableCell className="text-muted-foreground">
                           {entry.suppliers?.code || entry.suppliers?.name || "-"}
                         </TableCell>
-                        <TableCell className="text-white font-medium">
+                        <TableCell className="text-foreground font-medium">
                           {entry.crew_yards_poured}
                         </TableCell>
-                        <TableCell className="text-white font-medium">
+                        <TableCell className="text-foreground font-medium">
                           {entry.ready_mix_yards_billed}
                         </TableCell>
                         <TableCell>
-                          <Badge className={diff > 0 ? "bg-red-500/20 text-red-400" : "bg-amber-500/20 text-amber-400"}>
+                          <Badge className={diff > 0 ? "bg-red-500/20 text-red-600 dark:text-red-400" : "bg-amber-500/20 text-amber-600 dark:text-amber-400"}>
                             {diff > 0 ? "+" : ""}{diff.toFixed(1)}
                           </Badge>
                         </TableCell>

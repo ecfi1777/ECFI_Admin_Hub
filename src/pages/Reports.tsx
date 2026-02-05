@@ -165,7 +165,7 @@ export default function Reports() {
               <Button 
                 onClick={handleExport} 
                 disabled={isExporting}
-                className="w-full bg-amber-500 hover:bg-amber-600 text-slate-900"
+                className="w-full"
               >
                 {isExporting ? (
                   <>
