@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { HardHat, Building2, Users, Loader2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -16,27 +16,18 @@ export default function Onboarding() {
   const [inviteCode, setInviteCode] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { toast } = useToast();
   const { user, initialized: authInitialized } = useAuth();
   const queryClient = useQueryClient();
 
   const handleCreateOrganization = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) {
-      toast({
-        title: "Not authenticated",
-        description: "Please sign in to create an organization.",
-        variant: "destructive",
-      });
+      toast.error("Please sign in to create an organization.");
       return;
     }
 
     if (!companyName.trim()) {
-      toast({
-        title: "Company name required",
-        description: "Please enter a company name.",
-        variant: "destructive",
-      });
+      toast.error("Please enter a company name.");
       return;
     }
 
@@ -96,34 +87,21 @@ export default function Onboarding() {
 
       if (seedError) {
         console.error("Failed to seed defaults:", seedError);
-        // Don't throw here - the org was created successfully
-        toast({
-          title: "Warning",
-          description: "Organization created but some default data may be missing.",
-          variant: "destructive",
-        });
+        toast.error("Organization created but some default data may be missing.");
       } else {
         console.log("Default data seeded");
       }
 
-      // Step 5: Invalidate organization queries and navigate
       console.log("Step 5: Completing setup...");
       await queryClient.invalidateQueries({ queryKey: ["organizations"] });
 
-      toast({
-        title: "Organization created!",
-        description: `Welcome to ${companyName}. Your invite code is: ${generatedCode}`,
-      });
+      toast.success(`Welcome to ${companyName}. Your invite code is: ${generatedCode}`);
 
       // Force a page reload to ensure clean state
       window.location.href = "/";
     } catch (error: any) {
       console.error("Organization creation failed:", error);
-      toast({
-        title: "Failed to create organization",
-        description: error.message || "An unexpected error occurred.",
-        variant: "destructive",
-      });
+      toast.error(error.message || "An unexpected error occurred.");
     } finally {
       setLoading(false);
     }
@@ -132,20 +110,12 @@ export default function Onboarding() {
   const handleJoinOrganization = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) {
-      toast({
-        title: "Not authenticated",
-        description: "Please sign in to join an organization.",
-        variant: "destructive",
-      });
+      toast.error("Please sign in to join an organization.");
       return;
     }
 
     if (!inviteCode.trim()) {
-      toast({
-        title: "Invite code required",
-        description: "Please enter an invite code.",
-        variant: "destructive",
-      });
+      toast.error("Please enter an invite code.");
       return;
     }
 
@@ -196,19 +166,12 @@ export default function Onboarding() {
       // Invalidate organization queries and navigate
       await queryClient.invalidateQueries({ queryKey: ["organizations"] });
 
-      toast({
-        title: "Joined organization!",
-        description: `Welcome to ${org.name}.`,
-      });
+      toast.success(`Welcome to ${org.name}.`);
 
       // Force a page reload to ensure clean state
       window.location.href = "/";
     } catch (error: any) {
-      toast({
-        title: "Failed to join organization",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error(error.message);
     } finally {
       setLoading(false);
     }

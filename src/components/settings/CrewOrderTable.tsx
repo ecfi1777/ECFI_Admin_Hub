@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { GripVertical, Save } from "lucide-react";
 import {
   DndContext,
@@ -81,7 +81,6 @@ function SortableRow({ crew, index }: { crew: Crew; index: number }) {
 export function CrewOrderTable() {
   const [orderedCrews, setOrderedCrews] = useState<Crew[]>([]);
   const [hasChanges, setHasChanges] = useState(false);
-  const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const sensors = useSensors(
@@ -147,10 +146,10 @@ export function CrewOrderTable() {
       queryClient.invalidateQueries({ queryKey: ["crews-active"] });
       queryClient.invalidateQueries({ queryKey: ["crews-all-order"] });
       setHasChanges(false);
-      toast({ title: "Crew order saved" });
+      toast.success("Crew order saved");
     },
     onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast.error(error.message);
     },
   });
 

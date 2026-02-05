@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { HardHat, Eye, EyeOff, Mail, CheckCircle } from "lucide-react";
 import { PasswordStrength, getPasswordStrength } from "@/components/ui/password-strength";
 import { getUserFriendlyError } from "@/lib/errorHandler";
@@ -19,18 +19,13 @@ export default function Auth() {
   const [showPassword, setShowPassword] = useState(false);
   const [signupSuccess, setSignupSuccess] = useState(false);
   const navigate = useNavigate();
-  const { toast } = useToast();
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const { isValid } = getPasswordStrength(password);
     if (!isValid) {
-      toast({
-        title: "Password too weak",
-        description: "Please meet at least 4 of the 5 password requirements.",
-        variant: "destructive",
-      });
+      toast.error("Please meet at least 4 of the 5 password requirements.");
       return;
     }
 
@@ -48,11 +43,7 @@ export default function Auth() {
     });
 
     if (error) {
-      toast({
-        title: "Sign up failed",
-        description: getUserFriendlyError(error, "Auth"),
-        variant: "destructive",
-      });
+      toast.error(getUserFriendlyError(error, "Auth"));
     } else {
       // Clear form and show success state
       setEmail("");
@@ -73,11 +64,7 @@ export default function Auth() {
     });
 
     if (error) {
-      toast({
-        title: "Sign in failed",
-        description: getUserFriendlyError(error, "Auth"),
-        variant: "destructive",
-      });
+      toast.error(getUserFriendlyError(error, "Auth"));
       setLoading(false);
     }
     // On success, auth state change will trigger redirect via AuthRoute

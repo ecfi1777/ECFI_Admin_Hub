@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Building2, Copy, Check, Users, RefreshCw, Pencil, X, Trash2, AlertTriangle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { TeamMembersTable } from "./TeamMembersTable";
@@ -15,7 +15,6 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 export function OrganizationSettings() {
   const { organization, isOwner, isLoading } = useOrganization();
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
@@ -43,19 +42,11 @@ export function OrganizationSettings() {
       return newCode;
     },
     onSuccess: async () => {
-      // Remove cached data and force immediate refetch
       await queryClient.resetQueries({ queryKey: ["organizations"] });
-      toast({
-        title: "Invite code regenerated",
-        description: "The old invite code is no longer valid. Share the new code with team members.",
-      });
+      toast.success("The old invite code is no longer valid. Share the new code with team members.");
     },
     onError: (error: any) => {
-      toast({
-        title: "Failed to regenerate invite code",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error(error.message);
     },
   });
 
@@ -73,17 +64,10 @@ export function OrganizationSettings() {
     onSuccess: async () => {
       await queryClient.resetQueries({ queryKey: ["organizations"] });
       setIsEditingName(false);
-      toast({
-        title: "Organization name updated",
-        description: "Your organization name has been changed successfully.",
-      });
+      toast.success("Your organization name has been changed successfully.");
     },
     onError: (error: any) => {
-      toast({
-        title: "Failed to update name",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error(error.message);
     },
   });
 
@@ -109,19 +93,11 @@ export function OrganizationSettings() {
     },
     onSuccess: async () => {
       await queryClient.resetQueries({ queryKey: ["organizations"] });
-      toast({
-        title: "Organization deleted",
-        description: "Your organization has been permanently deleted.",
-      });
-      // Navigate to onboarding since user no longer has an organization
+      toast.success("Your organization has been permanently deleted.");
       navigate("/onboarding");
     },
     onError: (error: any) => {
-      toast({
-        title: "Failed to delete organization",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error(error.message);
     },
   });
 
@@ -131,17 +107,10 @@ export function OrganizationSettings() {
     try {
       await navigator.clipboard.writeText(organization.invite_code);
       setCopied(true);
-      toast({
-        title: "Copied!",
-        description: "Invite code copied to clipboard.",
-      });
+      toast.success("Invite code copied to clipboard.");
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      toast({
-        title: "Failed to copy",
-        description: "Please copy the code manually.",
-        variant: "destructive",
-      });
+      toast.error("Please copy the code manually.");
     }
   };
 

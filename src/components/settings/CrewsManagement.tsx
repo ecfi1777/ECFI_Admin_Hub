@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import {
   Plus,
   Pencil,
@@ -256,7 +256,6 @@ export function CrewsManagement() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [memberToDelete, setMemberToDelete] = useState<CrewMember | null>(null);
 
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const { organizationId } = useOrganization();
 
@@ -337,10 +336,10 @@ export function CrewsManagement() {
       queryClient.invalidateQueries({ queryKey: ["crews-all"] });
       queryClient.invalidateQueries({ queryKey: ["crews-management"] });
       setHasOrderChanges(false);
-      toast({ title: "Crew order saved" });
+      toast.success("Crew order saved");
     },
     onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast.error(error.message);
     },
   });
 
@@ -357,11 +356,11 @@ export function CrewsManagement() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["crews-management"] });
-      toast({ title: "Crew created" });
+      toast.success("Crew created");
       closeCrewDialog();
     },
     onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast.error(error.message);
     },
   });
 
@@ -372,11 +371,11 @@ export function CrewsManagement() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["crews-management"] });
-      toast({ title: "Crew updated" });
+      toast.success("Crew updated");
       closeCrewDialog();
     },
     onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast.error(error.message);
     },
   });
 
@@ -390,7 +389,7 @@ export function CrewsManagement() {
       queryClient.invalidateQueries({ queryKey: ["crews-all"] });
     },
     onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast.error(error.message);
     },
   });
 
@@ -402,11 +401,11 @@ export function CrewsManagement() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["crew-members-management"] });
-      toast({ title: "Crew member created" });
+      toast.success("Crew member created");
       closeMemberDialog();
     },
     onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast.error(error.message);
     },
   });
 
@@ -417,11 +416,11 @@ export function CrewsManagement() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["crew-members-management"] });
-      toast({ title: "Crew member updated" });
+      toast.success("Crew member updated");
       closeMemberDialog();
     },
     onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast.error(error.message);
     },
   });
 
@@ -434,7 +433,7 @@ export function CrewsManagement() {
       queryClient.invalidateQueries({ queryKey: ["crew-members-management"] });
     },
     onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast.error(error.message);
     },
   });
 
@@ -445,12 +444,12 @@ export function CrewsManagement() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["crew-members-management"] });
-      toast({ title: "Crew member deleted" });
+      toast.success("Crew member deleted");
       setDeleteConfirmOpen(false);
       setMemberToDelete(null);
     },
     onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast.error(error.message);
     },
   });
 

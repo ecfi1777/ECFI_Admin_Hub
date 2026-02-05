@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Upload, File, X, Loader2, ExternalLink, CheckCircle } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -34,7 +34,6 @@ interface ProjectDocumentsProps {
 export function ProjectDocuments({ projectId }: ProjectDocumentsProps) {
   const [uploadingCategory, setUploadingCategory] = useState<string | null>(null);
   const [documentToDelete, setDocumentToDelete] = useState<ProjectDocument | null>(null);
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const { organizationId } = useOrganization();
 
@@ -77,11 +76,11 @@ export function ProjectDocuments({ projectId }: ProjectDocumentsProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["project-documents", projectId] });
-      toast({ title: "Document uploaded" });
+      toast.success("Document uploaded");
       setUploadingCategory(null);
     },
     onError: (error: Error) => {
-      toast({ title: "Upload failed", description: error.message, variant: "destructive" });
+      toast.error(error.message);
       setUploadingCategory(null);
     },
   });
@@ -104,11 +103,11 @@ export function ProjectDocuments({ projectId }: ProjectDocumentsProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["project-documents", projectId] });
       queryClient.invalidateQueries({ queryKey: ["project-documents-all"] });
-      toast({ title: "Document deleted" });
+      toast.success("Document deleted");
       setDocumentToDelete(null);
     },
     onError: (error: Error) => {
-      toast({ title: "Delete failed", description: error.message, variant: "destructive" });
+      toast.error(error.message);
       setDocumentToDelete(null);
     },
   });

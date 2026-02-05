@@ -2,7 +2,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useOrganization } from "@/hooks/useOrganization";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -25,7 +25,6 @@ export function JoinOrganizationDialog({ open, onOpenChange }: JoinOrganizationD
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
   const { refetch, allOrganizations } = useOrganization();
-  const { toast } = useToast();
 
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,20 +62,13 @@ export function JoinOrganizationDialog({ open, onOpenChange }: JoinOrganizationD
 
       if (membershipError) throw membershipError;
 
-      toast({
-        title: "Joined organization!",
-        description: `You are now a member of ${org.name}.`,
-      });
+      toast.success(`You are now a member of ${org.name}.`);
 
       await refetch();
       setInviteCode("");
       onOpenChange(false);
     } catch (error: any) {
-      toast({
-        title: "Failed to join organization",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error(error.message);
     } finally {
       setLoading(false);
     }

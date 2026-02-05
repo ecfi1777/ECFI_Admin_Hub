@@ -13,7 +13,7 @@ import { Plus } from "lucide-react";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useOrganization } from "@/hooks/useOrganization";
 
 interface Builder {
@@ -71,7 +71,6 @@ export function ProjectFormFields({
   const [newBuilderName, setNewBuilderName] = useState("");
   const [newBuilderCode, setNewBuilderCode] = useState("");
   const [newLocationName, setNewLocationName] = useState("");
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const { organizationId } = useOrganization();
 
@@ -92,10 +91,10 @@ export function ProjectFormFields({
       setShowNewBuilder(false);
       setNewBuilderName("");
       setNewBuilderCode("");
-      toast({ title: "Builder created" });
+      toast.success("Builder created");
     },
     onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast.error(error.message);
     },
   });
 
@@ -115,10 +114,10 @@ export function ProjectFormFields({
       onChange("locationId", data.id);
       setShowNewLocation(false);
       setNewLocationName("");
-      toast({ title: "Location created" });
+      toast.success("Location created");
     },
     onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast.error(error.message);
     },
   });
 
