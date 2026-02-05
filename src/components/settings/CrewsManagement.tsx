@@ -45,6 +45,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useOrganization } from "@/hooks/useOrganization";
 
 interface Crew {
   id: string;
@@ -257,6 +258,7 @@ export function CrewsManagement() {
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { organizationId } = useOrganization();
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -338,12 +340,13 @@ export function CrewsManagement() {
 
   const createCrewMutation = useMutation({
     mutationFn: async (name: string) => {
+      if (!organizationId) throw new Error("No organization found");
       const maxOrder = orderedCrews.length > 0 
         ? Math.max(...orderedCrews.map(c => c.display_order)) + 1 
         : 1;
       const { error } = await supabase
         .from("crews")
-        .insert({ name, display_order: maxOrder });
+        .insert({ organization_id: organizationId, name, display_order: maxOrder });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -387,7 +390,8 @@ export function CrewsManagement() {
 
   const createMemberMutation = useMutation({
     mutationFn: async ({ name, crew_id }: { name: string; crew_id: string | null }) => {
-      const { error } = await supabase.from("crew_members").insert({ name, crew_id });
+      if (!organizationId) throw new Error("No organization found");
+      const { error } = await supabase.from("crew_members").insert({ organization_id: organizationId, name, crew_id });
       if (error) throw error;
     },
     onSuccess: () => {

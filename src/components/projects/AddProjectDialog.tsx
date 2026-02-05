@@ -12,6 +12,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Plus } from "lucide-react";
 import { ProjectFormFields } from "./ProjectFormFields";
+import { useOrganization } from "@/hooks/useOrganization";
 
 interface Builder {
   id: string;
@@ -54,10 +55,13 @@ export function AddProjectDialog({ builders, locations, statuses }: AddProjectDi
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { organizationId } = useOrganization();
 
   const createMutation = useMutation({
     mutationFn: async () => {
+      if (!organizationId) throw new Error("No organization found");
       const { error } = await supabase.from("projects").insert({
+        organization_id: organizationId,
         builder_id: formData.builderId || null,
         location_id: formData.locationId || null,
         lot_number: formData.lotNumber,

@@ -10,6 +10,7 @@ import { ScheduleTable } from "./ScheduleTable";
 import { AddEntryDialog } from "./AddEntryDialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { useOrganization } from "@/hooks/useOrganization";
 
 interface ScheduleEntry {
   id: string;
@@ -68,6 +69,7 @@ function sortCrews(crews: Crew[]): Crew[] {
 export function DailySchedule() {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
+  const { organizationId } = useOrganization();
   const dateParam = searchParams.get("date");
   
   // Parse date from URL or use today
@@ -198,9 +200,10 @@ export function DailySchedule() {
         if (error) throw error;
       } else {
         // Insert new
+        if (!organizationId) throw new Error("No organization found");
         const { error } = await supabase
           .from("daily_notes")
-          .insert({ note_date: dateStr, notes });
+          .insert({ organization_id: organizationId, note_date: dateStr, notes });
         if (error) throw error;
       }
     },

@@ -30,6 +30,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil } from "lucide-react";
+import { useOrganization } from "@/hooks/useOrganization";
 
 interface CrewMember {
   id: string;
@@ -52,6 +53,7 @@ export function CrewMembersTable() {
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { organizationId } = useOrganization();
 
   const { data: crewMembers = [], isLoading } = useQuery({
     queryKey: ["crew_members"],
@@ -80,7 +82,8 @@ export function CrewMembersTable() {
 
   const createMutation = useMutation({
     mutationFn: async (newItem: { name: string; crew_id: string | null }) => {
-      const { error } = await supabase.from("crew_members").insert(newItem);
+      if (!organizationId) throw new Error("No organization found");
+      const { error } = await supabase.from("crew_members").insert({ ...newItem, organization_id: organizationId });
       if (error) throw error;
     },
     onSuccess: () => {

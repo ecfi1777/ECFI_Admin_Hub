@@ -14,6 +14,7 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useOrganization } from "@/hooks/useOrganization";
 
 interface Builder {
   id: string;
@@ -72,12 +73,14 @@ export function ProjectFormFields({
   const [newLocationName, setNewLocationName] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { organizationId } = useOrganization();
 
   const createBuilderMutation = useMutation({
     mutationFn: async () => {
+      if (!organizationId) throw new Error("No organization found");
       const { data, error } = await supabase
         .from("builders")
-        .insert({ name: newBuilderName, code: newBuilderCode || null })
+        .insert({ organization_id: organizationId, name: newBuilderName, code: newBuilderCode || null })
         .select()
         .single();
       if (error) throw error;
@@ -98,9 +101,10 @@ export function ProjectFormFields({
 
   const createLocationMutation = useMutation({
     mutationFn: async () => {
+      if (!organizationId) throw new Error("No organization found");
       const { data, error } = await supabase
         .from("locations")
-        .insert({ name: newLocationName })
+        .insert({ organization_id: organizationId, name: newLocationName })
         .select()
         .single();
       if (error) throw error;

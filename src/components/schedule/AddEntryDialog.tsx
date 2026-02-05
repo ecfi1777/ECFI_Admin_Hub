@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useOrganization } from "@/hooks/useOrganization";
 import { Search } from "lucide-react";
 
 interface AddEntryDialogProps {
@@ -54,6 +55,7 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate 
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { organizationId } = useOrganization();
 
   useEffect(() => {
     if (defaultCrewId) setCrewId(defaultCrewId);
@@ -147,7 +149,9 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate 
 
   const createMutation = useMutation({
     mutationFn: async () => {
+      if (!organizationId) throw new Error("No organization found");
       const { error } = await supabase.from("schedule_entries").insert({
+        organization_id: organizationId,
         scheduled_date: defaultDate,
         crew_id: crewId || null,
         project_id: projectId || null,
