@@ -26,18 +26,18 @@ const queryClient = new QueryClient();
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading: authLoading } = useAuth();
-  const { organizationId, isLoading: orgLoading, error: orgError } = useOrganization();
+  const { hasOrganization, isLoading: orgLoading, error: orgError } = useOrganization();
   const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
     console.log("ProtectedRoute state:", { 
       user: user?.id, 
       authLoading, 
-      organizationId, 
+      hasOrganization, 
       orgLoading,
       orgError: orgError?.message 
     });
-  }, [user, authLoading, organizationId, orgLoading, orgError]);
+  }, [user, authLoading, hasOrganization, orgLoading, orgError]);
 
   // Handle redirects using window.location to avoid SecurityError in iframes
   useEffect(() => {
@@ -50,13 +50,13 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
       return;
     }
     
-    if (!organizationId) {
+    if (!hasOrganization) {
       console.log("ProtectedRoute: No org, redirecting to onboarding");
       setRedirecting(true);
       window.location.href = "/onboarding";
       return;
     }
-  }, [user, authLoading, organizationId, orgLoading]);
+  }, [user, authLoading, hasOrganization, orgLoading]);
 
   if (authLoading || orgLoading || redirecting) {
     return (
@@ -66,7 +66,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!user || !organizationId) {
+  if (!user || !hasOrganization) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-foreground">Redirecting...</div>
@@ -79,12 +79,12 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function OnboardingRoute({ children }: { children: React.ReactNode }) {
   const { user, loading: authLoading } = useAuth();
-  const { organizationId, isLoading: orgLoading } = useOrganization();
+  const { hasOrganization, isLoading: orgLoading } = useOrganization();
   const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
-    console.log("OnboardingRoute state:", { user: user?.id, authLoading, organizationId, orgLoading });
-  }, [user, authLoading, organizationId, orgLoading]);
+    console.log("OnboardingRoute state:", { user: user?.id, authLoading, hasOrganization, orgLoading });
+  }, [user, authLoading, hasOrganization, orgLoading]);
 
   useEffect(() => {
     if (authLoading || orgLoading) return;
@@ -96,13 +96,13 @@ function OnboardingRoute({ children }: { children: React.ReactNode }) {
       return;
     }
     
-    if (organizationId) {
+    if (hasOrganization) {
       console.log("OnboardingRoute: Has org, redirecting to dashboard");
       setRedirecting(true);
       window.location.href = "/";
       return;
     }
-  }, [user, authLoading, organizationId, orgLoading]);
+  }, [user, authLoading, hasOrganization, orgLoading]);
 
   if (authLoading || orgLoading || redirecting) {
     return (

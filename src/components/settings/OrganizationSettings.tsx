@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Building2, Copy, Check, Users } from "lucide-react";
 import { TeamMembersTable } from "./TeamMembersTable";
+import { MyOrganizations } from "./MyOrganizations";
 
 export function OrganizationSettings() {
   const { organization, isOwner, isLoading } = useOrganization();
@@ -58,6 +59,9 @@ export function OrganizationSettings() {
 
   return (
     <div className="space-y-6">
+      {/* My Organizations Section */}
+      <MyOrganizations />
+
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">

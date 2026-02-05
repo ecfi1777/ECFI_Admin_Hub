@@ -1,6 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
+import { useState, useEffect, useCallback } from "react";
 
 interface Organization {
   id: string;
@@ -11,23 +12,36 @@ interface Organization {
 interface OrganizationMembership {
   organization_id: string;
   role: string;
+  created_at: string;
   organizations: Organization;
 }
 
+const ACTIVE_ORG_KEY = "ecfi_active_organization_id";
+
 export function useOrganization() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+  
+  // Get active org from localStorage, with fallback to first org
+  const [activeOrgId, setActiveOrgIdState] = useState<string | null>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem(ACTIVE_ORG_KEY);
+    }
+    return null;
+  });
 
-  const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ["organization", user?.id],
+  // Fetch ALL organizations the user belongs to
+  const { data: allMemberships, isLoading, error, refetch } = useQuery({
+    queryKey: ["organizations", user?.id],
     queryFn: async () => {
-      if (!user?.id) return null;
+      if (!user?.id) return [];
 
-      // Use maybeSingle or limit 1 to handle users with multiple memberships
       const { data, error } = await supabase
         .from("organization_memberships")
         .select(`
           organization_id,
           role,
+          created_at,
           organizations (
             id,
             name,
@@ -35,31 +49,65 @@ export function useOrganization() {
           )
         `)
         .eq("user_id", user.id)
-        .order("created_at", { ascending: true })
-        .limit(1)
-        .maybeSingle();
+        .order("created_at", { ascending: true });
 
       if (error) {
         console.error("Organization fetch error:", error);
         throw error;
       }
       
-      console.log("Organization data fetched:", data);
-      return data as unknown as OrganizationMembership | null;
+      console.log("All organizations fetched:", data);
+      return (data || []) as unknown as OrganizationMembership[];
     },
     enabled: !!user?.id,
-    staleTime: 5 * 60 * 1000, // 5 minutes - prevents refetching on tab focus
-    refetchOnWindowFocus: false, // Prevent refetch when switching tabs
-    retry: false, // Don't retry on error (user might not have org yet)
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    retry: false,
   });
 
+  // Determine the current active organization
+  const currentMembership = allMemberships?.find(
+    (m) => m.organization_id === activeOrgId
+  ) || allMemberships?.[0] || null;
+
+  // Sync activeOrgId with localStorage and ensure it's valid
+  useEffect(() => {
+    if (allMemberships && allMemberships.length > 0) {
+      const validOrg = allMemberships.find(m => m.organization_id === activeOrgId);
+      if (!validOrg) {
+        // Active org not found, default to first org
+        const firstOrgId = allMemberships[0].organization_id;
+        setActiveOrgIdState(firstOrgId);
+        localStorage.setItem(ACTIVE_ORG_KEY, firstOrgId);
+      }
+    }
+  }, [allMemberships, activeOrgId]);
+
+  // Switch organization
+  const switchOrganization = useCallback((orgId: string) => {
+    setActiveOrgIdState(orgId);
+    localStorage.setItem(ACTIVE_ORG_KEY, orgId);
+    // Invalidate all queries to refetch data for new org
+    queryClient.invalidateQueries();
+  }, [queryClient]);
+
   return {
-    organizationId: data?.organization_id ?? null,
-    organization: data?.organizations ?? null,
-    role: data?.role ?? null,
+    // Current active organization
+    organizationId: currentMembership?.organization_id ?? null,
+    organization: currentMembership?.organizations ?? null,
+    role: currentMembership?.role ?? null,
+    isOwner: currentMembership?.role === "owner",
+    
+    // Multi-org support
+    allOrganizations: allMemberships || [],
+    switchOrganization,
+    
+    // Loading/error state
     isLoading,
     error,
-    isOwner: data?.role === "owner",
     refetch,
+    
+    // Check if user has any organizations
+    hasOrganization: (allMemberships?.length ?? 0) > 0,
   };
 }
