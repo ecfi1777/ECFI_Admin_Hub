@@ -41,6 +41,33 @@ export type Database = {
         }
         Relationships: []
       }
+      concrete_mixes: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       crew_members: {
         Row: {
           created_at: string
@@ -441,6 +468,10 @@ export type Database = {
       }
       schedule_entries: {
         Row: {
+          additive_1_percent_he: boolean
+          additive_2_percent_he: boolean
+          additive_hot_water: boolean
+          concrete_mix_id: string | null
           concrete_notes: string | null
           created_at: string
           created_by: string | null
@@ -478,6 +509,10 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          additive_1_percent_he?: boolean
+          additive_2_percent_he?: boolean
+          additive_hot_water?: boolean
+          concrete_mix_id?: string | null
           concrete_notes?: string | null
           created_at?: string
           created_by?: string | null
@@ -515,6 +550,10 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          additive_1_percent_he?: boolean
+          additive_2_percent_he?: boolean
+          additive_hot_water?: boolean
+          concrete_mix_id?: string | null
           concrete_notes?: string | null
           created_at?: string
           created_by?: string | null
@@ -552,6 +591,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "schedule_entries_concrete_mix_id_fkey"
+            columns: ["concrete_mix_id"]
+            isOneToOne: false
+            referencedRelation: "concrete_mixes"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "schedule_entries_crew_id_fkey"
             columns: ["crew_id"]

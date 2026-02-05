@@ -13,6 +13,7 @@ const tabs = [
   { value: "statuses", label: "Statuses", table: "project_statuses" },
   { value: "suppliers", label: "Suppliers", table: "suppliers" },
   { value: "pump_vendors", label: "Pump Vendors", table: "pump_vendors" },
+  { value: "concrete_mixes", label: "Concrete Mixes", table: "concrete_mixes" },
   { value: "inspection_types", label: "Inspection Types", table: "inspection_types" },
   { value: "inspectors", label: "Inspectors", table: "inspectors" },
   { value: "account", label: "Account", table: null },
@@ -53,7 +54,7 @@ export default function Settings() {
                   tableName={tab.table as any} 
                   displayName={tab.label}
                   hasCode={["builders", "suppliers", "pump_vendors"].includes(tab.table || "")}
-                  hasOrder={["phases", "project_statuses"].includes(tab.table || "")}
+                  hasOrder={["phases", "project_statuses", "concrete_mixes"].includes(tab.table || "")}
                 />
               )}
             </TabsContent>
