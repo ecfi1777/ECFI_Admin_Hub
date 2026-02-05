@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useToast } from "@/hooks/use-toast";
-import { Trash2, CalendarIcon, Pencil, MoreVertical } from "lucide-react";
+import { toast } from "sonner";
+import { Trash2, CalendarIcon, MoreVertical, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -40,45 +40,14 @@ import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { EditEntryDialog } from "./EditEntryDialog";
 import { ProjectDetailsSheet } from "@/components/projects/ProjectDetailsSheet";
-import { useOrganization } from "@/hooks/useOrganization";
-
-interface ScheduleEntry {
-  id: string;
-  project_id: string | null;
-  crew_id: string | null;
-  phase_id: string | null;
-  scheduled_date: string;
-  start_time: string | null;
-  order_status: string | null;
-  notes: string | null;
-  supplier_id: string | null;
-  ready_mix_invoice_number: string | null;
-  ready_mix_invoice_amount: number | null;
-  ready_mix_yards_billed: number | null;
-  pump_vendor_id: string | null;
-  pump_invoice_number: string | null;
-  pump_invoice_amount: number | null;
-  inspection_type_id: string | null;
-  inspector_id: string | null;
-  inspection_invoice_number: string | null;
-  inspection_amount: number | null;
-  to_be_invoiced: boolean;
-  invoice_complete: boolean;
-  invoice_number: string | null;
-  qty_ordered: string | null;
-  order_number: string | null;
-  crews: { name: string } | null;
-  phases: { name: string } | null;
-  suppliers: { name: string; code: string | null } | null;
-  pump_vendors: { name: string; code: string | null } | null;
-  inspection_types: { name: string } | null;
-  inspectors: { name: string } | null;
-  projects: {
-    lot_number: string;
-    builders: { name: string; code: string | null } | null;
-    locations: { name: string } | null;
-  } | null;
-}
+import {
+  usePhases,
+  useSuppliers,
+  usePumpVendors,
+  useInspectionTypes,
+  useInspectors,
+} from "@/hooks/useReferenceData";
+import type { ScheduleEntry } from "@/types/schedule";
 
 interface ScheduleTableProps {
   entries: ScheduleEntry[];
@@ -95,65 +64,14 @@ export function ScheduleTable({ entries }: ScheduleTableProps) {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [isProjectSheetOpen, setIsProjectSheetOpen] = useState(false);
   
-  const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { organizationId } = useOrganization();
 
-  // Fetch reference data for dropdowns
-  const { data: phases = [] } = useQuery({
-    queryKey: ["phases-active", organizationId],
-    queryFn: async () => {
-      if (!organizationId) return [];
-      const { data, error } = await supabase.from("phases").select("id, name").eq("organization_id", organizationId).eq("is_active", true).order("display_order");
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!organizationId,
-  });
-
-  const { data: suppliers = [] } = useQuery({
-    queryKey: ["suppliers-active", organizationId],
-    queryFn: async () => {
-      if (!organizationId) return [];
-      const { data, error } = await supabase.from("suppliers").select("id, name, code").eq("organization_id", organizationId).eq("is_active", true).order("name");
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!organizationId,
-  });
-
-  const { data: pumpVendors = [] } = useQuery({
-    queryKey: ["pump-vendors-active", organizationId],
-    queryFn: async () => {
-      if (!organizationId) return [];
-      const { data, error } = await supabase.from("pump_vendors").select("id, name, code").eq("organization_id", organizationId).eq("is_active", true).order("name");
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!organizationId,
-  });
-
-  const { data: inspectionTypes = [] } = useQuery({
-    queryKey: ["inspection-types-active", organizationId],
-    queryFn: async () => {
-      if (!organizationId) return [];
-      const { data, error } = await supabase.from("inspection_types").select("id, name").eq("organization_id", organizationId).eq("is_active", true).order("name");
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!organizationId,
-  });
-
-  const { data: inspectors = [] } = useQuery({
-    queryKey: ["inspectors-active", organizationId],
-    queryFn: async () => {
-      if (!organizationId) return [];
-      const { data, error } = await supabase.from("inspectors").select("id, name").eq("organization_id", organizationId).eq("is_active", true).order("name");
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!organizationId,
-  });
+  // Fetch reference data for dropdowns using shared hooks
+  const { data: phases = [] } = usePhases();
+  const { data: suppliers = [] } = useSuppliers();
+  const { data: pumpVendors = [] } = usePumpVendors();
+  const { data: inspectionTypes = [] } = useInspectionTypes();
+  const { data: inspectors = [] } = useInspectors();
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Record<string, any> }) => {
@@ -168,7 +86,7 @@ export function ScheduleTable({ entries }: ScheduleTableProps) {
       setEditingCell(null);
     },
     onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast.error(error.message);
     },
   });
 
@@ -182,11 +100,11 @@ export function ScheduleTable({ entries }: ScheduleTableProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["schedule-entries"] });
-      toast({ title: "Entry deleted" });
+      toast.success("Entry deleted");
       setDeleteEntryId(null);
     },
     onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast.error(error.message);
     },
   });
 
@@ -200,12 +118,12 @@ export function ScheduleTable({ entries }: ScheduleTableProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["schedule-entries"] });
-      toast({ title: "Entry moved to new date" });
+      toast.success("Entry moved to new date");
       setMoveEntryId(null);
       setMoveDate(undefined);
     },
     onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast.error(error.message);
     },
   });
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,10 +18,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useOrganization } from "@/hooks/useOrganization";
 import { Search } from "lucide-react";
+import {
+  useCrews,
+  useProjects,
+  usePhases,
+  useSuppliers,
+  usePumpVendors,
+  useInspectionTypes,
+  useInspectors,
+} from "@/hooks/useReferenceData";
 
 interface AddEntryDialogProps {
   open: boolean;
@@ -53,7 +62,6 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate 
   const [inspectionInvoiceNumber, setInspectionInvoiceNumber] = useState("");
   const [inspectionAmount, setInspectionAmount] = useState("");
 
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const { organizationId } = useOrganization();
 
@@ -61,31 +69,14 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate 
     if (defaultCrewId) setCrewId(defaultCrewId);
   }, [defaultCrewId]);
 
-  const { data: crews = [] } = useQuery({
-    queryKey: ["crews-active", organizationId],
-    queryFn: async () => {
-      if (!organizationId) return [];
-      const { data, error } = await supabase.from("crews").select("id, name").eq("organization_id", organizationId).eq("is_active", true).order("name");
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!organizationId,
-  });
-
-  const { data: projects = [] } = useQuery({
-    queryKey: ["projects-all", organizationId],
-    queryFn: async () => {
-      if (!organizationId) return [];
-      const { data, error } = await supabase
-        .from("projects")
-        .select("id, lot_number, builders(name, code), locations(name)")
-        .eq("organization_id", organizationId)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!organizationId,
-  });
+  // Use shared reference data hooks
+  const { data: crews = [] } = useCrews();
+  const { data: projects = [] } = useProjects();
+  const { data: phases = [] } = usePhases();
+  const { data: suppliers = [] } = useSuppliers();
+  const { data: pumpVendors = [] } = usePumpVendors();
+  const { data: inspectionTypes = [] } = useInspectionTypes();
+  const { data: inspectors = [] } = useInspectors();
 
   // Filter projects based on search term
   const filteredProjects = useMemo(() => {
@@ -106,61 +97,6 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate 
       );
     });
   }, [projects, projectSearch]);
-
-  const { data: phases = [] } = useQuery({
-    queryKey: ["phases-active", organizationId],
-    queryFn: async () => {
-      if (!organizationId) return [];
-      const { data, error } = await supabase.from("phases").select("id, name").eq("organization_id", organizationId).eq("is_active", true).order("display_order");
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!organizationId,
-  });
-
-  const { data: suppliers = [] } = useQuery({
-    queryKey: ["suppliers-active", organizationId],
-    queryFn: async () => {
-      if (!organizationId) return [];
-      const { data, error } = await supabase.from("suppliers").select("id, name, code").eq("organization_id", organizationId).eq("is_active", true).order("name");
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!organizationId,
-  });
-
-  const { data: pumpVendors = [] } = useQuery({
-    queryKey: ["pump-vendors-active", organizationId],
-    queryFn: async () => {
-      if (!organizationId) return [];
-      const { data, error } = await supabase.from("pump_vendors").select("id, name, code").eq("organization_id", organizationId).eq("is_active", true).order("name");
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!organizationId,
-  });
-
-  const { data: inspectionTypes = [] } = useQuery({
-    queryKey: ["inspection-types-active", organizationId],
-    queryFn: async () => {
-      if (!organizationId) return [];
-      const { data, error } = await supabase.from("inspection_types").select("id, name").eq("organization_id", organizationId).eq("is_active", true).order("name");
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!organizationId,
-  });
-
-  const { data: inspectors = [] } = useQuery({
-    queryKey: ["inspectors-active", organizationId],
-    queryFn: async () => {
-      if (!organizationId) return [];
-      const { data, error } = await supabase.from("inspectors").select("id, name").eq("organization_id", organizationId).eq("is_active", true).order("name");
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!organizationId,
-  });
 
   const createMutation = useMutation({
     mutationFn: async () => {
@@ -193,12 +129,12 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate 
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["schedule-entries"] });
-      toast({ title: "Entry created" });
+      toast.success("Entry created");
       resetForm();
       onOpenChange(false);
     },
     onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast.error(error.message);
     },
   });
 
@@ -228,7 +164,7 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!projectId) {
-      toast({ title: "Error", description: "Please select a project before adding an entry", variant: "destructive" });
+      toast.error("Please select a project before adding an entry");
       return;
     }
     createMutation.mutate();

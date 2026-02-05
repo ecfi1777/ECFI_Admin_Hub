@@ -11,58 +11,14 @@ import { AddEntryDialog } from "./AddEntryDialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useOrganization } from "@/hooks/useOrganization";
-
-interface ScheduleEntry {
-  id: string;
-  project_id: string | null;
-  crew_id: string | null;
-  phase_id: string | null;
-  scheduled_date: string;
-  start_time: string | null;
-  order_status: string | null;
-  notes: string | null;
-  supplier_id: string | null;
-  ready_mix_invoice_number: string | null;
-  ready_mix_invoice_amount: number | null;
-  ready_mix_yards_billed: number | null;
-  crew_yards_poured: number | null;
-  pump_vendor_id: string | null;
-  pump_invoice_number: string | null;
-  pump_invoice_amount: number | null;
-  inspection_type_id: string | null;
-  inspector_id: string | null;
-  inspection_invoice_number: string | null;
-  inspection_amount: number | null;
-  to_be_invoiced: boolean;
-  invoice_complete: boolean;
-  invoice_number: string | null;
-  qty_ordered: string | null;
-  order_number: string | null;
-  crews: { name: string } | null;
-  phases: { name: string } | null;
-  suppliers: { name: string; code: string | null } | null;
-  pump_vendors: { name: string; code: string | null } | null;
-  inspection_types: { name: string } | null;
-  inspectors: { name: string } | null;
-  projects: {
-    lot_number: string;
-    builders: { name: string; code: string | null } | null;
-    locations: { name: string } | null;
-  } | null;
-}
-
-interface Crew {
-  id: string;
-  name: string;
-  display_order: number;
-  is_active: boolean;
-}
+import { useCrewsAll, type Crew } from "@/hooks/useReferenceData";
+import type { ScheduleEntry } from "@/types/schedule";
 
 // Sort crews by display_order (set via drag-and-drop in Settings)
 function sortCrews(crews: Crew[]): Crew[] {
   return [...crews].sort((a, b) => {
     // Primary sort: by display_order ascending
-    return a.display_order - b.display_order;
+    return (a.display_order || 0) - (b.display_order || 0);
   });
 }
 
@@ -123,19 +79,7 @@ export function DailySchedule() {
 
   const dateStr = format(selectedDate, "yyyy-MM-dd");
 
-  const { data: crews = [] } = useQuery({
-    queryKey: ["crews-all", organizationId],
-    queryFn: async () => {
-      if (!organizationId) return [];
-      const { data, error } = await supabase
-        .from("crews")
-        .select("id, name, display_order, is_active")
-        .eq("organization_id", organizationId);
-      if (error) throw error;
-      return data as Crew[];
-    },
-    enabled: !!organizationId,
-  });
+  const { data: crews = [] } = useCrewsAll();
 
   const sortedCrews = sortCrews(crews);
 
@@ -153,6 +97,7 @@ export function DailySchedule() {
           pump_vendors(name, code),
           inspection_types(name),
           inspectors(name),
+          concrete_mixes(name),
           projects(
             lot_number,
             builders(name, code),
