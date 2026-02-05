@@ -1,7 +1,7 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 interface Organization {
   id: string;
@@ -20,7 +20,6 @@ const ACTIVE_ORG_KEY = "ecfi_active_organization_id";
 
 export function useOrganization() {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
   
   // Get active org from localStorage, with fallback to first org
   const [activeOrgId, setActiveOrgIdState] = useState<string | null>(() => {
@@ -83,27 +82,6 @@ export function useOrganization() {
     }
   }, [allMemberships, activeOrgId]);
 
-  // Track previous org to detect changes and invalidate queries
-  const previousOrgIdRef = useRef<string | null>(null);
-  const isInitializedRef = useRef(false);
-
-  // Invalidate queries when organizationId changes (after initial load)
-  useEffect(() => {
-    const currentOrgId = currentMembership?.organization_id ?? null;
-    
-    if (isInitializedRef.current && previousOrgIdRef.current !== currentOrgId && currentOrgId) {
-      // Organization actually changed - invalidate all queries
-      console.log("Organization switched from", previousOrgIdRef.current, "to", currentOrgId, "- invalidating queries");
-      queryClient.invalidateQueries();
-    }
-    
-    // Mark as initialized after first valid org is set
-    if (currentOrgId && !isInitializedRef.current) {
-      isInitializedRef.current = true;
-    }
-    
-    previousOrgIdRef.current = currentOrgId;
-  }, [currentMembership?.organization_id, queryClient]);
 
   // Switch organization
   const switchOrganization = useCallback((orgId: string) => {
