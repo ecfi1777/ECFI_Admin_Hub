@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Trash2, Crown, User } from "lucide-react";
+import { Trash2, Crown, User, ArrowRightLeft } from "lucide-react";
 import { format } from "date-fns";
 
 interface TeamMember {
@@ -29,11 +29,12 @@ interface TeamMember {
 }
 
 export function TeamMembersTable() {
-  const { organization, isOwner } = useOrganization();
+  const { organization, isOwner, refetch: refetchOrg } = useOrganization();
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [memberToRemove, setMemberToRemove] = useState<TeamMember | null>(null);
+  const [memberToTransfer, setMemberToTransfer] = useState<TeamMember | null>(null);
 
   const { data: members, isLoading } = useQuery({
     queryKey: ["team-members", organization?.id],
@@ -99,13 +100,75 @@ export function TeamMembersTable() {
     },
   });
 
+  const transferMutation = useMutation({
+    mutationFn: async (newOwnerId: string) => {
+      if (!organization?.id || !user?.id) {
+        throw new Error("Missing organization or user");
+      }
+
+      // Find the current owner's membership ID and new owner's membership ID
+      const currentOwnerMembership = members?.find(
+        (m) => m.user_id === user.id && m.role === "owner"
+      );
+      const newOwnerMembership = members?.find((m) => m.user_id === newOwnerId);
+
+      if (!currentOwnerMembership || !newOwnerMembership) {
+        throw new Error("Could not find membership records");
+      }
+
+      // Update new owner to "owner" role
+      const { error: newOwnerError } = await supabase
+        .from("organization_memberships")
+        .update({ role: "owner" })
+        .eq("id", newOwnerMembership.id);
+
+      if (newOwnerError) throw newOwnerError;
+
+      // Update current owner to "member" role
+      const { error: currentOwnerError } = await supabase
+        .from("organization_memberships")
+        .update({ role: "member" })
+        .eq("id", currentOwnerMembership.id);
+
+      if (currentOwnerError) throw currentOwnerError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["team-members"] });
+      queryClient.invalidateQueries({ queryKey: ["organizations"] });
+      refetchOrg();
+      toast({
+        title: "Ownership transferred",
+        description: `${memberToTransfer?.email || "The member"} is now the owner of this organization.`,
+      });
+      setMemberToTransfer(null);
+    },
+    onError: (error) => {
+      console.error("Failed to transfer ownership:", error);
+      toast({
+        title: "Failed to transfer ownership",
+        description: "Please try again later.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleRemove = (member: TeamMember) => {
     setMemberToRemove(member);
+  };
+
+  const handleTransfer = (member: TeamMember) => {
+    setMemberToTransfer(member);
   };
 
   const confirmRemove = () => {
     if (memberToRemove) {
       removeMutation.mutate(memberToRemove.id);
+    }
+  };
+
+  const confirmTransfer = () => {
+    if (memberToTransfer) {
+      transferMutation.mutate(memberToTransfer.user_id);
     }
   };
 
@@ -135,7 +198,7 @@ export function TeamMembersTable() {
               <TableHead>Display Name</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>Date Joined</TableHead>
-              {isOwner && <TableHead className="w-[80px]">Actions</TableHead>}
+              {isOwner && <TableHead className="w-[120px]">Actions</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -167,16 +230,30 @@ export function TeamMembersTable() {
                   </TableCell>
                   {isOwner && (
                     <TableCell>
-                      {!isMemberOwner && !isCurrentUser && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleRemove(member)}
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      )}
+                      <div className="flex gap-1">
+                        {!isMemberOwner && !isCurrentUser && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleTransfer(member)}
+                              title="Transfer ownership"
+                              className="text-primary hover:text-primary hover:bg-primary/10"
+                            >
+                              <ArrowRightLeft className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleRemove(member)}
+                              title="Remove member"
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </TableCell>
                   )}
                 </TableRow>
@@ -195,6 +272,17 @@ export function TeamMembersTable() {
         variant="destructive"
         onConfirm={confirmRemove}
         isLoading={removeMutation.isPending}
+      />
+
+      <ConfirmDialog
+        open={!!memberToTransfer}
+        onOpenChange={(open) => !open && setMemberToTransfer(null)}
+        title="Transfer Ownership"
+        description={`Are you sure you want to transfer ownership of "${organization?.name}" to ${memberToTransfer?.email || "this member"}? You will become a regular member and they will become the owner. They will be able to manage team members, regenerate invite codes, and delete the organization.`}
+        confirmLabel="Transfer Ownership"
+        variant="default"
+        onConfirm={confirmTransfer}
+        isLoading={transferMutation.isPending}
       />
     </>
   );
