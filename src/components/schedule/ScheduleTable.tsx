@@ -370,7 +370,7 @@ export function ScheduleTable({ entries }: ScheduleTableProps) {
               <TableHead className="text-muted-foreground w-24">Inspector</TableHead>
               <TableHead className="text-muted-foreground w-20">Supplier</TableHead>
               <TableHead className="text-muted-foreground w-16">Qty Ord</TableHead>
-              <TableHead className="text-muted-foreground w-10 text-center">Inv</TableHead>
+              <TableHead className="text-muted-foreground w-16 text-center">Need to Inv.</TableHead>
               <TableHead className="text-muted-foreground w-24">Actions</TableHead>
             </TableRow>
           </TableHeader>

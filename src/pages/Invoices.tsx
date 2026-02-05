@@ -246,7 +246,7 @@ export default function Invoices() {
       <Table>
         <TableHeader>
           <TableRow className="border-slate-700 hover:bg-transparent">
-            <TableHead className="text-slate-400 w-12">Complete</TableHead>
+            <TableHead className="text-slate-400 w-16">Inv Complete</TableHead>
             <TableHead className="text-slate-400">Date Completed</TableHead>
             <TableHead className="text-slate-400">Builder</TableHead>
             <TableHead className="text-slate-400">Location</TableHead>
