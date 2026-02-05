@@ -23,6 +23,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil } from "lucide-react";
+import { useOrganization } from "@/hooks/useOrganization";
 
 type TableName = "crews" | "builders" | "locations" | "phases" | "project_statuses" | "suppliers" | "pump_vendors" | "inspection_types" | "inspectors" | "concrete_mixes";
 
@@ -50,6 +51,7 @@ export function ReferenceDataTable({ tableName, displayName, hasCode, hasOrder }
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { organizationId } = useOrganization();
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: [tableName],
@@ -70,7 +72,8 @@ export function ReferenceDataTable({ tableName, displayName, hasCode, hasOrder }
 
   const createMutation = useMutation({
     mutationFn: async (newItem: Partial<ReferenceItem>) => {
-      const { error } = await supabase.from(tableName).insert([newItem] as any);
+      if (!organizationId) throw new Error("No organization found");
+      const { error } = await supabase.from(tableName).insert([{ ...newItem, organization_id: organizationId }] as any);
       if (error) throw error;
     },
     onSuccess: () => {

@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Upload, File, X, Loader2, ExternalLink, CheckCircle } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { useOrganization } from "@/hooks/useOrganization";
 
 const DOCUMENT_CATEGORIES = [
   { id: "permit_copy", label: "Permit Copy" },
@@ -35,6 +36,7 @@ export function ProjectDocuments({ projectId }: ProjectDocumentsProps) {
   const [documentToDelete, setDocumentToDelete] = useState<ProjectDocument | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { organizationId } = useOrganization();
 
   const { data: documents = [] } = useQuery({
     queryKey: ["project-documents", projectId],
@@ -51,6 +53,7 @@ export function ProjectDocuments({ projectId }: ProjectDocumentsProps) {
 
   const uploadMutation = useMutation({
     mutationFn: async ({ file, category }: { file: File; category: string }) => {
+      if (!organizationId) throw new Error("No organization found");
       const fileExt = file.name.split(".").pop();
       const filePath = `${projectId}/${category}/${Date.now()}.${fileExt}`;
 
@@ -61,6 +64,7 @@ export function ProjectDocuments({ projectId }: ProjectDocumentsProps) {
       if (uploadError) throw uploadError;
 
       const { error: dbError } = await supabase.from("project_documents").insert({
+        organization_id: organizationId,
         project_id: projectId,
         category,
         file_name: file.name,
