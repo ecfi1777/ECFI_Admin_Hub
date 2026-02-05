@@ -6,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Lock, Eye, EyeOff } from "lucide-react";
+import { PasswordStrength, getPasswordStrength } from "@/components/ui/password-strength";
+import { getUserFriendlyError } from "@/lib/errorHandler";
 
 export function ChangePassword() {
   const [newPassword, setNewPassword] = useState("");
@@ -27,10 +29,11 @@ export function ChangePassword() {
       return;
     }
 
-    if (newPassword.length < 6) {
+    const { isValid } = getPasswordStrength(newPassword);
+    if (!isValid) {
       toast({
-        title: "Password too short",
-        description: "Password must be at least 6 characters.",
+        title: "Password too weak",
+        description: "Please meet at least 4 of the 5 password requirements.",
         variant: "destructive",
       });
       return;
@@ -45,7 +48,7 @@ export function ChangePassword() {
     if (error) {
       toast({
         title: "Error",
-        description: error.message,
+        description: getUserFriendlyError(error, "ChangePassword"),
         variant: "destructive",
       });
     } else {
@@ -84,7 +87,6 @@ export function ChangePassword() {
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 required
-                minLength={6}
                 className="pr-10"
               />
               <Button
@@ -101,6 +103,7 @@ export function ChangePassword() {
                 )}
               </Button>
             </div>
+            <PasswordStrength password={newPassword} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="confirm-new-password">Confirm New Password</Label>

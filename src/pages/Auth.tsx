@@ -8,6 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { HardHat, Eye, EyeOff } from "lucide-react";
+import { PasswordStrength, getPasswordStrength } from "@/components/ui/password-strength";
+import { getUserFriendlyError } from "@/lib/errorHandler";
 
 export default function Auth() {
   const [email, setEmail] = useState("");
@@ -20,6 +22,17 @@ export default function Auth() {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const { isValid } = getPasswordStrength(password);
+    if (!isValid) {
+      toast({
+        title: "Password too weak",
+        description: "Please meet at least 4 of the 5 password requirements.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     const { error } = await supabase.auth.signUp({
@@ -36,7 +49,7 @@ export default function Auth() {
     if (error) {
       toast({
         title: "Sign up failed",
-        description: error.message,
+        description: getUserFriendlyError(error, "Auth"),
         variant: "destructive",
       });
     } else {
@@ -60,7 +73,7 @@ export default function Auth() {
     if (error) {
       toast({
         title: "Sign in failed",
-        description: error.message,
+        description: getUserFriendlyError(error, "Auth"),
         variant: "destructive",
       });
     } else {
@@ -189,7 +202,6 @@ export default function Auth() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
-                      minLength={6}
                       className="bg-slate-700 border-slate-600 text-white pr-10"
                     />
                     <Button
@@ -206,6 +218,7 @@ export default function Auth() {
                       )}
                     </Button>
                   </div>
+                  <PasswordStrength password={password} />
                 </div>
                 <Button 
                   type="submit" 
