@@ -18,6 +18,7 @@ interface ConfirmDialogProps {
   cancelLabel?: string;
   variant?: "default" | "destructive";
   onConfirm: () => void;
+  isLoading?: boolean;
 }
 
 export function ConfirmDialog({
@@ -29,29 +30,31 @@ export function ConfirmDialog({
   cancelLabel = "Cancel",
   variant = "destructive",
   onConfirm,
+  isLoading = false,
 }: ConfirmDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent className="bg-slate-800 border-slate-700">
+      <AlertDialogContent className="bg-card border-border">
         <AlertDialogHeader>
-          <AlertDialogTitle className="text-white">{title}</AlertDialogTitle>
-          <AlertDialogDescription className="text-slate-400">
+          <AlertDialogTitle className="text-foreground">{title}</AlertDialogTitle>
+          <AlertDialogDescription className="text-muted-foreground">
             {description}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel className="bg-slate-700 border-slate-600 text-white hover:bg-slate-600">
+          <AlertDialogCancel className="bg-muted border-border text-foreground hover:bg-muted/80" disabled={isLoading}>
             {cancelLabel}
           </AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirm}
+            disabled={isLoading}
             className={
               variant === "destructive"
-                ? "bg-red-600 hover:bg-red-700 text-white"
+                ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground"
                 : ""
             }
           >
-            {confirmLabel}
+            {isLoading ? "Removing..." : confirmLabel}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

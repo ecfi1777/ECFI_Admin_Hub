@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Building2, Copy, Check, Users } from "lucide-react";
+import { TeamMembersTable } from "./TeamMembersTable";
 
 export function OrganizationSettings() {
   const { organization, isOwner, isLoading } = useOrganization();
@@ -119,6 +120,23 @@ export function OrganizationSettings() {
                 New team members can use this code when signing up to automatically join your organization.
               </p>
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {isOwner && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-primary" />
+              <CardTitle>Team Members</CardTitle>
+            </div>
+            <CardDescription>
+              Manage users who have access to your organization
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <TeamMembersTable />
           </CardContent>
         </Card>
       )}
