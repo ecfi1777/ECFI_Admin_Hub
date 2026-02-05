@@ -1,7 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, createContext, useContext, ReactNode } from "react";
 
 interface Organization {
   id: string;
@@ -16,10 +16,26 @@ interface OrganizationMembership {
   organizations: Organization;
 }
 
+interface OrganizationContextValue {
+  organizationId: string | null;
+  organization: Organization | null;
+  role: string | null;
+  isOwner: boolean;
+  allOrganizations: OrganizationMembership[];
+  switchOrganization: (orgId: string) => void;
+  isLoading: boolean;
+  error: Error | null;
+  refetch: () => void;
+  hasOrganization: boolean;
+}
+
+const OrganizationContext = createContext<OrganizationContextValue | null>(null);
+
 const ACTIVE_ORG_KEY = "ecfi_active_organization_id";
 
-export function useOrganization() {
+export function OrganizationProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   
   // Get active org from localStorage, with fallback to first org
   const [activeOrgId, setActiveOrgIdState] = useState<string | null>(() => {
@@ -55,7 +71,6 @@ export function useOrganization() {
         throw error;
       }
       
-      console.log("All organizations fetched:", data);
       return (data || []) as unknown as OrganizationMembership[];
     },
     enabled: !!user?.id,
@@ -82,30 +97,38 @@ export function useOrganization() {
     }
   }, [allMemberships, activeOrgId]);
 
-
-  // Switch organization
+  // Switch organization - updates state and invalidates queries
   const switchOrganization = useCallback((orgId: string) => {
     setActiveOrgIdState(orgId);
     localStorage.setItem(ACTIVE_ORG_KEY, orgId);
-  }, []);
+    // Invalidate all queries to force refetch with new org
+    queryClient.invalidateQueries();
+  }, [queryClient]);
 
-  return {
-    // Current active organization
+  const value: OrganizationContextValue = {
     organizationId: currentMembership?.organization_id ?? null,
     organization: currentMembership?.organizations ?? null,
     role: currentMembership?.role ?? null,
     isOwner: currentMembership?.role === "owner",
-    
-    // Multi-org support
     allOrganizations: allMemberships || [],
     switchOrganization,
-    
-    // Loading/error state
     isLoading,
-    error,
+    error: error as Error | null,
     refetch,
-    
-    // Check if user has any organizations
     hasOrganization: (allMemberships?.length ?? 0) > 0,
   };
+
+  return (
+    <OrganizationContext.Provider value={value}>
+      {children}
+    </OrganizationContext.Provider>
+  );
+}
+
+export function useOrganization() {
+  const context = useContext(OrganizationContext);
+  if (!context) {
+    throw new Error("useOrganization must be used within an OrganizationProvider");
+  }
+  return context;
 }
