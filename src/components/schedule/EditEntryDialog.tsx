@@ -141,6 +141,7 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["schedule-entries"] });
+      queryClient.invalidateQueries({ queryKey: ["calendar-entries"] });
       toast.success("Entry updated");
       onOpenChange(false);
     },
