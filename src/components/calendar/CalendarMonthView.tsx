@@ -54,7 +54,16 @@ export const CalendarMonthView = memo(function CalendarMonthView({
     return days;
   }, [currentMonth]);
 
-  // Group entries by date
+  // Create crew order lookup for sorting
+  const crewOrderMap = useMemo(() => {
+    const map: Record<string, number> = {};
+    crews.forEach((crew) => {
+      map[crew.id] = crew.display_order;
+    });
+    return map;
+  }, [crews]);
+
+  // Group entries by date, sorted by crew display_order
   const entriesByDate = useMemo(() => {
     const map: Record<string, ScheduleEntry[]> = {};
     entries.forEach((entry) => {
@@ -62,8 +71,16 @@ export const CalendarMonthView = memo(function CalendarMonthView({
       if (!map[dateKey]) map[dateKey] = [];
       map[dateKey].push(entry);
     });
+    // Sort each day's entries by crew display_order
+    Object.values(map).forEach((dayEntries) => {
+      dayEntries.sort((a, b) => {
+        const orderA = a.crew_id ? (crewOrderMap[a.crew_id] ?? 999) : 999;
+        const orderB = b.crew_id ? (crewOrderMap[b.crew_id] ?? 999) : 999;
+        return orderA - orderB;
+      });
+    });
     return map;
-  }, [entries]);
+  }, [entries, crewOrderMap]);
 
   // Split days into weeks for grid
   const weeks = useMemo(() => {
