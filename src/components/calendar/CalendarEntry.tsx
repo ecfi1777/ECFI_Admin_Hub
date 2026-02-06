@@ -18,27 +18,20 @@ export const CalendarEntry = memo(function CalendarEntry({
   const crewColor = crew ? getCrewColor(crew) : "#6b7280";
   const textColor = getContrastTextColor(crewColor);
 
-  // Build compact display text: "Lot | Builder - Location | Phase"
+  // Build compact display text: "Phase | Location | Lot#"
   const project = entry.projects;
   const parts: string[] = [];
   
-  if (project?.lot_number) {
-    parts.push(project.lot_number);
-  }
-  
-  const builderLocation: string[] = [];
-  if (project?.builders?.code || project?.builders?.name) {
-    builderLocation.push(project.builders.code || project.builders.name);
-  }
-  if (project?.locations?.name) {
-    builderLocation.push(project.locations.name);
-  }
-  if (builderLocation.length > 0) {
-    parts.push(builderLocation.join(" - "));
-  }
-  
   if (entry.phases?.name) {
     parts.push(entry.phases.name);
+  }
+  
+  if (project?.locations?.name) {
+    parts.push(project.locations.name);
+  }
+  
+  if (project?.lot_number) {
+    parts.push(project.lot_number);
   }
 
   const displayText = parts.join(" | ") || "No details";
