@@ -1,144 +1,114 @@
 
+# Fix: Organization Membership Visibility Issue
 
-# Fix: Organization Switcher Data Refresh
+## Problem Summary
+When you're logged in as `ecfischedule@gmail.com` and viewing the ECFI 1 organization, you can't see other team members (like `elan@easternconcrete.com`) or transfer ownership because of a bug in how the database determines which organization you're currently using.
 
-## Problem Analysis
+## Root Cause
+The database has a helper function called `get_user_organization_id()` that picks which organization a user belongs to. However, this function:
+- Picks the **first** organization membership it finds (not necessarily the one you're currently viewing)
+- Doesn't know which organization you've selected in the app
 
-When switching organizations, the data on the current page doesn't refresh immediately. The console logs show "Organization switched... invalidating queries" is being called, but network requests show queries are still fetching with the OLD organization ID.
+Since `ecfischedule@gmail.com` joined "Test Company 1" before "ECFI 1", the database always thinks you're in Test Company 1, even when you've switched to ECFI 1 in the app.
 
-### Root Cause
-
-There's a **timing/state propagation issue** in the React lifecycle:
-
-1. User clicks to switch organization in `OrganizationSwitcher`
-2. `switchOrganization(newOrgId)` is called, which sets `activeOrgId` state
-3. The `useEffect` in `useOrganization` detects `currentMembership?.organization_id` changed and calls `queryClient.invalidateQueries()`
-4. **Problem**: At this point, the child components (like `DailySchedule`) haven't re-rendered yet with the new `organizationId`
-5. When TanStack Query refetches the invalidated queries, the query functions still have the OLD `organizationId` in their closure from the previous render
-6. Result: Data is fetched for the wrong organization
-
-### Evidence from Network Logs
-
-All requests after switching still show:
-```
-organization_id=eq.9e6edef7-b918-401c-9d96-8952cc66ec6b
-```
-Even though the organization visually switched in the sidebar.
+This causes the security rules to hide other ECFI 1 members from you because it thinks you're not currently in that organization.
 
 ## Solution
+Update the security rules to allow users to view and manage memberships for **any organization where they are an owner**, not just the first organization returned by the function.
 
-Instead of calling `invalidateQueries()` immediately in a `useEffect`, we need to ensure queries refetch **after** the new `organizationId` has propagated to all components. There are two approaches:
-
-### Approach: Force Component Re-render First, Then Invalidate
-
-The cleanest fix is to:
-
-1. **Remove** the query invalidation from `useOrganization` hook's `useEffect`
-2. **Add a "key" prop** to the main content area that changes when `organizationId` changes
-
-This forces React to unmount and remount the entire content tree with fresh state and the correct `organizationId`.
-
-## Implementation
-
-### Step 1: Remove Query Invalidation from useOrganization
-
-Remove the `useEffect` that calls `queryClient.invalidateQueries()` since it's causing the race condition.
-
-**File: `src/hooks/useOrganization.tsx`**
-
-```typescript
-// REMOVE this entire useEffect block (lines 86-106):
-// Track previous org to detect changes and invalidate queries
-const previousOrgIdRef = useRef<string | null>(null);
-const isInitializedRef = useRef(false);
-
-// Invalidate queries when organizationId changes (after initial load)
-useEffect(() => {
-  const currentOrgId = currentMembership?.organization_id ?? null;
-  
-  if (isInitializedRef.current && previousOrgIdRef.current !== currentOrgId && currentOrgId) {
-    console.log("Organization switched from", previousOrgIdRef.current, "to", currentOrgId, "- invalidating queries");
-    queryClient.invalidateQueries();
-  }
-  
-  if (currentOrgId && !isInitializedRef.current) {
-    isInitializedRef.current = true;
-  }
-  
-  previousOrgIdRef.current = currentOrgId;
-}, [currentMembership?.organization_id, queryClient]);
-```
-
-Also remove the now-unused imports and `useQueryClient` call if no longer needed.
-
-### Step 2: Add Key Prop to Force Re-mount in AppLayout
-
-Use React's `key` prop to force a complete re-render of the main content area when `organizationId` changes. This guarantees all child components unmount and remount with the new context.
-
-**File: `src/components/layout/AppLayout.tsx`**
-
-Wrap the main content area with a `key={organizationId}`:
-
-```tsx
-export function AppLayout({ children }: AppLayoutProps) {
-  const { organizationId } = useOrganization();
-  
-  return (
-    <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-background">
-        <AppSidebar />
-        <main key={organizationId || "loading"} className="flex-1">
-          {children}
-        </main>
-      </div>
-    </SidebarProvider>
-  );
-}
-```
-
-When `organizationId` changes:
-- React sees a different `key` on `<main>`
-- It unmounts the old tree and mounts a fresh one
-- All `useQuery` hooks re-run with the correct `organizationId`
-- No stale closures, no race conditions
-
-## Why This Works
-
-1. **No timing issues**: React's key-based remounting is synchronous and deterministic
-2. **Clean state**: Each organization gets a fresh component tree with no stale data
-3. **Simpler code**: Removes complex effect-based invalidation logic
-4. **Guaranteed correctness**: Queries always run with the correct `organizationId` from their initial mount
+---
 
 ## Technical Details
 
-The key change is conceptually simple but has significant impact:
+### Current RLS Policy (SELECT)
+```sql
+(organization_id = get_user_organization_id(auth.uid())) 
+OR (user_id = auth.uid())
+```
+This only allows viewing memberships in ONE organization (whichever `LIMIT 1` returns).
 
-```text
-Before (race condition):
-┌──────────────────────────────────────────────────────┐
-│ 1. switchOrganization(newId)                         │
-│ 2. activeOrgId state updates                         │
-│ 3. useEffect detects change                          │
-│ 4. invalidateQueries() called                        │
-│ 5. TanStack refetches with OLD organizationId ❌     │
-│ 6. Components re-render with new organizationId      │
-│ 7. User sees stale data                              │
-└──────────────────────────────────────────────────────┘
+### Current RLS Policy (UPDATE - for ownership transfer)  
+```sql
+(organization_id = get_user_organization_id(auth.uid()))
+```
+Same issue - only works for one organization.
 
-After (key-based remount):
-┌──────────────────────────────────────────────────────┐
-│ 1. switchOrganization(newId)                         │
-│ 2. activeOrgId state updates                         │
-│ 3. AppLayout re-renders with new organizationId      │
-│ 4. key={organizationId} changes                      │
-│ 5. React unmounts old <main>, mounts new <main>      │
-│ 6. All children mount fresh with correct context     │
-│ 7. useQuery hooks run with correct organizationId ✓  │
-└──────────────────────────────────────────────────────┘
+### Updated RLS Policy (SELECT)
+```sql
+EXISTS (
+  SELECT 1 FROM organization_memberships om
+  WHERE om.user_id = auth.uid()
+  AND om.organization_id = organization_memberships.organization_id
+)
+OR (user_id = auth.uid())
+```
+This allows viewing memberships for **all organizations the user belongs to**.
+
+### Updated RLS Policy (UPDATE)
+```sql
+EXISTS (
+  SELECT 1 FROM organization_memberships om
+  WHERE om.user_id = auth.uid()
+  AND om.organization_id = organization_memberships.organization_id
+  AND om.role = 'owner'
+)
+```
+This allows managing memberships in **any organization where the user is an owner**.
+
+---
+
+## Implementation Steps
+
+1. **Drop existing problematic policies**
+   - `Users can view memberships in their organization`
+   - `Owners can manage memberships`
+
+2. **Create corrected policies**
+   - New SELECT policy: Allow viewing all memberships in any organization the user belongs to
+   - New UPDATE policy: Allow managing memberships only in organizations where user is an owner
+
+3. **Test the fix**
+   - Log in as `ecfischedule@gmail.com`
+   - Navigate to Settings > Organization
+   - Verify `elan@easternconcrete.com` now appears in the Team Members table
+   - Verify the transfer ownership button works
+
+---
+
+## Migration SQL Preview
+```sql
+-- Drop the problematic policies
+DROP POLICY IF EXISTS "Users can view memberships in their organization" 
+  ON organization_memberships;
+DROP POLICY IF EXISTS "Owners can manage memberships" 
+  ON organization_memberships;
+
+-- Create corrected SELECT policy
+CREATE POLICY "Users can view memberships in their organizations"
+  ON organization_memberships FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM organization_memberships om
+      WHERE om.user_id = auth.uid()
+      AND om.organization_id = organization_memberships.organization_id
+    )
+    OR (user_id = auth.uid())
+  );
+
+-- Create corrected UPDATE policy  
+CREATE POLICY "Owners can manage memberships in their organizations"
+  ON organization_memberships FOR UPDATE
+  USING (
+    EXISTS (
+      SELECT 1 FROM organization_memberships om
+      WHERE om.user_id = auth.uid()
+      AND om.organization_id = organization_memberships.organization_id
+      AND om.role = 'owner'
+    )
+  );
 ```
 
-## Files to Modify
-
-1. **`src/hooks/useOrganization.tsx`** - Remove the query invalidation effect and related refs
-2. **`src/components/layout/AppLayout.tsx`** - Add `key={organizationId}` to main content wrapper
-
+## Risk Assessment
+- **Low risk**: Only changes visibility rules, no data modifications
+- **Backward compatible**: Users in single organizations will see no change
+- **Immediate effect**: Fix will work as soon as migration runs
