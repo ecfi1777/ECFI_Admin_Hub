@@ -25,7 +25,7 @@ interface CalendarMonthViewProps {
 }
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const MAX_VISIBLE_ENTRIES = 3;
+const MAX_VISIBLE_ENTRIES = 6;
 
 export const CalendarMonthView = memo(function CalendarMonthView({
   currentMonth,

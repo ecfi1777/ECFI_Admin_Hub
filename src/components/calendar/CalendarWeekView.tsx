@@ -16,7 +16,7 @@ interface CalendarWeekViewProps {
   onAddEntry: (date: Date) => void;
 }
 
-const MAX_VISIBLE_ENTRIES = 3;
+const MAX_VISIBLE_ENTRIES = 6;
 
 export const CalendarWeekView = memo(function CalendarWeekView({
   weekStart,
