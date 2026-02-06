@@ -18,7 +18,9 @@ import { ChevronLeft, ChevronRight, CalendarDays, CalendarRange } from "lucide-r
 import { CalendarWeekView } from "@/components/calendar/CalendarWeekView";
 import { CalendarMonthView } from "@/components/calendar/CalendarMonthView";
 import { CrewColorLegend } from "@/components/calendar/CrewColorLegend";
+import { DayDetailModal } from "@/components/calendar/DayDetailModal";
 import { EditEntryDialog } from "@/components/schedule/EditEntryDialog";
+import { AddEntryDialog } from "@/components/schedule/AddEntryDialog";
 import { useCalendarEntries, useCrewsWithColors } from "@/hooks/useCalendarData";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ScheduleEntry } from "@/types/schedule";
@@ -33,6 +35,15 @@ export default function CalendarView() {
   // Edit dialog state
   const [editEntry, setEditEntry] = useState<ScheduleEntry | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+
+  // Day detail modal state
+  const [dayDetailDate, setDayDetailDate] = useState<Date | null>(null);
+  const [dayDetailEntries, setDayDetailEntries] = useState<ScheduleEntry[]>([]);
+  const [dayDetailOpen, setDayDetailOpen] = useState(false);
+
+  // Add entry dialog state
+  const [addEntryDate, setAddEntryDate] = useState<string>("");
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
 
   // Calculate date range based on view mode
   const { startDate, endDate, displayTitle } = useMemo(() => {
@@ -100,6 +111,17 @@ export default function CalendarView() {
   const handleEntryClick = useCallback((entry: ScheduleEntry) => {
     setEditEntry(entry);
     setEditDialogOpen(true);
+  }, []);
+
+  const handleShowDayDetail = useCallback((date: Date, dayEntries: ScheduleEntry[]) => {
+    setDayDetailDate(date);
+    setDayDetailEntries(dayEntries);
+    setDayDetailOpen(true);
+  }, []);
+
+  const handleAddEntry = useCallback((date: Date) => {
+    setAddEntryDate(format(date, "yyyy-MM-dd"));
+    setAddDialogOpen(true);
   }, []);
 
   return (
@@ -182,6 +204,8 @@ export default function CalendarView() {
             crews={crews}
             onDayClick={handleDayClick}
             onEntryClick={handleEntryClick}
+            onShowDayDetail={handleShowDayDetail}
+            onAddEntry={handleAddEntry}
           />
         ) : (
           <CalendarMonthView
@@ -190,14 +214,33 @@ export default function CalendarView() {
             crews={crews}
             onDayClick={handleDayClick}
             onEntryClick={handleEntryClick}
+            onShowDayDetail={handleShowDayDetail}
+            onAddEntry={handleAddEntry}
           />
         )}
+
+        {/* Day Detail Modal */}
+        <DayDetailModal
+          open={dayDetailOpen}
+          onOpenChange={setDayDetailOpen}
+          date={dayDetailDate}
+          entries={dayDetailEntries}
+          crews={crews}
+          onEntryClick={handleEntryClick}
+        />
 
         {/* Edit Entry Dialog */}
         <EditEntryDialog
           entry={editEntry}
           open={editDialogOpen}
           onOpenChange={setEditDialogOpen}
+        />
+
+        {/* Add Entry Dialog */}
+        <AddEntryDialog
+          open={addDialogOpen}
+          onOpenChange={setAddDialogOpen}
+          defaultDate={addEntryDate}
         />
       </div>
     </AppLayout>

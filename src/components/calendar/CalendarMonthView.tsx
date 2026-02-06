@@ -1,4 +1,4 @@
-import { memo, useMemo } from "react";
+import { memo, useMemo, useState } from "react";
 import {
   format,
   startOfMonth,
@@ -9,8 +9,8 @@ import {
   isSameMonth,
   isToday,
 } from "date-fns";
+import { Plus } from "lucide-react";
 import { CalendarEntry } from "./CalendarEntry";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import type { ScheduleEntry } from "@/types/schedule";
 import type { CrewWithColor } from "@/hooks/useCalendarData";
 
@@ -20,6 +20,8 @@ interface CalendarMonthViewProps {
   crews: CrewWithColor[];
   onDayClick: (date: Date) => void;
   onEntryClick: (entry: ScheduleEntry) => void;
+  onShowDayDetail: (date: Date, entries: ScheduleEntry[]) => void;
+  onAddEntry: (date: Date) => void;
 }
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -31,7 +33,11 @@ export const CalendarMonthView = memo(function CalendarMonthView({
   crews,
   onDayClick,
   onEntryClick,
+  onShowDayDetail,
+  onAddEntry,
 }: CalendarMonthViewProps) {
+  const [hoveredDay, setHoveredDay] = useState<string | null>(null);
+
   // Generate all days for the calendar grid
   const calendarDays = useMemo(() => {
     const monthStart = startOfMonth(currentMonth);
@@ -92,31 +98,52 @@ export const CalendarMonthView = memo(function CalendarMonthView({
             const isCurrentDay = isToday(day);
             const hasMoreEntries = dayEntries.length > MAX_VISIBLE_ENTRIES;
             const visibleEntries = dayEntries.slice(0, MAX_VISIBLE_ENTRIES);
+            const isHovered = hoveredDay === dateStr;
 
             return (
               <div
                 key={dateStr}
-                className={`bg-card min-h-[100px] flex flex-col ${
+                className={`bg-card min-h-[100px] flex flex-col relative group ${
                   !isCurrentMonth ? "opacity-40" : ""
                 }`}
+                onMouseEnter={() => setHoveredDay(dateStr)}
+                onMouseLeave={() => setHoveredDay(null)}
               >
                 {/* Day Number */}
-                <button
-                  onClick={() => onDayClick(day)}
-                  className={`p-1 text-right hover:bg-muted/50 transition-colors ${
-                    isCurrentDay ? "bg-primary/10" : ""
-                  }`}
-                >
-                  <span
-                    className={`inline-flex items-center justify-center w-6 h-6 text-sm rounded-full ${
-                      isCurrentDay
-                        ? "bg-primary text-primary-foreground font-semibold"
-                        : "text-foreground"
+                <div className="flex items-center justify-between p-1">
+                  <button
+                    onClick={() => onDayClick(day)}
+                    className={`hover:bg-muted/50 transition-colors rounded-full ${
+                      isCurrentDay ? "bg-primary/10" : ""
                     }`}
                   >
-                    {format(day, "d")}
-                  </span>
-                </button>
+                    <span
+                      className={`inline-flex items-center justify-center w-6 h-6 text-sm rounded-full ${
+                        isCurrentDay
+                          ? "bg-primary text-primary-foreground font-semibold"
+                          : "text-foreground"
+                      }`}
+                    >
+                      {format(day, "d")}
+                    </span>
+                  </button>
+
+                  {/* Add Button - appears on hover */}
+                  {isCurrentMonth && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAddEntry(day);
+                      }}
+                      className={`w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-all ${
+                        isHovered ? "opacity-100 scale-100" : "opacity-0 scale-75"
+                      }`}
+                      aria-label={`Add entry for ${format(day, "MMMM d")}`}
+                    >
+                      <Plus className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
 
                 {/* Entries */}
                 <div className="flex-1 px-1 pb-1 space-y-0.5">
@@ -130,7 +157,7 @@ export const CalendarMonthView = memo(function CalendarMonthView({
                   ))}
                   {hasMoreEntries && (
                     <button
-                      onClick={() => onDayClick(day)}
+                      onClick={() => onShowDayDetail(day, dayEntries)}
                       className="w-full text-left px-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
                     >
                       +{dayEntries.length - MAX_VISIBLE_ENTRIES} more

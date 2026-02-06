@@ -129,6 +129,7 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate 
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["schedule-entries"] });
+      queryClient.invalidateQueries({ queryKey: ["calendar-entries"] });
       toast.success("Entry created");
       resetForm();
       onOpenChange(false);
