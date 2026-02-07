@@ -88,6 +88,7 @@ export default function Reports() {
           inspection_notes,
           crew_yards_poured,
           crew_notes,
+          notes,
           to_be_invoiced,
           invoice_complete,
           invoice_number

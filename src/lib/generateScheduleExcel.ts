@@ -31,6 +31,7 @@ interface ScheduleEntryExport {
   inspection_notes?: string | null;
   crew_yards_poured?: number | null;
   crew_notes?: string | null;
+  notes?: string | null;
   to_be_invoiced?: boolean;
   invoice_complete?: boolean;
   invoice_number?: string | null;
@@ -74,6 +75,8 @@ export function generateScheduleExcel(
     // Crew
     "Yards Poured": entry.crew_yards_poured || "",
     "Crew Notes": entry.crew_notes || "",
+    // General
+    "Notes": entry.notes || "",
     // Invoice Status
     "Invoice Status": entry.invoice_complete
       ? "Complete"
@@ -116,6 +119,7 @@ export function generateScheduleExcel(
     { wch: 30 }, // Inspection Notes
     { wch: 12 }, // Yards Poured
     { wch: 30 }, // Crew Notes
+    { wch: 30 }, // Notes
     { wch: 14 }, // Invoice Status
     { wch: 15 }, // Invoice #
   ];
