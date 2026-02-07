@@ -1,114 +1,29 @@
 
-# Fix: Organization Membership Visibility Issue
 
-## Problem Summary
-When you're logged in as `ecfischedule@gmail.com` and viewing the ECFI 1 organization, you can't see other team members (like `elan@easternconcrete.com`) or transfer ownership because of a bug in how the database determines which organization you're currently using.
+## Add General Notes to Monthly Schedule Backup Export
 
-## Root Cause
-The database has a helper function called `get_user_organization_id()` that picks which organization a user belongs to. However, this function:
-- Picks the **first** organization membership it finds (not necessarily the one you're currently viewing)
-- Doesn't know which organization you've selected in the app
+The `notes` field (general entry notes) is missing from the Excel export. This is a small change across two files.
 
-Since `ecfischedule@gmail.com` joined "Test Company 1" before "ECFI 1", the database always thinks you're in Test Company 1, even when you've switched to ECFI 1 in the app.
+### Changes
 
-This causes the security rules to hide other ECFI 1 members from you because it thinks you're not currently in that organization.
+**1. `src/pages/Reports.tsx`** - Add `notes` to the query select statement (line ~93, before `to_be_invoiced`).
 
-## Solution
-Update the security rules to allow users to view and manage memberships for **any organization where they are an owner**, not just the first organization returned by the function.
+**2. `src/lib/generateScheduleExcel.ts`** - Three updates:
+   - Add `notes?: string | null` to the `ScheduleEntryExport` interface
+   - Add a `"Notes"` column in the Excel data mapping, placed after "Crew Notes" (near the end, before Invoice Status)
+   - Add a column width entry `{ wch: 30 }` for the new Notes column
 
----
+### Technical Details
 
-## Technical Details
+**Query change (Reports.tsx, line ~93):**
+Add `notes,` to the select string, right before `to_be_invoiced`.
 
-### Current RLS Policy (SELECT)
-```sql
-(organization_id = get_user_organization_id(auth.uid())) 
-OR (user_id = auth.uid())
-```
-This only allows viewing memberships in ONE organization (whichever `LIMIT 1` returns).
+**Interface update (generateScheduleExcel.ts):**
+Add `notes?: string | null;` to `ScheduleEntryExport`.
 
-### Current RLS Policy (UPDATE - for ownership transfer)  
-```sql
-(organization_id = get_user_organization_id(auth.uid()))
-```
-Same issue - only works for one organization.
+**Excel column (generateScheduleExcel.ts):**
+Add `"Notes": entry.notes || "",` after `"Crew Notes"` and before `"Invoice Status"`.
 
-### Updated RLS Policy (SELECT)
-```sql
-EXISTS (
-  SELECT 1 FROM organization_memberships om
-  WHERE om.user_id = auth.uid()
-  AND om.organization_id = organization_memberships.organization_id
-)
-OR (user_id = auth.uid())
-```
-This allows viewing memberships for **all organizations the user belongs to**.
+**Column width:**
+Add `{ wch: 30 }` for the Notes column after the Crew Notes width entry.
 
-### Updated RLS Policy (UPDATE)
-```sql
-EXISTS (
-  SELECT 1 FROM organization_memberships om
-  WHERE om.user_id = auth.uid()
-  AND om.organization_id = organization_memberships.organization_id
-  AND om.role = 'owner'
-)
-```
-This allows managing memberships in **any organization where the user is an owner**.
-
----
-
-## Implementation Steps
-
-1. **Drop existing problematic policies**
-   - `Users can view memberships in their organization`
-   - `Owners can manage memberships`
-
-2. **Create corrected policies**
-   - New SELECT policy: Allow viewing all memberships in any organization the user belongs to
-   - New UPDATE policy: Allow managing memberships only in organizations where user is an owner
-
-3. **Test the fix**
-   - Log in as `ecfischedule@gmail.com`
-   - Navigate to Settings > Organization
-   - Verify `elan@easternconcrete.com` now appears in the Team Members table
-   - Verify the transfer ownership button works
-
----
-
-## Migration SQL Preview
-```sql
--- Drop the problematic policies
-DROP POLICY IF EXISTS "Users can view memberships in their organization" 
-  ON organization_memberships;
-DROP POLICY IF EXISTS "Owners can manage memberships" 
-  ON organization_memberships;
-
--- Create corrected SELECT policy
-CREATE POLICY "Users can view memberships in their organizations"
-  ON organization_memberships FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM organization_memberships om
-      WHERE om.user_id = auth.uid()
-      AND om.organization_id = organization_memberships.organization_id
-    )
-    OR (user_id = auth.uid())
-  );
-
--- Create corrected UPDATE policy  
-CREATE POLICY "Owners can manage memberships in their organizations"
-  ON organization_memberships FOR UPDATE
-  USING (
-    EXISTS (
-      SELECT 1 FROM organization_memberships om
-      WHERE om.user_id = auth.uid()
-      AND om.organization_id = organization_memberships.organization_id
-      AND om.role = 'owner'
-    )
-  );
-```
-
-## Risk Assessment
-- **Low risk**: Only changes visibility rules, no data modifications
-- **Backward compatible**: Users in single organizations will see no change
-- **Immediate effect**: Fix will work as soon as migration runs
