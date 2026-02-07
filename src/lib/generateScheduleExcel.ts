@@ -15,6 +15,10 @@ interface ScheduleEntryExport {
   ready_mix_yards_billed?: number | null;
   ready_mix_invoice_number?: string | null;
   ready_mix_invoice_amount?: number | null;
+  concrete_mix?: { name: string } | null;
+  additive_hot_water?: boolean;
+  additive_1_percent_he?: boolean;
+  additive_2_percent_he?: boolean;
   concrete_notes?: string | null;
   pump_vendor?: { name: string; code?: string | null } | null;
   pump_invoice_number?: string | null;
@@ -51,6 +55,10 @@ export function generateScheduleExcel(
     "Yards Billed": entry.ready_mix_yards_billed || "",
     "Concrete Invoice #": entry.ready_mix_invoice_number || "",
     "Concrete Invoice $": entry.ready_mix_invoice_amount || "",
+    "Concrete Mix": entry.concrete_mix?.name || "",
+    "Hot Water": entry.additive_hot_water ? "Yes" : "",
+    "1% HE": entry.additive_1_percent_he ? "Yes" : "",
+    "2% HE": entry.additive_2_percent_he ? "Yes" : "",
     "Concrete Notes": entry.concrete_notes || "",
     // Pump
     "Pump Vendor": entry.pump_vendor?.name || "",
@@ -92,6 +100,10 @@ export function generateScheduleExcel(
     { wch: 12 }, // Yards Billed
     { wch: 18 }, // Concrete Invoice #
     { wch: 16 }, // Concrete Invoice $
+    { wch: 20 }, // Concrete Mix
+    { wch: 10 }, // Hot Water
+    { wch: 10 }, // 1% HE
+    { wch: 10 }, // 2% HE
     { wch: 30 }, // Concrete Notes
     { wch: 20 }, // Pump Vendor
     { wch: 15 }, // Pump Invoice #
