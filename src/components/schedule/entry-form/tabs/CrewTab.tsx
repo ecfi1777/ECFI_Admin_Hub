@@ -45,7 +45,7 @@ export function CrewTab({ formData, updateField, currentCrewId }: CrewTabProps) 
             <SelectItem value="none">Unassigned</SelectItem>
             {crewOptions.map((c) => (
               <SelectItem key={c.id} value={c.id}>
-                {c.name}{!c.is_active && " (Inactive)"}
+                {c.name}{c.is_active === false && " (Inactive)"}
               </SelectItem>
             ))}
           </SelectContent>

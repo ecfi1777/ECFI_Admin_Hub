@@ -223,7 +223,7 @@ export function useCrews() {
       if (!organizationId) return [];
       const { data, error } = await supabase
         .from("crews")
-        .select("id, name")
+        .select("id, name, is_active")
         .eq("organization_id", organizationId)
         .eq("is_active", true)
         .order("display_order");

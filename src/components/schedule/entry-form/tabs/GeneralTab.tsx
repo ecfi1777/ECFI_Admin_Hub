@@ -45,7 +45,7 @@ export function GeneralTab({ formData, updateField, showCrew = true, crewOptions
                 <SelectItem value="none">Unassigned</SelectItem>
                 {crews.map((crew) => (
                   <SelectItem key={crew.id} value={crew.id}>
-                    {crew.name}{!crew.is_active && " (Inactive)"}
+                    {crew.name}{crew.is_active === false && " (Inactive)"}
                   </SelectItem>
                 ))}
               </SelectContent>
