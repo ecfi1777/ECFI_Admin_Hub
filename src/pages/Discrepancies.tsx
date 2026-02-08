@@ -1,284 +1,333 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
-import { format } from "date-fns";
+import { useState, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { AlertTriangle, TrendingDown, TrendingUp } from "lucide-react";
-import { ProjectDetailsSheet } from "@/components/projects/ProjectDetailsSheet";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Search, X } from "lucide-react";
 import { useOrganization } from "@/hooks/useOrganization";
+import { useBuilders, useCrews, useLocations } from "@/hooks/useReferenceData";
+import { EditEntryDialog } from "@/components/schedule/EditEntryDialog";
+import { IncompleteEntriesSection } from "@/components/discrepancies/IncompleteEntriesSection";
+import { ProjectDiscrepancyRow } from "@/components/discrepancies/ProjectDiscrepancyRow";
+import { YardsSummaryCards } from "@/components/discrepancies/YardsSummaryCards";
+import type { ScheduleEntry } from "@/types/schedule";
 
-// Define inline type that matches the query shape
-interface DiscrepancyEntry {
-  id: string;
-  scheduled_date: string;
-  crew_yards_poured: number | null;
-  ready_mix_yards_billed: number | null;
-  crews: { name: string } | null;
-  phases: { name: string } | null;
-  suppliers: { name: string; code: string | null } | null;
-  projects: {
-    id: string;
-    lot_number: string;
-    builders: { name: string; code: string | null } | null;
-    locations: { name: string } | null;
-  } | null;
-}
-
-interface CrewSummary {
-  name: string;
-  totalPoured: number;
-}
-
-interface SupplierSummary {
-  name: string;
-  totalBilled: number;
-}
+const ENTRY_SELECT = `
+  id, scheduled_date, project_id, crew_id, phase_id, start_time, order_status, notes,
+  supplier_id, concrete_mix_id, qty_ordered, order_number,
+  ready_mix_invoice_number, ready_mix_invoice_amount, ready_mix_yards_billed,
+  crew_yards_poured, crew_notes, concrete_notes,
+  pump_vendor_id, pump_invoice_number, pump_invoice_amount, pump_notes,
+  inspection_type_id, inspector_id, inspection_invoice_number, inspection_amount, inspection_notes,
+  to_be_invoiced, invoice_complete, invoice_number,
+  additive_hot_water, additive_1_percent_he, additive_2_percent_he,
+  crews(name), phases(name), suppliers(name, code),
+  pump_vendors(name, code), inspection_types(name), inspectors(name),
+  concrete_mixes(name),
+  projects(id, lot_number, builders(name, code), locations(name))
+`;
 
 export default function Discrepancies() {
-  const navigate = useNavigate();
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
   const { organizationId } = useOrganization();
 
-  const { data: discrepancyEntries = [], isLoading } = useQuery({
-    queryKey: ["discrepancies", organizationId],
+  // Filters
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterBuilder, setFilterBuilder] = useState("all");
+  const [filterCrew, setFilterCrew] = useState("all");
+  const [filterLocation, setFilterLocation] = useState("all");
+
+  // Edit dialog
+  const [editEntry, setEditEntry] = useState<ScheduleEntry | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+
+  // Reference data
+  const { data: builders = [] } = useBuilders();
+  const { data: crews = [] } = useCrews();
+  const { data: locations = [] } = useLocations();
+
+  // Incomplete entries: missing crew_yards_poured OR ready_mix_yards_billed
+  const { data: incompleteEntries = [], isLoading: loadingIncomplete } = useQuery({
+    queryKey: ["discrepancy-incomplete", organizationId],
     queryFn: async () => {
       if (!organizationId) return [];
       const { data, error } = await supabase
         .from("schedule_entries")
-        .select(`
-          id, scheduled_date, crew_yards_poured, ready_mix_yards_billed,
-          crews(name),
-          phases(name),
-          suppliers(name, code),
-          projects(id, lot_number, builders(name, code), locations(name))
-        `)
+        .select(ENTRY_SELECT)
+        .eq("organization_id", organizationId)
+        .eq("deleted", false)
+        .or("crew_yards_poured.is.null,ready_mix_yards_billed.is.null")
+        // At least one of project_id or crew_id should exist to be meaningful
+        .not("project_id", "is", null)
+        .order("scheduled_date", { ascending: false });
+      if (error) throw error;
+      return data as ScheduleEntry[];
+    },
+    enabled: !!organizationId,
+  });
+
+  // Complete entries: both yards fields are NOT NULL
+  const { data: completeEntries = [], isLoading: loadingComplete } = useQuery({
+    queryKey: ["discrepancy-complete", organizationId],
+    queryFn: async () => {
+      if (!organizationId) return [];
+      const { data, error } = await supabase
+        .from("schedule_entries")
+        .select(ENTRY_SELECT)
         .eq("organization_id", organizationId)
         .eq("deleted", false)
         .not("crew_yards_poured", "is", null)
         .not("ready_mix_yards_billed", "is", null)
+        .not("project_id", "is", null)
         .order("scheduled_date", { ascending: false });
       if (error) throw error;
-      
-      // Filter to only entries with discrepancies
-      return (data as DiscrepancyEntry[]).filter(
-        (e) => e.crew_yards_poured !== e.ready_mix_yards_billed
-      );
+      return data as ScheduleEntry[];
     },
     enabled: !!organizationId,
   });
 
-  const { data: allEntries = [] } = useQuery({
-    queryKey: ["all-entries-for-summary", organizationId],
-    queryFn: async () => {
-      if (!organizationId) return [];
-      const { data, error } = await supabase
-        .from("schedule_entries")
-        .select(`
-          crew_yards_poured, ready_mix_yards_billed,
-          crews(name),
-          suppliers(name)
-        `)
-        .eq("organization_id", organizationId)
-        .eq("deleted", false);
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!organizationId,
-  });
+  const isLoading = loadingIncomplete || loadingComplete;
 
-  // Calculate crew totals
-  const crewTotals = allEntries.reduce((acc, entry) => {
-    const crewName = entry.crews?.name || "Unassigned";
-    if (!acc[crewName]) acc[crewName] = 0;
-    acc[crewName] += entry.crew_yards_poured || 0;
-    return acc;
-  }, {} as Record<string, number>);
+  // Filter helper
+  const matchesFilters = (entry: ScheduleEntry) => {
+    const searchLower = searchQuery.toLowerCase();
+    const matchesSearch =
+      !searchQuery ||
+      entry.projects?.builders?.name?.toLowerCase().includes(searchLower) ||
+      entry.projects?.builders?.code?.toLowerCase().includes(searchLower) ||
+      entry.projects?.locations?.name?.toLowerCase().includes(searchLower) ||
+      entry.projects?.lot_number?.toLowerCase().includes(searchLower);
 
-  // Calculate supplier totals
-  const supplierTotals = allEntries.reduce((acc, entry) => {
-    const supplierName = entry.suppliers?.name || "Unknown";
-    if (!acc[supplierName]) acc[supplierName] = 0;
-    acc[supplierName] += entry.ready_mix_yards_billed || 0;
-    return acc;
-  }, {} as Record<string, number>);
+    const matchesBuilder =
+      filterBuilder === "all" ||
+      entry.projects?.builders?.code === filterBuilder ||
+      entry.projects?.builders?.name === filterBuilder;
 
-  const totalCrewYards = Object.values(crewTotals).reduce((a, b) => a + b, 0);
-  const totalSupplierYards = Object.values(supplierTotals).reduce((a, b) => a + b, 0);
-  const overallDiscrepancy = totalCrewYards - totalSupplierYards;
+    const matchesCrew =
+      filterCrew === "all" || entry.crews?.name === filterCrew;
+
+    const matchesLocation =
+      filterLocation === "all" ||
+      entry.projects?.locations?.name === filterLocation;
+
+    return matchesSearch && matchesBuilder && matchesCrew && matchesLocation;
+  };
+
+  // Filtered incomplete
+  const filteredIncomplete = useMemo(
+    () => incompleteEntries.filter(matchesFilters),
+    [incompleteEntries, searchQuery, filterBuilder, filterCrew, filterLocation]
+  );
+
+  // Group complete entries by project
+  const projectGroups = useMemo(() => {
+    const filtered = completeEntries.filter(matchesFilters);
+    const grouped = new Map<
+      string,
+      {
+        projectLabel: string;
+        entries: ScheduleEntry[];
+        totalCrewYards: number;
+        totalSupplierYards: number;
+        discrepancy: number;
+      }
+    >();
+
+    filtered.forEach((entry) => {
+      const pid = entry.project_id || "no-project";
+      if (!grouped.has(pid)) {
+        const builder =
+          entry.projects?.builders?.code || entry.projects?.builders?.name || "?";
+        const location = entry.projects?.locations?.name || "";
+        const lot = entry.projects?.lot_number || "?";
+        const label = [builder, location, `Lot ${lot}`].filter(Boolean).join(" — ");
+        grouped.set(pid, {
+          projectLabel: label,
+          entries: [],
+          totalCrewYards: 0,
+          totalSupplierYards: 0,
+          discrepancy: 0,
+        });
+      }
+      const group = grouped.get(pid)!;
+      group.entries.push(entry);
+      group.totalCrewYards += entry.crew_yards_poured || 0;
+      group.totalSupplierYards += entry.ready_mix_yards_billed || 0;
+    });
+
+    // Compute discrepancy and sort
+    grouped.forEach((g) => {
+      g.discrepancy = g.totalCrewYards - g.totalSupplierYards;
+    });
+
+    return Array.from(grouped.values()).sort(
+      (a, b) => Math.abs(b.discrepancy) - Math.abs(a.discrepancy)
+    );
+  }, [completeEntries, searchQuery, filterBuilder, filterCrew, filterLocation]);
+
+  const hasActiveFilters =
+    searchQuery || filterBuilder !== "all" || filterCrew !== "all" || filterLocation !== "all";
+
+  const clearFilters = () => {
+    setSearchQuery("");
+    setFilterBuilder("all");
+    setFilterCrew("all");
+    setFilterLocation("all");
+  };
+
+  const handleEditEntry = (entry: ScheduleEntry) => {
+    setEditEntry(entry);
+    setEditDialogOpen(true);
+  };
+
+  const handleEditDialogChange = (open: boolean) => {
+    setEditDialogOpen(open);
+    if (!open) {
+      setEditEntry(null);
+      queryClient.invalidateQueries({ queryKey: ["discrepancy-incomplete"] });
+      queryClient.invalidateQueries({ queryKey: ["discrepancy-complete"] });
+    }
+  };
 
   return (
     <AppLayout>
-      <div className="p-6">
+      <div className="p-3 md:p-6">
+        {/* Header */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-foreground">Yards Discrepancies</h1>
-          <p className="text-muted-foreground">Track differences between crew-reported and supplier-billed yards</p>
+          <p className="text-muted-foreground">
+            Track differences between crew-reported and supplier-billed yards
+          </p>
         </div>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Crew Yards</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-foreground">{totalCrewYards.toFixed(1)}</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Supplier Yards</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-foreground">{totalSupplierYards.toFixed(1)}</div>
-            </CardContent>
-          </Card>
-
-          <Card className={`${overallDiscrepancy !== 0 ? "bg-red-500/10 border-red-500/30" : "bg-green-500/10 border-green-500/30"}`}>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Overall Discrepancy</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className={`text-2xl font-bold flex items-center gap-2 ${overallDiscrepancy !== 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}>
-                {overallDiscrepancy > 0 ? <TrendingUp className="w-5 h-5" /> : overallDiscrepancy < 0 ? <TrendingDown className="w-5 h-5" /> : null}
-                {overallDiscrepancy > 0 ? "+" : ""}{overallDiscrepancy.toFixed(1)}
+        {/* Filters */}
+        <Card className="mb-6">
+          <CardContent className="p-4">
+            <div className="flex flex-col md:flex-row gap-3">
+              <div className="relative w-full md:flex-1 md:min-w-[200px]">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                <Input
+                  placeholder="Search builder, location, lot #..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
               </div>
-            </CardContent>
-          </Card>
-        </div>
 
-        {/* Summary by Crew and Supplier */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-foreground">Yards by Crew</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {Object.entries(crewTotals).map(([name, total]) => (
-                  <div key={name} className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Crew {name}</span>
-                    <span className="text-foreground font-medium">{total.toFixed(1)} yds</span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+              <Select value={filterBuilder} onValueChange={setFilterBuilder}>
+                <SelectTrigger className="w-full md:w-40">
+                  <SelectValue placeholder="All Builders" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Builders</SelectItem>
+                  {builders.map((b) => (
+                    <SelectItem key={b.id} value={b.code || b.name}>
+                      {b.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-foreground">Yards by Supplier</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {Object.entries(supplierTotals).map(([name, total]) => (
-                  <div key={name} className="flex justify-between items-center">
-                    <span className="text-muted-foreground">{name}</span>
-                    <span className="text-foreground font-medium">{total.toFixed(1)} yds</span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+              <Select value={filterCrew} onValueChange={setFilterCrew}>
+                <SelectTrigger className="w-full md:w-40">
+                  <SelectValue placeholder="All Crews" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Crews</SelectItem>
+                  {crews.map((c) => (
+                    <SelectItem key={c.id} value={c.name}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-        {/* Discrepancy Entries */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-foreground flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-primary" />
-              Entries with Discrepancies ({discrepancyEntries.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            {isLoading ? (
-              <div className="text-muted-foreground text-center py-12">Loading...</div>
-            ) : discrepancyEntries.length === 0 ? (
-              <div className="text-green-600 dark:text-green-400 text-center py-12">
-                ✓ No discrepancies found
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-transparent">
-                    <TableHead className="text-muted-foreground">Date</TableHead>
-                    <TableHead className="text-muted-foreground">Project</TableHead>
-                    <TableHead className="text-muted-foreground">Phase</TableHead>
-                    <TableHead className="text-muted-foreground">Crew</TableHead>
-                    <TableHead className="text-muted-foreground">Supplier</TableHead>
-                    <TableHead className="text-muted-foreground">Crew Yds</TableHead>
-                    <TableHead className="text-muted-foreground">Billed Yds</TableHead>
-                    <TableHead className="text-muted-foreground">Diff</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {discrepancyEntries.map((entry) => {
-                    const diff = (entry.crew_yards_poured || 0) - (entry.ready_mix_yards_billed || 0);
-                    const dateForNav = format(new Date(entry.scheduled_date + "T00:00:00"), "yyyy-MM-dd");
-                    return (
-                      <TableRow key={entry.id}>
-                        <TableCell>
-                          <button
-                            onClick={() => navigate(`/?date=${dateForNav}`)}
-                            className="text-foreground hover:text-primary hover:underline transition-colors text-left"
-                          >
-                            {format(new Date(entry.scheduled_date + "T00:00:00"), "M/d/yyyy")}
-                          </button>
-                        </TableCell>
-                        <TableCell>
-                          <button
-                            onClick={() => entry.projects?.id && setSelectedProjectId(entry.projects.id)}
-                            className="text-muted-foreground hover:text-primary hover:underline transition-colors text-left"
-                          >
-                            {entry.projects?.builders?.code || entry.projects?.builders?.name} - {entry.projects?.lot_number}
-                          </button>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {entry.phases?.name || "-"}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {entry.crews?.name || "-"}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {entry.suppliers?.code || entry.suppliers?.name || "-"}
-                        </TableCell>
-                        <TableCell className="text-foreground font-medium">
-                          {entry.crew_yards_poured}
-                        </TableCell>
-                        <TableCell className="text-foreground font-medium">
-                          {entry.ready_mix_yards_billed}
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={diff > 0 ? "bg-red-500/20 text-red-600 dark:text-red-400" : "bg-amber-500/20 text-amber-600 dark:text-amber-400"}>
-                            {diff > 0 ? "+" : ""}{diff.toFixed(1)}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            )}
+              <Select value={filterLocation} onValueChange={setFilterLocation}>
+                <SelectTrigger className="w-full md:w-40">
+                  <SelectValue placeholder="All Locations" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Locations</SelectItem>
+                  {locations.map((l) => (
+                    <SelectItem key={l.id} value={l.name}>
+                      {l.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {hasActiveFilters && (
+                <Button
+                  variant="ghost"
+                  onClick={clearFilters}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  Clear Filters
+                </Button>
+              )}
+            </div>
           </CardContent>
         </Card>
 
-        <ProjectDetailsSheet
-          projectId={selectedProjectId}
-          isOpen={!!selectedProjectId}
-          onClose={() => setSelectedProjectId(null)}
-        />
+        {isLoading ? (
+          <div className="text-muted-foreground text-center py-12">Loading...</div>
+        ) : (
+          <>
+            {/* Incomplete Entries (collapsible) */}
+            <IncompleteEntriesSection
+              entries={filteredIncomplete}
+              onEditEntry={handleEditEntry}
+            />
+
+            {/* Project Discrepancies */}
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold text-foreground mb-3">
+                Project Discrepancies ({projectGroups.length})
+              </h2>
+              {projectGroups.length === 0 ? (
+                <div className="text-muted-foreground text-center py-8 bg-card border border-border rounded-lg">
+                  No entries with both crew and supplier yards found
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {projectGroups.map((group) => (
+                    <ProjectDiscrepancyRow
+                      key={group.projectLabel}
+                      projectLabel={group.projectLabel}
+                      entries={group.entries}
+                      totalCrewYards={group.totalCrewYards}
+                      totalSupplierYards={group.totalSupplierYards}
+                      discrepancy={group.discrepancy}
+                      onEditEntry={handleEditEntry}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Breakdowns */}
+            <YardsSummaryCards entries={completeEntries} />
+          </>
+        )}
       </div>
+
+      {/* Edit Entry Dialog */}
+      <EditEntryDialog
+        entry={editEntry}
+        open={editDialogOpen}
+        onOpenChange={handleEditDialogChange}
+        defaultTab="crew"
+      />
     </AppLayout>
   );
 }

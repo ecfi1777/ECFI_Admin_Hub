@@ -72,17 +72,3 @@ export type ScheduleEntryForInvoice = Pick<
   | 'projects'
 >;
 
-/**
- * Minimal schedule entry type for discrepancy tracking
- */
-export type ScheduleEntryForDiscrepancy = Pick<
-  ScheduleEntry,
-  | 'id'
-  | 'scheduled_date'
-  | 'crew_yards_poured'
-  | 'ready_mix_yards_billed'
-  | 'crews'
-  | 'phases'
-  | 'suppliers'
-  | 'projects'
->;
