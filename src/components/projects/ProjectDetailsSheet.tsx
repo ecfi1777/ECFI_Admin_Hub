@@ -169,7 +169,10 @@ export function ProjectDetailsSheet({
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => setIsEditOpen(true)}
+                        onClick={() => {
+                          onClose();
+                          setIsEditOpen(true);
+                        }}
                         className="text-slate-400 hover:text-white h-8 w-8 p-0"
                       >
                         <Pencil className="w-4 h-4" />
@@ -315,19 +318,21 @@ export function ProjectDetailsSheet({
         </SheetContent>
       </Sheet>
 
-      <EditProjectDialog
-        project={project}
-        isOpen={isEditOpen}
-        onClose={() => {
-          setIsEditOpen(false);
-          queryClient.invalidateQueries({ queryKey: ["project", projectId] });
-          queryClient.invalidateQueries({ queryKey: ["projects", organizationId] });
-          queryClient.invalidateQueries({ queryKey: ["kanban-projects", organizationId] });
-        }}
-        builders={builders}
-        locations={locations}
-        statuses={statuses}
-      />
+      {isEditOpen && (
+        <EditProjectDialog
+          project={project}
+          isOpen={isEditOpen}
+          onClose={() => {
+            setIsEditOpen(false);
+            queryClient.invalidateQueries({ queryKey: ["project", projectId] });
+            queryClient.invalidateQueries({ queryKey: ["projects", organizationId] });
+            queryClient.invalidateQueries({ queryKey: ["kanban-projects", organizationId] });
+          }}
+          builders={builders}
+          locations={locations}
+          statuses={statuses}
+        />
+      )}
     </>
   );
 }
