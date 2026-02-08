@@ -183,8 +183,8 @@ export default function Projects() {
 
   return (
     <AppLayout>
-      <div className="p-6">
-        <div className="flex items-center justify-between mb-6">
+      <div className="p-3 md:p-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-6">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Projects</h1>
             <p className="text-muted-foreground">Manage all your jobs and projects</p>
@@ -199,8 +199,8 @@ export default function Projects() {
         {/* Filters */}
         <Card className="mb-6">
           <CardContent className="p-4">
-            <div className="flex flex-wrap gap-4 items-center">
-              <div className="flex-1 min-w-[200px]">
+            <div className="flex flex-col md:flex-row gap-3">
+              <div className="w-full md:flex-1 md:min-w-[200px]">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
@@ -212,7 +212,7 @@ export default function Projects() {
                 </div>
               </div>
               <Select value={filterBuilder} onValueChange={setFilterBuilder}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-full md:w-40">
                   <SelectValue placeholder="All Builders" />
                 </SelectTrigger>
                 <SelectContent>
@@ -223,7 +223,7 @@ export default function Projects() {
                 </SelectContent>
               </Select>
               <Select value={filterLocation} onValueChange={setFilterLocation}>
-                <SelectTrigger className="w-44">
+                <SelectTrigger className="w-full md:w-44">
                   <SelectValue placeholder="All Locations" />
                 </SelectTrigger>
                 <SelectContent>
@@ -234,7 +234,7 @@ export default function Projects() {
                 </SelectContent>
               </Select>
               <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="w-48">
+                <SelectTrigger className="w-full md:w-48">
                   <SelectValue placeholder="All Statuses" />
                 </SelectTrigger>
                 <SelectContent>

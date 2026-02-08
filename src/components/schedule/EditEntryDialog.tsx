@@ -79,7 +79,7 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] md:max-w-2xl max-h-[100dvh] md:max-h-[90dvh] overflow-y-auto rounded-none md:rounded-lg">
         <DialogHeader>
           <DialogTitle>Edit Entry: {projectLabel}</DialogTitle>
         </DialogHeader>
