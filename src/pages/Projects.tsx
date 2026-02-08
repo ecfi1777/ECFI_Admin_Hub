@@ -31,7 +31,6 @@ import { Search, Paperclip, X, FileText, ExternalLink } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { AddProjectDialog } from "@/components/projects/AddProjectDialog";
-import { EditProjectDialog } from "@/components/projects/EditProjectDialog";
 import { ProjectDetailsSheet } from "@/components/projects/ProjectDetailsSheet";
 import { toast } from "sonner";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -67,7 +66,6 @@ export default function Projects() {
   
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [isEditOpen, setIsEditOpen] = useState(false);
   const { organizationId } = useOrganization();
 
   const { data: projects = [], isLoading } = useQuery({
@@ -148,8 +146,6 @@ export default function Projects() {
   const { data: locations = [] } = useLocations();
   const { data: statuses = [] } = useProjectStatuses();
 
-  const selectedProject = projects.find((p) => p.id === selectedProjectId) || null;
-
   const filteredProjects = projects.filter((project) => {
     // Hide archived unless toggle is on
     if (!includeArchived && project.project_statuses?.name === "Archived") {
@@ -174,11 +170,6 @@ export default function Projects() {
   const handleRowClick = (projectId: string) => {
     setSelectedProjectId(projectId);
     setIsDetailsOpen(true);
-  };
-
-  const handleEditFromDetails = () => {
-    setIsDetailsOpen(false);
-    setIsEditOpen(true);
   };
 
   return (
@@ -367,17 +358,6 @@ export default function Projects() {
         projectId={selectedProjectId}
         isOpen={isDetailsOpen}
         onClose={() => setIsDetailsOpen(false)}
-        onEdit={handleEditFromDetails}
-      />
-
-      {/* Edit Project Dialog */}
-      <EditProjectDialog
-        project={selectedProject}
-        isOpen={isEditOpen}
-        onClose={() => setIsEditOpen(false)}
-        builders={builders}
-        locations={locations}
-        statuses={statuses}
       />
     </AppLayout>
   );

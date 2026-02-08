@@ -445,7 +445,6 @@ export default function Invoices() {
         projectId={selectedProjectId}
         isOpen={isProjectSheetOpen}
         onClose={() => setIsProjectSheetOpen(false)}
-        onEdit={() => {}}
       />
     </AppLayout>
   );

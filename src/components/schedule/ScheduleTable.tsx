@@ -557,9 +557,6 @@ export function ScheduleTable({ entries }: ScheduleTableProps) {
           setIsProjectSheetOpen(false);
           setSelectedProjectId(null);
         }}
-        onEdit={() => {
-          // Edit button inside the sheet handles the edit flow
-        }}
       />
     </>
   );

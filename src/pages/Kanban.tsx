@@ -28,7 +28,6 @@ import { useBuilders, useLocations, useProjectStatuses } from "@/hooks/useRefere
 import { KanbanColumn } from "@/components/kanban/KanbanColumn";
 import { ProjectCard, KanbanProject } from "@/components/kanban/ProjectCard";
 import { ProjectDetailsSheet } from "@/components/projects/ProjectDetailsSheet";
-import { EditProjectDialog } from "@/components/projects/EditProjectDialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const COLLAPSE_STORAGE_KEY = "ecfi_kanban_collapsed";
@@ -51,7 +50,6 @@ export default function Kanban() {
   const [activeProject, setActiveProject] = useState<KanbanProject | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [isEditOpen, setIsEditOpen] = useState(false);
 
   const { organizationId } = useOrganization();
   const queryClient = useQueryClient();
@@ -199,27 +197,6 @@ export default function Kanban() {
     setIsDetailsOpen(true);
   };
 
-  const handleEditFromDetails = () => {
-    setIsDetailsOpen(false);
-    setIsEditOpen(true);
-  };
-
-  // Fetch full project data for the edit dialog
-  const { data: fullSelectedProject = null } = useQuery({
-    queryKey: ["project", selectedProjectId],
-    queryFn: async () => {
-      if (!selectedProjectId) return null;
-      const { data, error } = await supabase
-        .from("projects")
-        .select("*")
-        .eq("id", selectedProjectId)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!selectedProjectId && isEditOpen,
-  });
-
   return (
     <AppLayout>
       <div className="p-3 md:p-6 h-full flex flex-col">
@@ -329,19 +306,6 @@ export default function Kanban() {
         projectId={selectedProjectId}
         isOpen={isDetailsOpen}
         onClose={() => setIsDetailsOpen(false)}
-        onEdit={handleEditFromDetails}
-      />
-
-      <EditProjectDialog
-        project={fullSelectedProject}
-        isOpen={isEditOpen}
-        onClose={() => {
-          setIsEditOpen(false);
-          queryClient.invalidateQueries({ queryKey: ["kanban-projects", organizationId] });
-        }}
-        builders={builders}
-        locations={locations}
-        statuses={statuses}
       />
     </AppLayout>
   );
