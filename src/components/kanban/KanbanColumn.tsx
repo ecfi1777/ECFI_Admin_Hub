@@ -11,6 +11,7 @@ interface KanbanColumnProps {
   isCollapsed: boolean;
   onToggleCollapse: () => void;
   onProjectClick: (projectId: string) => void;
+  isMobile?: boolean;
 }
 
 export function KanbanColumn({
@@ -20,8 +21,9 @@ export function KanbanColumn({
   isCollapsed,
   onToggleCollapse,
   onProjectClick,
+  isMobile = false,
 }: KanbanColumnProps) {
-  const { setNodeRef, isOver } = useDroppable({ id });
+  const { setNodeRef, isOver } = useDroppable({ id, disabled: isMobile });
 
   return (
     <div
@@ -66,6 +68,7 @@ export function KanbanColumn({
               key={project.id}
               project={project}
               onClick={onProjectClick}
+              isMobile={isMobile}
             />
           ))}
           {projects.length === 0 && (

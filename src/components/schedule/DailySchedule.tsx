@@ -187,14 +187,14 @@ export function DailySchedule() {
   const unassignedEntries = entries.filter((e) => !e.crew_id || !displayedCrewIds.has(e.crew_id));
 
   return (
-    <div className="p-6">
+    <div className="p-3 md:p-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Daily Schedule</h1>
           <p className="text-muted-foreground">Manage crew assignments and pours</p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 md:gap-4 w-full md:w-auto justify-between md:justify-end">
           {/* Date Navigation */}
           <div className="flex items-center gap-2 bg-muted rounded-lg p-1">
             <Button

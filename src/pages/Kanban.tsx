@@ -29,6 +29,7 @@ import { KanbanColumn } from "@/components/kanban/KanbanColumn";
 import { ProjectCard, KanbanProject } from "@/components/kanban/ProjectCard";
 import { ProjectDetailsSheet } from "@/components/projects/ProjectDetailsSheet";
 import { EditProjectDialog } from "@/components/projects/EditProjectDialog";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const COLLAPSE_STORAGE_KEY = "ecfi_kanban_collapsed";
 const KANBAN_STATUSES = ["No Status", "Upcoming", "Ready to Start", "In Progress", "Complete"];
@@ -54,6 +55,7 @@ export default function Kanban() {
 
   const { organizationId } = useOrganization();
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
   const { data: builders = [] } = useBuilders();
   const { data: locations = [] } = useLocations();
   const { data: statuses = [] } = useProjectStatuses();
@@ -223,7 +225,9 @@ export default function Kanban() {
       <div className="p-3 md:p-6 h-full flex flex-col">
         <div className="mb-4">
           <h1 className="text-2xl font-bold text-foreground">Kanban</h1>
-          <p className="text-muted-foreground">Drag projects between columns to update status</p>
+          <p className="text-muted-foreground">
+            {isMobile ? "Tap a project to change status" : "Drag projects between columns to update status"}
+          </p>
         </div>
 
         {/* Filters */}
@@ -269,13 +273,8 @@ export default function Kanban() {
 
         {/* Kanban Board */}
         <div className="flex-1 overflow-x-auto">
-          <DndContext
-            sensors={sensors}
-            collisionDetection={pointerWithin}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-          >
-            <div className="flex gap-4 h-full pb-4">
+          {isMobile ? (
+            <div className="flex gap-4 h-full pb-4 snap-x snap-mandatory overflow-x-auto" style={{ touchAction: "pan-x" }}>
               {KANBAN_STATUSES.map((status) => (
                 <KanbanColumn
                   key={status}
@@ -285,22 +284,44 @@ export default function Kanban() {
                   isCollapsed={!!collapsed[status]}
                   onToggleCollapse={() => toggleCollapse(status)}
                   onProjectClick={handleProjectClick}
+                  isMobile
                 />
               ))}
             </div>
-
-            <DragOverlay>
-              {activeProject ? (
-                <div className="w-[260px]">
-                  <ProjectCard
-                    project={activeProject}
-                    onClick={() => {}}
-                    isDragOverlay
+          ) : (
+            <DndContext
+              sensors={sensors}
+              collisionDetection={pointerWithin}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+            >
+              <div className="flex gap-4 h-full pb-4">
+                {KANBAN_STATUSES.map((status) => (
+                  <KanbanColumn
+                    key={status}
+                    id={status}
+                    title={status}
+                    projects={columns[status] || []}
+                    isCollapsed={!!collapsed[status]}
+                    onToggleCollapse={() => toggleCollapse(status)}
+                    onProjectClick={handleProjectClick}
                   />
-                </div>
-              ) : null}
-            </DragOverlay>
-          </DndContext>
+                ))}
+              </div>
+
+              <DragOverlay>
+                {activeProject ? (
+                  <div className="w-[260px]">
+                    <ProjectCard
+                      project={activeProject}
+                      onClick={() => {}}
+                      isDragOverlay
+                    />
+                  </div>
+                ) : null}
+              </DragOverlay>
+            </DndContext>
+          )}
         </div>
       </div>
 
