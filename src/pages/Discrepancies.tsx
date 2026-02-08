@@ -223,20 +223,6 @@ export default function Discrepancies() {
                 />
               </div>
 
-              <Select value={filterBuilder} onValueChange={setFilterBuilder}>
-                <SelectTrigger className="w-full md:w-40">
-                  <SelectValue placeholder="All Builders" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Builders</SelectItem>
-                  {builders.map((b) => (
-                    <SelectItem key={b.id} value={b.code || b.name}>
-                      {b.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
               <Select value={filterCrew} onValueChange={setFilterCrew}>
                 <SelectTrigger className="w-full md:w-40">
                   <SelectValue placeholder="All Crews" />
@@ -246,6 +232,20 @@ export default function Discrepancies() {
                   {crews.map((c) => (
                     <SelectItem key={c.id} value={c.name}>
                       {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={filterBuilder} onValueChange={setFilterBuilder}>
+                <SelectTrigger className="w-full md:w-40">
+                  <SelectValue placeholder="All Builders" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Builders</SelectItem>
+                  {builders.map((b) => (
+                    <SelectItem key={b.id} value={b.code || b.name}>
+                      {b.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
