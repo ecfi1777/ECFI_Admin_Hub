@@ -328,7 +328,7 @@ export default function Invoices() {
 
   return (
     <AppLayout>
-      <div className="p-6">
+      <div className="p-3 md:p-6">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-foreground">Invoice Tracking</h1>
           <p className="text-muted-foreground">Track pending and completed invoices</p>
@@ -337,9 +337,9 @@ export default function Invoices() {
         {/* Filters */}
         <Card className="mb-6">
           <CardContent className="p-4">
-            <div className="flex flex-wrap gap-4 items-center">
+            <div className="flex flex-col md:flex-row gap-3">
               {/* Search box */}
-              <div className="relative flex-1 min-w-[200px] max-w-sm">
+              <div className="relative w-full md:flex-1 md:min-w-[200px]">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                 <Input
                   placeholder="Search builder, location, crew, phase..."
@@ -350,7 +350,7 @@ export default function Invoices() {
               </div>
               
               <Select value={filterBuilder} onValueChange={setFilterBuilder}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-full md:w-40">
                   <SelectValue placeholder="All Builders" />
                 </SelectTrigger>
                 <SelectContent>
@@ -362,7 +362,7 @@ export default function Invoices() {
               </Select>
               
               <Select value={filterLocation} onValueChange={setFilterLocation}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-full md:w-40">
                   <SelectValue placeholder="All Locations" />
                 </SelectTrigger>
                 <SelectContent>
@@ -374,7 +374,7 @@ export default function Invoices() {
               </Select>
               
               <Select value={filterCrew} onValueChange={setFilterCrew}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-full md:w-40">
                   <SelectValue placeholder="All Crews" />
                 </SelectTrigger>
                 <SelectContent>
@@ -386,7 +386,7 @@ export default function Invoices() {
               </Select>
               
               <Select value={filterPhase} onValueChange={setFilterPhase}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-full md:w-40">
                   <SelectValue placeholder="All Phases" />
                 </SelectTrigger>
                 <SelectContent>

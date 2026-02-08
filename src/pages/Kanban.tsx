@@ -220,7 +220,7 @@ export default function Kanban() {
 
   return (
     <AppLayout>
-      <div className="p-6 h-full flex flex-col">
+      <div className="p-3 md:p-6 h-full flex flex-col">
         <div className="mb-4">
           <h1 className="text-2xl font-bold text-foreground">Kanban</h1>
           <p className="text-muted-foreground">Drag projects between columns to update status</p>
@@ -229,8 +229,8 @@ export default function Kanban() {
         {/* Filters */}
         <Card className="mb-4">
           <CardContent className="p-3">
-            <div className="flex flex-wrap gap-3 items-center">
-              <div className="flex-1 min-w-[180px]">
+            <div className="flex flex-col md:flex-row gap-3">
+              <div className="w-full md:flex-1 md:min-w-[180px]">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
@@ -242,7 +242,7 @@ export default function Kanban() {
                 </div>
               </div>
               <Select value={filterBuilder} onValueChange={setFilterBuilder}>
-                <SelectTrigger className="w-40 h-9">
+                <SelectTrigger className="w-full md:w-40 h-9">
                   <SelectValue placeholder="All Builders" />
                 </SelectTrigger>
                 <SelectContent>
@@ -253,7 +253,7 @@ export default function Kanban() {
                 </SelectContent>
               </Select>
               <Select value={filterLocation} onValueChange={setFilterLocation}>
-                <SelectTrigger className="w-40 h-9">
+                <SelectTrigger className="w-full md:w-40 h-9">
                   <SelectValue placeholder="All Locations" />
                 </SelectTrigger>
                 <SelectContent>
