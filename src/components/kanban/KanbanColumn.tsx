@@ -1,8 +1,4 @@
 import { useDroppable } from "@dnd-kit/core";
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ChevronDown, ChevronRight } from "lucide-react";
@@ -65,18 +61,13 @@ export function KanbanColumn({
               : "border-border bg-muted/30"
           }`}
         >
-          <SortableContext
-            items={projects.map((p) => p.id)}
-            strategy={verticalListSortingStrategy}
-          >
-            {projects.map((project) => (
-              <ProjectCard
-                key={project.id}
-                project={project}
-                onClick={onProjectClick}
-              />
-            ))}
-          </SortableContext>
+          {projects.map((project) => (
+            <ProjectCard
+              key={project.id}
+              project={project}
+              onClick={onProjectClick}
+            />
+          ))}
           {projects.length === 0 && (
             <div className="text-xs text-muted-foreground text-center py-8">
               No projects

@@ -8,7 +8,7 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-  closestCenter,
+  pointerWithin,
 } from "@dnd-kit/core";
 import { supabase } from "@/integrations/supabase/client";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -202,7 +202,21 @@ export default function Kanban() {
     setIsEditOpen(true);
   };
 
-  const selectedProject = projects.find((p) => p.id === selectedProjectId) || null;
+  // Fetch full project data for the edit dialog
+  const { data: fullSelectedProject = null } = useQuery({
+    queryKey: ["project", selectedProjectId],
+    queryFn: async () => {
+      if (!selectedProjectId) return null;
+      const { data, error } = await supabase
+        .from("projects")
+        .select("*")
+        .eq("id", selectedProjectId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!selectedProjectId && isEditOpen,
+  });
 
   return (
     <AppLayout>
@@ -257,7 +271,7 @@ export default function Kanban() {
         <div className="flex-1 overflow-x-auto">
           <DndContext
             sensors={sensors}
-            collisionDetection={closestCenter}
+            collisionDetection={pointerWithin}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           >
@@ -281,6 +295,7 @@ export default function Kanban() {
                   <ProjectCard
                     project={activeProject}
                     onClick={() => {}}
+                    isDragOverlay
                   />
                 </div>
               ) : null}
@@ -297,7 +312,7 @@ export default function Kanban() {
       />
 
       <EditProjectDialog
-        project={selectedProject as any}
+        project={fullSelectedProject}
         isOpen={isEditOpen}
         onClose={() => {
           setIsEditOpen(false);
