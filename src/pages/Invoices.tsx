@@ -223,106 +223,108 @@ export default function Invoices() {
     }
 
     return (
-      <Table>
-        <TableHeader>
-          <TableRow className="hover:bg-transparent">
-            <TableHead className="text-muted-foreground w-16">Inv Complete</TableHead>
-            <TableHead className="text-muted-foreground">Date Completed</TableHead>
-            <TableHead className="text-muted-foreground">Builder</TableHead>
-            <TableHead className="text-muted-foreground">Location</TableHead>
-            <TableHead className="text-muted-foreground">Lot</TableHead>
-            <TableHead className="text-muted-foreground">Phase</TableHead>
-            <TableHead className="text-muted-foreground">Crew</TableHead>
-            <TableHead className="text-muted-foreground">Invoice #</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {filtered.map((entry) => (
-            <TableRow key={entry.id}>
-              <TableCell>
-                <Checkbox
-                  checked={entry.invoice_complete}
-                  onCheckedChange={(checked) => 
-                    toggleCompleteMutation.mutate({ entryId: entry.id, complete: !!checked })
-                  }
-                  disabled={toggleCompleteMutation.isPending}
-                  className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
-                />
-              </TableCell>
-              <TableCell>
-                <button
-                  onClick={() => handleDateClick(entry.scheduled_date)}
-                  className="text-foreground hover:text-primary hover:underline transition-colors cursor-pointer"
-                >
-                  {format(new Date(entry.scheduled_date + "T00:00:00"), "M/d/yyyy")}
-                </button>
-              </TableCell>
-              <TableCell>
-                <button
-                  onClick={() => handleProjectClick(entry.projects?.id || entry.project_id)}
-                  className="text-foreground font-medium hover:text-primary hover:underline transition-colors text-left"
-                >
-                  {entry.projects?.builders?.code || entry.projects?.builders?.name || "-"}
-                </button>
-              </TableCell>
-              <TableCell>
-                <button
-                  onClick={() => handleProjectClick(entry.projects?.id || entry.project_id)}
-                  className="text-muted-foreground hover:text-primary hover:underline transition-colors text-left"
-                >
-                  {entry.projects?.locations?.name || "-"}
-                </button>
-              </TableCell>
-              <TableCell>
-                <button
-                  onClick={() => handleProjectClick(entry.projects?.id || entry.project_id)}
-                  className="text-primary font-medium hover:underline transition-colors text-left"
-                >
-                  {entry.projects?.lot_number || "-"}
-                </button>
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                {entry.phases?.name || "-"}
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                {entry.crews?.name || "-"}
-              </TableCell>
-              <TableCell>
-                {editingInvoiceId === entry.id ? (
-                  <div className="flex items-center gap-2">
-                    <Input
-                      value={invoiceNumberValue}
-                      onChange={(e) => setInvoiceNumberValue(e.target.value)}
-                      className="h-8 w-28"
-                      placeholder="Invoice #"
-                      autoFocus
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") handleSaveInvoiceNumber(entry.id);
-                        if (e.key === "Escape") handleCancelEdit();
-                      }}
-                    />
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-8 px-2 text-green-500 hover:text-green-400"
-                      onClick={() => handleSaveInvoiceNumber(entry.id)}
-                    >
-                      <Check className="w-4 h-4" />
-                    </Button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => handleStartEditInvoice(entry)}
-                    className="text-muted-foreground hover:text-foreground transition-colors text-left min-w-[80px]"
-                  >
-                    {entry.invoice_number || "Add #"}
-                  </button>
-                )}
-              </TableCell>
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow className="hover:bg-transparent">
+              <TableHead className="text-muted-foreground w-16">Inv Complete</TableHead>
+              <TableHead className="text-muted-foreground">Date Completed</TableHead>
+              <TableHead className="text-muted-foreground">Builder</TableHead>
+              <TableHead className="text-muted-foreground">Location</TableHead>
+              <TableHead className="text-muted-foreground">Lot</TableHead>
+              <TableHead className="text-muted-foreground">Phase</TableHead>
+              <TableHead className="text-muted-foreground">Crew</TableHead>
+              <TableHead className="text-muted-foreground">Invoice #</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {filtered.map((entry) => (
+              <TableRow key={entry.id}>
+                <TableCell>
+                  <Checkbox
+                    checked={entry.invoice_complete}
+                    onCheckedChange={(checked) => 
+                      toggleCompleteMutation.mutate({ entryId: entry.id, complete: !!checked })
+                    }
+                    disabled={toggleCompleteMutation.isPending}
+                    className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
+                  />
+                </TableCell>
+                <TableCell>
+                  <button
+                    onClick={() => handleDateClick(entry.scheduled_date)}
+                    className="text-foreground hover:text-primary hover:underline transition-colors cursor-pointer"
+                  >
+                    {format(new Date(entry.scheduled_date + "T00:00:00"), "M/d/yyyy")}
+                  </button>
+                </TableCell>
+                <TableCell>
+                  <button
+                    onClick={() => handleProjectClick(entry.projects?.id || entry.project_id)}
+                    className="text-foreground font-medium hover:text-primary hover:underline transition-colors text-left"
+                  >
+                    {entry.projects?.builders?.code || entry.projects?.builders?.name || "-"}
+                  </button>
+                </TableCell>
+                <TableCell>
+                  <button
+                    onClick={() => handleProjectClick(entry.projects?.id || entry.project_id)}
+                    className="text-muted-foreground hover:text-primary hover:underline transition-colors text-left"
+                  >
+                    {entry.projects?.locations?.name || "-"}
+                  </button>
+                </TableCell>
+                <TableCell>
+                  <button
+                    onClick={() => handleProjectClick(entry.projects?.id || entry.project_id)}
+                    className="text-primary font-medium hover:underline transition-colors text-left"
+                  >
+                    {entry.projects?.lot_number || "-"}
+                  </button>
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  {entry.phases?.name || "-"}
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  {entry.crews?.name || "-"}
+                </TableCell>
+                <TableCell>
+                  {editingInvoiceId === entry.id ? (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        value={invoiceNumberValue}
+                        onChange={(e) => setInvoiceNumberValue(e.target.value)}
+                        className="h-8 w-28"
+                        placeholder="Invoice #"
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleSaveInvoiceNumber(entry.id);
+                          if (e.key === "Escape") handleCancelEdit();
+                        }}
+                      />
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 px-2 text-green-500 hover:text-green-400"
+                        onClick={() => handleSaveInvoiceNumber(entry.id)}
+                      >
+                        <Check className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => handleStartEditInvoice(entry)}
+                      className="text-muted-foreground hover:text-foreground transition-colors text-left min-w-[80px]"
+                    >
+                      {entry.invoice_number || "Add #"}
+                    </button>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     );
   };
 

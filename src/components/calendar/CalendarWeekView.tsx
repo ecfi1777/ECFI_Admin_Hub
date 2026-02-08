@@ -1,8 +1,7 @@
-import { memo, useMemo, useState } from "react";
+import { memo, useMemo, useState, useRef, useCallback, useEffect } from "react";
 import { format, addDays, isToday } from "date-fns";
 import { Plus } from "lucide-react";
 import { CalendarEntry } from "./CalendarEntry";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import type { ScheduleEntry } from "@/types/schedule";
 import type { CrewWithColor } from "@/hooks/useCalendarData";
 
@@ -14,9 +13,11 @@ interface CalendarWeekViewProps {
   onEntryClick: (entry: ScheduleEntry) => void;
   onShowDayDetail: (date: Date, entries: ScheduleEntry[]) => void;
   onAddEntry: (date: Date) => void;
+  isMobile?: boolean;
 }
 
 const MAX_VISIBLE_ENTRIES = 6;
+const DAY_ABBREVS = ["S", "M", "T", "W", "T", "F", "S"];
 
 export const CalendarWeekView = memo(function CalendarWeekView({
   weekStart,
@@ -26,12 +27,28 @@ export const CalendarWeekView = memo(function CalendarWeekView({
   onEntryClick,
   onShowDayDetail,
   onAddEntry,
+  isMobile = false,
 }: CalendarWeekViewProps) {
   const [hoveredDay, setHoveredDay] = useState<string | null>(null);
+  const [activeDayIndex, setActiveDayIndex] = useState(() => {
+    // Default to today's index in the week, or 0
+    const today = new Date();
+    for (let i = 0; i < 7; i++) {
+      if (isToday(addDays(weekStart, i))) return i;
+    }
+    return 0;
+  });
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   // Generate 7 days of the week
   const days = useMemo(() => {
     return Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  }, [weekStart]);
+
+  // Reset active day when week changes
+  useEffect(() => {
+    const todayIdx = days.findIndex((d) => isToday(d));
+    setActiveDayIndex(todayIdx >= 0 ? todayIdx : 0);
   }, [weekStart]);
 
   // Create crew order lookup for sorting
@@ -51,7 +68,6 @@ export const CalendarWeekView = memo(function CalendarWeekView({
       if (!map[dateKey]) map[dateKey] = [];
       map[dateKey].push(entry);
     });
-    // Sort each day's entries by crew display_order
     Object.values(map).forEach((dayEntries) => {
       dayEntries.sort((a, b) => {
         const orderA = a.crew_id ? (crewOrderMap[a.crew_id] ?? 999) : 999;
@@ -62,6 +78,109 @@ export const CalendarWeekView = memo(function CalendarWeekView({
     return map;
   }, [entries, crewOrderMap]);
 
+  const handleScroll = useCallback(() => {
+    if (!scrollRef.current) return;
+    const container = scrollRef.current;
+    const scrollLeft = container.scrollLeft;
+    const childWidth = container.offsetWidth;
+    const newIndex = Math.round(scrollLeft / childWidth);
+    setActiveDayIndex(Math.min(Math.max(newIndex, 0), 6));
+  }, []);
+
+  const scrollToDay = useCallback((index: number) => {
+    if (!scrollRef.current) return;
+    const childWidth = scrollRef.current.offsetWidth;
+    scrollRef.current.scrollTo({ left: childWidth * index, behavior: "smooth" });
+    setActiveDayIndex(index);
+  }, []);
+
+  // Mobile layout: swipeable single day
+  if (isMobile) {
+    return (
+      <div>
+        {/* Day selector row */}
+        <div className="flex items-center justify-around mb-3 bg-muted rounded-lg p-2">
+          {days.map((day, idx) => {
+            const isActive = idx === activeDayIndex;
+            const isTodayDay = isToday(day);
+            return (
+              <button
+                key={idx}
+                onClick={() => scrollToDay(idx)}
+                className={`flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-colors ${
+                  isActive
+                    ? "bg-primary text-primary-foreground"
+                    : isTodayDay
+                    ? "text-primary font-semibold"
+                    : "text-muted-foreground"
+                }`}
+              >
+                <span className="text-xs font-medium">{DAY_ABBREVS[idx]}</span>
+                <span className="text-sm font-semibold">{format(day, "d")}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Swipeable day cards */}
+        <div
+          ref={scrollRef}
+          onScroll={handleScroll}
+          className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide"
+          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+        >
+          {days.map((day, idx) => {
+            const dateStr = format(day, "yyyy-MM-dd");
+            const dayEntries = entriesByDate[dateStr] || [];
+
+            return (
+              <div
+                key={dateStr}
+                className="min-w-full snap-start px-1"
+              >
+                <div className="bg-card border border-border rounded-lg p-3">
+                  <div className="flex items-center justify-between mb-3">
+                    <button
+                      onClick={() => onDayClick(day)}
+                      className="text-foreground font-semibold text-base hover:text-primary transition-colors"
+                    >
+                      {format(day, "EEEE, MMM d")}
+                    </button>
+                    <button
+                      onClick={() => onAddEntry(day)}
+                      className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-all"
+                      aria-label={`Add entry for ${format(day, "MMMM d")}`}
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {dayEntries.length > 0 ? (
+                    <div className="space-y-1.5">
+                      {dayEntries.map((entry) => (
+                        <CalendarEntry
+                          key={entry.id}
+                          entry={entry}
+                          crews={crews}
+                          onClick={onEntryClick}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground text-sm text-center py-6">
+                      No entries
+                    </p>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // Desktop layout: 7-column grid
   return (
     <div className="grid grid-cols-7 gap-px bg-border rounded-lg overflow-hidden">
       {days.map((day) => {
