@@ -1,108 +1,131 @@
 
+# Mobile Responsiveness -- Remaining Pages
 
-# Fix: Make ProjectDetailsSheet Handle Editing Internally
+## Overview
+Address mobile responsiveness gaps on the Calendar View, Settings, Reports, and Invoices pages. The Discrepancies page is excluded since it has a pending rewrite.
 
-## Problem
-The pencil button in ProjectDetailsSheet calls `onEdit()`, but 3 of 5 parent components pass empty handlers (`() => {}`), so Edit does nothing from Daily Schedule, Discrepancies, and Invoices pages.
+## Pages and Changes
 
-## Solution
-Move EditProjectDialog ownership into ProjectDetailsSheet so it always works regardless of parent wiring.
+### 1. Calendar View (`src/pages/CalendarView.tsx`)
 
-## Detailed Changes
+**Header controls:**
+- Change outer padding from `p-6` to `p-3 md:p-6`
+- The header already uses `flex-col sm:flex-row`, which is good
+- Reduce date title `min-w-[180px]` to `min-w-[140px]` so it fits narrow screens
+- On mobile, stack the view toggle and nav controls onto two rows by wrapping them in `flex flex-wrap gap-2`
 
-### 1. `src/components/projects/ProjectDetailsSheet.tsx`
+**Week view -- show only 1 day at a time on mobile:**
+- On screens below 768px, the 7-column grid is unusable. Instead of the grid, render a horizontally scrollable day list using `snap-x snap-mandatory` with each day taking full width (`min-w-full snap-start`), matching the Kanban mobile pattern.
+- Each day card shows the day header and its entries in a vertical list
+- The user can swipe left/right between days
+- Above the swipeable area, show a compact day-of-week row so users know where they are (e.g., small dots or abbreviated day names with the active one highlighted)
+- Requires changes in `CalendarWeekView.tsx` -- accept an `isMobile` prop and conditionally render the swipe layout vs. the grid
 
-**Props change:** Remove `onEdit` from `ProjectDetailsSheetProps` interface (4 props become 3).
+**Month view -- compact list on mobile:**
+- On mobile, the 7-column month grid is equally unusable. Switch to a vertical list showing only days that have entries (a "day agenda" view).
+- Each day row shows the date and the count of entries, and taps expand to show the entry list
+- This avoids the need to squeeze 7 tiny columns onto a 360px screen
+- Requires changes in `CalendarMonthView.tsx` -- accept an `isMobile` prop
 
-**New imports:**
-- `useState` from `react`
-- `EditProjectDialog` from `./EditProjectDialog`
-- `useBuilders`, `useLocations` from `@/hooks/useReferenceData` (already imports `useProjectStatuses`)
+**Skeleton:** Update `CalendarSkeleton` to reflect the mobile layouts (single-column cards instead of 7-column grid).
 
-**New state:**
+**Files changed:**
+- `src/pages/CalendarView.tsx` -- pass `isMobile` to sub-views, responsive padding
+- `src/components/calendar/CalendarWeekView.tsx` -- add mobile swipe layout
+- `src/components/calendar/CalendarMonthView.tsx` -- add mobile agenda layout
+
+### 2. Settings Page (`src/pages/Settings.tsx`)
+
+**Tab strip:**
+- Change outer padding from `p-6` to `p-3 md:p-6`
+- Replace the `flex-wrap` TabsList with a horizontally scrollable container on mobile: wrap the TabsList in a `div` with `overflow-x-auto whitespace-nowrap` and remove `flex-wrap` from the TabsList itself, using `inline-flex` instead
+- This matches the mobile dialog tab pattern already used in entry forms
+
+**Files changed:**
+- `src/pages/Settings.tsx` -- responsive padding, scrollable tab strip
+
+### 3. Reports Page (`src/pages/Reports.tsx`)
+
+**Minor padding fix:**
+- Change outer padding from `p-6` to `p-3 md:p-6`
+- The card grid already uses `md:grid-cols-2 lg:grid-cols-3` which stacks on mobile, so no further changes needed
+
+**Files changed:**
+- `src/pages/Reports.tsx` -- responsive padding only
+
+### 4. Invoices Page (`src/pages/Invoices.tsx`)
+
+**Table overflow:**
+- The 8-column invoice table has no horizontal scroll wrapper. Wrap the `<Table>` in a `div` with `overflow-x-auto` so it scrolls horizontally on narrow screens
+- This matches the pattern used in `ScheduleTable.tsx`
+
+**Files changed:**
+- `src/pages/Invoices.tsx` -- add `overflow-x-auto` wrapper around the table
+
+## Technical Details
+
+### Mobile detection
+- Reuse the existing `useIsMobile()` hook from `src/hooks/use-mobile.tsx` (breakpoint at 768px)
+
+### Calendar Week View mobile layout (in `CalendarWeekView.tsx`)
+```text
++--------------------------------------------------+
+|  S   M   T   W   T   F   S    (day selector row) |
+|             [active dot]                          |
++--------------------------------------------------+
+| <-- swipe -->                                     |
+| +----------------------------------------------+ |
+| | Wednesday, Feb 11                            | |
+| | [Entry 1 - crew colored]                     | |
+| | [Entry 2 - crew colored]                     | |
+| | [Entry 3 - crew colored]                     | |
+| | [+ Add Entry button]                         | |
+| +----------------------------------------------+ |
++--------------------------------------------------+
 ```
-const [isEditOpen, setIsEditOpen] = useState(false)
+
+- Use `useState` for `activeDayIndex` (default to today's index in the week, or 0)
+- Tapping a day abbreviation in the selector row jumps to that day
+- Swiping updates the active day index
+- Implement with snap scroll: `overflow-x-auto snap-x snap-mandatory` container with 7 children each `min-w-full snap-start`
+- Track scroll position with an `onScroll` handler to update the active day indicator
+
+### Calendar Month View mobile layout (in `CalendarMonthView.tsx`)
+```text
++--------------------------------------------------+
+| February 11 (Tue)              3 entries    [+]  |
+|   [Entry 1]                                       |
+|   [Entry 2]                                       |
+|   [Entry 3]                                       |
++--------------------------------------------------+
+| February 12 (Wed)              1 entry      [+]  |
+|   [Entry 1]                                       |
++--------------------------------------------------+
+| February 14 (Fri)              2 entries    [+]  |
+|   ...collapsed...                                  |
++--------------------------------------------------+
 ```
 
-**Hooks rule:** The three reference-data hooks (`useBuilders`, `useLocations`, `useProjectStatuses`) plus the existing `useQuery` hooks will all be called **before** the early return on line 150 (`if (!projectId) return null`). This avoids the React hooks-called-conditionally error.
+- Filter `calendarDays` to only show days with entries (or current day)
+- Use `Collapsible` from existing UI to expand/collapse each day
+- Each entry row is a `CalendarEntry` component (reused)
+- Add button visible on each day header
 
-**Pencil button (line 167):**
-- Change `onClick={onEdit}` to `onClick={() => setIsEditOpen(true)}`
-
-**Render EditProjectDialog** as a sibling after the `</Sheet>` closing tag (not inside SheetContent), using the **exact same prop pattern** currently used in Kanban.tsx and Projects.tsx:
-
-```tsx
-<EditProjectDialog
-  project={project}
-  isOpen={isEditOpen}
-  onClose={() => {
-    setIsEditOpen(false);
-    queryClient.invalidateQueries({ queryKey: ["project", projectId] });
-    queryClient.invalidateQueries({ queryKey: ["projects"] });
-    queryClient.invalidateQueries({ queryKey: ["kanban-projects"] });
-  }}
-  builders={builders}
-  locations={locations}
-  statuses={statuses}
-/>
+### Settings tab scrolling (in `Settings.tsx`)
+```text
+Before: flex-wrap causes tabs to wrap into 2-3 rows, crowding on 360px
+After:  single scrollable row, user can swipe to see all tabs
 ```
 
-The `project` variable from the existing query (line 77) already contains `id`, `lot_number`, `builder_id`, `location_id`, `status_id`, `notes`, `full_address`, `county`, `permit_number`, `authorization_numbers`, `wall_height`, `basement_type`, `google_drive_url` -- exactly what `EditProjectDialog`'s `Project` interface expects on lines 30-44.
+The TabsList will use `overflow-x-auto` and `inline-flex` with `whitespace-nowrap` to allow horizontal scrolling. Remove `flex-wrap` and `h-auto`.
 
-The dialog opens **over** the sheet (both use Radix portals with z-50, so layering works naturally). No need to close the sheet first.
+## Files Changed Summary
 
-### 2. Remove `onEdit` prop from all 5 parent usages
-
-| File | Current code | Change |
-|------|-------------|--------|
-| `src/pages/Kanban.tsx` line 332 | `onEdit={handleEditFromDetails}` | Remove this prop |
-| `src/pages/Projects.tsx` line 370 | `onEdit={handleEditFromDetails}` | Remove this prop |
-| `src/components/schedule/ScheduleTable.tsx` lines 560-562 | `onEdit={() => { ... }}` | Remove this prop |
-| `src/pages/Discrepancies.tsx` line 280 | `onEdit={() => {}}` | Remove this prop |
-| `src/pages/Invoices.tsx` line 448 | `onEdit={() => {}}` | Remove this prop |
-
-### 3. Cleanup redundant edit wiring in Kanban.tsx
-
-Remove (since the sheet now owns editing and this was the only edit path):
-- `isEditOpen` state (line 54)
-- `handleEditFromDetails` function (lines 202-205)
-- `fullSelectedProject` query (lines 208-221) -- note: this query shares queryKey `["project", selectedProjectId]` with the sheet's own query, so the sheet already fetches the same data
-- Standalone `<EditProjectDialog>` render (lines 335-345)
-- `EditProjectDialog` import (line 31)
-
-### 4. Cleanup redundant edit wiring in Projects.tsx
-
-Remove:
-- `isEditOpen` state (line 70)
-- `handleEditFromDetails` function (lines 179-182)
-- `selectedProject` derived variable (line 151) -- only used by the standalone EditProjectDialog
-- Standalone `<EditProjectDialog>` render (lines 374-381)
-- `EditProjectDialog` import (line 34)
-
-## Files changed (6 total)
-
-| File | What changes |
-|------|-------------|
-| `src/components/projects/ProjectDetailsSheet.tsx` | Add EditProjectDialog + local state + hooks; remove `onEdit` prop |
-| `src/pages/Kanban.tsx` | Remove `onEdit` prop, `handleEditFromDetails`, `isEditOpen`, `fullSelectedProject` query, standalone EditProjectDialog + import |
-| `src/pages/Projects.tsx` | Remove `onEdit` prop, `handleEditFromDetails`, `isEditOpen`, `selectedProject`, standalone EditProjectDialog + import |
-| `src/components/schedule/ScheduleTable.tsx` | Remove `onEdit` prop |
-| `src/pages/Discrepancies.tsx` | Remove `onEdit` prop |
-| `src/pages/Invoices.tsx` | Remove `onEdit` prop |
-
-## What does NOT change
-- `EditProjectDialog` component itself (no modifications)
-- The pencil Button element structure (no touch hacks)
-- Desktop behavior
-- Move-to-Phase dropdown in the sheet
-- PDF export button in the sheet
-- Move/Delete buttons in ScheduleTable
-
-## Verification
-After implementation, the following must be manually tested on Android Chrome:
-1. Daily Schedule -- open ProjectDetailsSheet -- tap pencil -- EditProjectDialog opens
-2. Invoices -- open sheet -- tap pencil -- dialog opens
-3. Discrepancies -- open sheet -- tap pencil -- dialog opens
-4. Kanban -- pencil still opens dialog
-5. Projects -- pencil still opens dialog
-6. Desktop behavior unchanged on all pages
+| File | Action | Scope |
+|------|--------|-------|
+| `src/pages/CalendarView.tsx` | Edit | Responsive padding, pass `isMobile` prop |
+| `src/components/calendar/CalendarWeekView.tsx` | Edit | Add mobile swipe-day layout |
+| `src/components/calendar/CalendarMonthView.tsx` | Edit | Add mobile agenda layout |
+| `src/pages/Settings.tsx` | Edit | Responsive padding, scrollable tab strip |
+| `src/pages/Reports.tsx` | Edit | Responsive padding |
+| `src/pages/Invoices.tsx` | Edit | Add `overflow-x-auto` to table wrapper |
