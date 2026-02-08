@@ -1,5 +1,4 @@
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
+import { useDraggable } from "@dnd-kit/core";
 import { Card } from "@/components/ui/card";
 import { Building, MapPin, Home } from "lucide-react";
 
@@ -14,35 +13,37 @@ export interface KanbanProject {
 interface ProjectCardProps {
   project: KanbanProject;
   onClick: (projectId: string) => void;
+  isDragOverlay?: boolean;
 }
 
-export function ProjectCard({ project, onClick }: ProjectCardProps) {
+export function ProjectCard({ project, onClick, isDragOverlay }: ProjectCardProps) {
   const {
     attributes,
     listeners,
     setNodeRef,
     transform,
-    transition,
     isDragging,
-  } = useSortable({
+  } = useDraggable({
     id: project.id,
     data: { type: "project", project },
   });
 
   const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
+    transform: transform
+      ? `translate(${transform.x}px, ${transform.y}px)`
+      : undefined,
+    opacity: isDragging ? 0.4 : 1,
   };
 
   return (
     <Card
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
+      ref={!isDragOverlay ? setNodeRef : undefined}
+      style={!isDragOverlay ? style : undefined}
+      {...(!isDragOverlay ? attributes : {})}
+      {...(!isDragOverlay ? listeners : {})}
       onClick={() => onClick(project.id)}
       className={`p-3 cursor-grab active:cursor-grabbing border-border bg-card hover:bg-accent/50 transition-colors ${
-        isDragging ? "opacity-50 shadow-lg ring-2 ring-primary/30" : ""
+        isDragging && !isDragOverlay ? "shadow-lg ring-2 ring-primary/30" : ""
       }`}
     >
       <div className="space-y-1.5">
