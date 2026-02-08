@@ -30,12 +30,12 @@ interface AppLayoutProps {
 }
 
 const navItems = [
-  { href: "/", label: "Schedule", icon: Calendar },
   { href: "/projects", label: "Projects", icon: FolderKanban },
-  { href: "/kanban", label: "Kanban", icon: Columns3 },
+  { href: "/", label: "Schedule", icon: Calendar },
   { href: "/calendar", label: "Calendar", icon: CalendarDays },
-  { href: "/invoices", label: "Invoices", icon: FileText },
-  { href: "/vendor-invoices", label: "Vendor Invoices", icon: Receipt },
+  { href: "/kanban", label: "Kanban", icon: Columns3 },
+  { href: "/invoices", label: "Jobs to Invoice", icon: FileText },
+  { href: "/vendor-invoices", label: "Vendor Details", icon: Receipt },
   { href: "/discrepancies", label: "Discrepancies", icon: AlertTriangle },
   { href: "/reports", label: "Reports", icon: ClipboardList },
   { href: "/settings", label: "Settings", icon: Settings },
