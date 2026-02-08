@@ -20,6 +20,7 @@ import Invoices from "./pages/Invoices";
 import Discrepancies from "./pages/Discrepancies";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
+import Kanban from "./pages/Kanban";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -133,6 +134,7 @@ const App = () => (
                 <Route path="/onboarding" element={<OnboardingRoute><Onboarding /></OnboardingRoute>} />
                 <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                 <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
+                <Route path="/kanban" element={<ProtectedRoute><Kanban /></ProtectedRoute>} />
                 <Route path="/calendar" element={<ProtectedRoute><CalendarView /></ProtectedRoute>} />
                 <Route path="/invoices" element={<ProtectedRoute><Invoices /></ProtectedRoute>} />
                 <Route path="/discrepancies" element={<ProtectedRoute><Discrepancies /></ProtectedRoute>} />

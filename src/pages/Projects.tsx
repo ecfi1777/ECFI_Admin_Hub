@@ -28,6 +28,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Search, Paperclip, X, FileText, ExternalLink } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { AddProjectDialog } from "@/components/projects/AddProjectDialog";
 import { EditProjectDialog } from "@/components/projects/EditProjectDialog";
 import { ProjectDetailsSheet } from "@/components/projects/ProjectDetailsSheet";
@@ -61,6 +63,7 @@ export default function Projects() {
   const [filterBuilder, setFilterBuilder] = useState("all");
   const [filterLocation, setFilterLocation] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [includeArchived, setIncludeArchived] = useState(false);
   
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -148,6 +151,11 @@ export default function Projects() {
   const selectedProject = projects.find((p) => p.id === selectedProjectId) || null;
 
   const filteredProjects = projects.filter((project) => {
+    // Hide archived unless toggle is on
+    if (!includeArchived && project.project_statuses?.name === "Archived") {
+      return false;
+    }
+
     const matchesSearch =
       searchQuery === "" ||
       project.lot_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -236,6 +244,16 @@ export default function Projects() {
                   ))}
                 </SelectContent>
               </Select>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="include-archived"
+                  checked={includeArchived}
+                  onCheckedChange={(checked) => setIncludeArchived(checked === true)}
+                />
+                <Label htmlFor="include-archived" className="text-sm text-muted-foreground cursor-pointer">
+                  Include Archived
+                </Label>
+              </div>
               {hasFiltersApplied && (
                 <Button
                   variant="ghost"
