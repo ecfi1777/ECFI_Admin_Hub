@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -40,14 +40,7 @@ export function ProjectDetailsSheet({
   isOpen,
   onClose,
 }: ProjectDetailsSheetProps) {
-  const [isEditOpen, setIsEditOpen] = useState(false);
-
-  // Reset edit state when the sheet reopens for a new project
-  useEffect(() => {
-    if (isOpen) {
-      setIsEditOpen(false);
-    }
-  }, [isOpen, projectId]);
+  const [editProject, setEditProject] = useState<any>(null);
 
   const { organizationId } = useOrganization();
   const queryClient = useQueryClient();
@@ -158,7 +151,7 @@ export function ProjectDetailsSheet({
     }
   };
 
-  if (!projectId) return null;
+  if (!projectId && !editProject) return null;
 
   return (
     <>
@@ -178,7 +171,7 @@ export function ProjectDetailsSheet({
                         size="sm"
                         onClick={() => {
                           onClose();
-                          setIsEditOpen(true);
+                          setEditProject(project);
                         }}
                         className="text-slate-400 hover:text-white h-8 w-8 p-0"
                       >
@@ -325,13 +318,14 @@ export function ProjectDetailsSheet({
         </SheetContent>
       </Sheet>
 
-      {isEditOpen && (
+      {!!editProject && (
         <EditProjectDialog
-          project={project}
-          isOpen={isEditOpen}
+          project={editProject}
+          isOpen={!!editProject}
           onClose={() => {
-            setIsEditOpen(false);
-            queryClient.invalidateQueries({ queryKey: ["project", projectId] });
+            const pid = editProject?.id;
+            setEditProject(null);
+            queryClient.invalidateQueries({ queryKey: ["project", pid] });
             queryClient.invalidateQueries({ queryKey: ["projects", organizationId] });
             queryClient.invalidateQueries({ queryKey: ["kanban-projects", organizationId] });
           }}
