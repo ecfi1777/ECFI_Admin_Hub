@@ -277,7 +277,6 @@ export default function Discrepancies() {
           projectId={selectedProjectId}
           isOpen={!!selectedProjectId}
           onClose={() => setSelectedProjectId(null)}
-          onEdit={() => {}}
         />
       </div>
     </AppLayout>
