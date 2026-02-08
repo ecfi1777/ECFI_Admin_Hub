@@ -18,6 +18,7 @@ import {
   Sun,
   Moon,
   ClipboardList,
+  Columns3,
 } from "lucide-react";
 
 interface AppLayoutProps {
@@ -27,6 +28,7 @@ interface AppLayoutProps {
 const navItems = [
   { href: "/", label: "Schedule", icon: Calendar },
   { href: "/projects", label: "Projects", icon: FolderKanban },
+  { href: "/kanban", label: "Kanban", icon: Columns3 },
   { href: "/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/invoices", label: "Invoices", icon: FileText },
   { href: "/discrepancies", label: "Discrepancies", icon: AlertTriangle },
