@@ -22,6 +22,7 @@ import {
   ClipboardList,
   Columns3,
   Menu,
+  Receipt,
 } from "lucide-react";
 
 interface AppLayoutProps {
@@ -34,6 +35,7 @@ const navItems = [
   { href: "/kanban", label: "Kanban", icon: Columns3 },
   { href: "/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/invoices", label: "Invoices", icon: FileText },
+  { href: "/vendor-invoices", label: "Vendor Invoices", icon: Receipt },
   { href: "/discrepancies", label: "Discrepancies", icon: AlertTriangle },
   { href: "/reports", label: "Reports", icon: ClipboardList },
   { href: "/settings", label: "Settings", icon: Settings },
