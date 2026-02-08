@@ -1,29 +1,65 @@
 
 
-## Add General Notes to Monthly Schedule Backup Export
+# Phase 3 Fix: KanbanColumn.tsx Column Classes
 
-The `notes` field (general entry notes) is missing from the Excel export. This is a small change across two files.
+Two corrections to the Phase 3 plan for `src/components/kanban/KanbanColumn.tsx`.
 
-### Changes
+---
 
-**1. `src/pages/Reports.tsx`** - Add `notes` to the query select statement (line ~93, before `to_be_invoiced`).
+## Fix 1: Scope `w-[280px]` to desktop
 
-**2. `src/lib/generateScheduleExcel.ts`** - Three updates:
-   - Add `notes?: string | null` to the `ScheduleEntryExport` interface
-   - Add a `"Notes"` column in the Excel data mapping, placed after "Crew Notes" (near the end, before Invoice Status)
-   - Add a column width entry `{ wch: 30 }` for the new Notes column
+The plan previously had `w-[280px]` without an `md:` prefix, which would fight `min-w-[85vw]` on mobile.
 
-### Technical Details
+**Corrected classes for normal (not collapsed) state:**
+```
+flex flex-col min-w-[85vw] snap-start md:min-w-[260px] md:w-[280px] flex-shrink-0 transition-all
+```
 
-**Query change (Reports.tsx, line ~93):**
-Add `notes,` to the select string, right before `to_be_invoiced`.
+## Fix 2: Preserve the existing `isCollapsed` ternary structure
 
-**Interface update (generateScheduleExcel.ts):**
-Add `notes?: string | null;` to `ScheduleEntryExport`.
+The current code (lines 28-30) uses a template literal with `isCollapsed` conditional:
 
-**Excel column (generateScheduleExcel.ts):**
-Add `"Notes": entry.notes || "",` after `"Crew Notes"` and before `"Invoice Status"`.
+```tsx
+className={`flex flex-col min-w-[260px] ${
+  isCollapsed ? "w-12" : "w-[280px]"
+} flex-shrink-0 transition-all`}
+```
 
-**Column width:**
-Add `{ wch: 30 }` for the Notes column after the Crew Notes width entry.
+**Keep this exact conditional pattern.** Update the mobile/desktop width classes inside each branch:
 
+```tsx
+className={`flex flex-col min-w-[85vw] snap-start md:min-w-[260px] ${
+  isCollapsed ? "w-12 min-w-[48px]" : "md:w-[280px]"
+} flex-shrink-0 transition-all`}
+```
+
+**What changed in each branch:**
+- **Collapsed branch**: `"w-12"` becomes `"w-12 min-w-[48px]"` (overrides the 85vw min-width so collapsed columns stay narrow on all screens)
+- **Normal branch**: `"w-[280px]"` becomes `"md:w-[280px]"` (desktop-only width; on mobile the column is sized by `min-w-[85vw]` from the outer classes)
+
+**What stays the same:**
+- The `isCollapsed` ternary conditional -- not restructured
+- `flex-shrink-0 transition-all` -- unchanged
+- The collapse toggle button, header, and body rendering -- all untouched
+
+---
+
+## Updated Phase 3 KanbanColumn section (replaces the previous version in the plan)
+
+**`src/components/kanban/KanbanColumn.tsx`** (lines 27-31):
+
+Keep the existing `isCollapsed` conditional structure. Update the mobile/desktop width classes inside each branch as specified:
+
+```tsx
+<div
+  className={`flex flex-col min-w-[85vw] snap-start md:min-w-[260px] ${
+    isCollapsed ? "w-12 min-w-[48px]" : "md:w-[280px]"
+  } flex-shrink-0 transition-all`}
+>
+```
+
+No other changes to this file. The collapse toggle, header, body, ProjectCard rendering, and droppable ref all remain unchanged.
+
+---
+
+All other phases in the plan remain unchanged. This fix only affects the KanbanColumn className on lines 27-31.
