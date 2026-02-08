@@ -120,7 +120,7 @@ export default function Reports() {
 
   return (
     <AppLayout>
-      <div className="p-6">
+      <div className="p-3 md:p-6">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-foreground">Reports</h1>
           <p className="text-muted-foreground">Generate and export data reports</p>

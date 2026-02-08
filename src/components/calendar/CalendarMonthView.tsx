@@ -9,8 +9,9 @@ import {
   isSameMonth,
   isToday,
 } from "date-fns";
-import { Plus } from "lucide-react";
+import { Plus, ChevronDown, ChevronRight } from "lucide-react";
 import { CalendarEntry } from "./CalendarEntry";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import type { ScheduleEntry } from "@/types/schedule";
 import type { CrewWithColor } from "@/hooks/useCalendarData";
 
@@ -22,6 +23,7 @@ interface CalendarMonthViewProps {
   onEntryClick: (entry: ScheduleEntry) => void;
   onShowDayDetail: (date: Date, entries: ScheduleEntry[]) => void;
   onAddEntry: (date: Date) => void;
+  isMobile?: boolean;
 }
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -35,6 +37,7 @@ export const CalendarMonthView = memo(function CalendarMonthView({
   onEntryClick,
   onShowDayDetail,
   onAddEntry,
+  isMobile = false,
 }: CalendarMonthViewProps) {
   const [hoveredDay, setHoveredDay] = useState<string | null>(null);
 
@@ -71,7 +74,6 @@ export const CalendarMonthView = memo(function CalendarMonthView({
       if (!map[dateKey]) map[dateKey] = [];
       map[dateKey].push(entry);
     });
-    // Sort each day's entries by crew display_order
     Object.values(map).forEach((dayEntries) => {
       dayEntries.sort((a, b) => {
         const orderA = a.crew_id ? (crewOrderMap[a.crew_id] ?? 999) : 999;
@@ -91,6 +93,49 @@ export const CalendarMonthView = memo(function CalendarMonthView({
     return result;
   }, [calendarDays]);
 
+  // Mobile: agenda list of days with entries
+  if (isMobile) {
+    const daysWithEntries = calendarDays.filter((day) => {
+      const dateStr = format(day, "yyyy-MM-dd");
+      return (
+        isSameMonth(day, currentMonth) &&
+        ((entriesByDate[dateStr] && entriesByDate[dateStr].length > 0) || isToday(day))
+      );
+    });
+
+    if (daysWithEntries.length === 0) {
+      return (
+        <div className="text-muted-foreground text-center py-12">
+          No entries this month
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-2">
+        {daysWithEntries.map((day) => {
+          const dateStr = format(day, "yyyy-MM-dd");
+          const dayEntries = entriesByDate[dateStr] || [];
+          const isTodayDay = isToday(day);
+
+          return (
+            <MobileMonthDay
+              key={dateStr}
+              day={day}
+              dayEntries={dayEntries}
+              isToday={isTodayDay}
+              crews={crews}
+              onDayClick={onDayClick}
+              onEntryClick={onEntryClick}
+              onAddEntry={onAddEntry}
+            />
+          );
+        })}
+      </div>
+    );
+  }
+
+  // Desktop: standard grid
   return (
     <div className="border border-border rounded-lg overflow-hidden">
       {/* Weekday Headers */}
@@ -187,5 +232,92 @@ export const CalendarMonthView = memo(function CalendarMonthView({
         </div>
       ))}
     </div>
+  );
+});
+
+// Extracted mobile day component
+interface MobileMonthDayProps {
+  day: Date;
+  dayEntries: ScheduleEntry[];
+  isToday: boolean;
+  crews: CrewWithColor[];
+  onDayClick: (date: Date) => void;
+  onEntryClick: (entry: ScheduleEntry) => void;
+  onAddEntry: (date: Date) => void;
+}
+
+const MobileMonthDay = memo(function MobileMonthDay({
+  day,
+  dayEntries,
+  isToday: isTodayDay,
+  crews,
+  onDayClick,
+  onEntryClick,
+  onAddEntry,
+}: MobileMonthDayProps) {
+  const [open, setOpen] = useState(isTodayDay || dayEntries.length <= 3);
+  const entryCount = dayEntries.length;
+  const entryLabel = entryCount === 1 ? "1 entry" : `${entryCount} entries`;
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <div
+        className={`bg-card border rounded-lg overflow-hidden ${
+          isTodayDay ? "border-primary" : "border-border"
+        }`}
+      >
+        <CollapsibleTrigger asChild>
+          <button className="w-full flex items-center justify-between p-3 hover:bg-muted/50 transition-colors text-left">
+            <div className="flex items-center gap-2">
+              {open ? (
+                <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
+              ) : (
+                <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+              )}
+              <span
+                className={`font-semibold text-sm ${
+                  isTodayDay ? "text-primary" : "text-foreground"
+                }`}
+              >
+                {format(day, "MMM d (EEE)")}
+              </span>
+              <span className="text-xs text-muted-foreground">{entryLabel}</span>
+            </div>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onAddEntry(day);
+              }}
+              className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-all shrink-0"
+              aria-label={`Add entry for ${format(day, "MMMM d")}`}
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </button>
+          </button>
+        </CollapsibleTrigger>
+
+        <CollapsibleContent>
+          <div className="px-3 pb-3 space-y-1.5">
+            {dayEntries.length > 0 ? (
+              dayEntries.map((entry) => (
+                <CalendarEntry
+                  key={entry.id}
+                  entry={entry}
+                  crews={crews}
+                  onClick={onEntryClick}
+                />
+              ))
+            ) : (
+              <button
+                onClick={() => onDayClick(day)}
+                className="w-full text-sm text-muted-foreground text-center py-3 hover:text-foreground transition-colors"
+              >
+                No entries — tap to view day
+              </button>
+            )}
+          </div>
+        </CollapsibleContent>
+      </div>
+    </Collapsible>
   );
 });

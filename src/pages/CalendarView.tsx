@@ -22,6 +22,7 @@ import { DayDetailModal } from "@/components/calendar/DayDetailModal";
 import { EditEntryDialog } from "@/components/schedule/EditEntryDialog";
 import { AddEntryDialog } from "@/components/schedule/AddEntryDialog";
 import { useCalendarEntries, useCrewsWithColors } from "@/hooks/useCalendarData";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ScheduleEntry } from "@/types/schedule";
 
@@ -29,6 +30,7 @@ type ViewMode = "week" | "month";
 
 export default function CalendarView() {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [viewMode, setViewMode] = useState<ViewMode>("week");
   const [currentDate, setCurrentDate] = useState(new Date());
   
@@ -126,7 +128,7 @@ export default function CalendarView() {
 
   return (
     <AppLayout>
-      <div className="p-6">
+      <div className="p-3 md:p-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
@@ -136,7 +138,7 @@ export default function CalendarView() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 md:gap-3">
             {/* View Toggle */}
             <ToggleGroup
               type="single"
@@ -155,7 +157,7 @@ export default function CalendarView() {
             </ToggleGroup>
 
             {/* Navigation */}
-            <div className="flex items-center gap-2 bg-muted rounded-lg p-1">
+            <div className="flex items-center gap-1 md:gap-2 bg-muted rounded-lg p-1">
               <Button
                 variant="ghost"
                 size="icon"
@@ -164,7 +166,7 @@ export default function CalendarView() {
               >
                 <ChevronLeft className="w-4 h-4" />
               </Button>
-              <span className="text-foreground font-medium min-w-[180px] text-center">
+              <span className="text-foreground font-medium min-w-[140px] md:min-w-[180px] text-center text-sm md:text-base">
                 {displayTitle}
               </span>
               <Button
@@ -196,7 +198,7 @@ export default function CalendarView() {
 
         {/* Calendar Content */}
         {isLoading ? (
-          <CalendarSkeleton viewMode={viewMode} />
+          <CalendarSkeleton viewMode={viewMode} isMobile={isMobile} />
         ) : viewMode === "week" ? (
           <CalendarWeekView
             weekStart={startOfWeek(currentDate)}
@@ -206,6 +208,7 @@ export default function CalendarView() {
             onEntryClick={handleEntryClick}
             onShowDayDetail={handleShowDayDetail}
             onAddEntry={handleAddEntry}
+            isMobile={isMobile}
           />
         ) : (
           <CalendarMonthView
@@ -216,6 +219,7 @@ export default function CalendarView() {
             onEntryClick={handleEntryClick}
             onShowDayDetail={handleShowDayDetail}
             onAddEntry={handleAddEntry}
+            isMobile={isMobile}
           />
         )}
 
@@ -247,7 +251,24 @@ export default function CalendarView() {
   );
 }
 
-function CalendarSkeleton({ viewMode }: { viewMode: ViewMode }) {
+function CalendarSkeleton({ viewMode, isMobile }: { viewMode: ViewMode; isMobile: boolean }) {
+  if (isMobile) {
+    return (
+      <div className="space-y-3">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="bg-card border border-border rounded-lg p-3">
+            <Skeleton className="h-5 w-32 mb-3" />
+            <div className="space-y-2">
+              <Skeleton className="h-8 w-full" />
+              <Skeleton className="h-8 w-full" />
+              <Skeleton className="h-8 w-3/4" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   if (viewMode === "week") {
     return (
       <div className="grid grid-cols-7 gap-px bg-border rounded-lg overflow-hidden">
