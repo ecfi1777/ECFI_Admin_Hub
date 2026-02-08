@@ -439,20 +439,13 @@ export function ScheduleTable({ entries }: ScheduleTableProps) {
                         variant="ghost"
                         className="h-7 w-7 text-muted-foreground hover:text-foreground"
                         title="Edit full details"
-                        onPointerDownCapture={(e) => {
-                          e.preventDefault();
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onTouchEnd={(e) => {
                           e.stopPropagation();
-                        }}
-                        onTouchStartCapture={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                        }}
-                        onClickCapture={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
+                          setEditEntry(entry);
+                          setEditEntryTab("general");
                         }}
                         onClick={(e) => {
-                          e.preventDefault();
                           e.stopPropagation();
                           setEditEntry(entry);
                           setEditEntryTab("general");
