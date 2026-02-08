@@ -25,8 +25,8 @@ export function KanbanColumn({
 
   return (
     <div
-      className={`flex flex-col min-w-[260px] ${
-        isCollapsed ? "w-12" : "w-[280px]"
+      className={`flex flex-col min-w-[85vw] snap-start md:min-w-[260px] ${
+        isCollapsed ? "w-12 min-w-[48px]" : "md:w-[280px]"
       } flex-shrink-0 transition-all`}
     >
       {/* Column Header */}
