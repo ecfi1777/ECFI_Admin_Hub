@@ -182,7 +182,7 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate 
 
           {/* Tabs using shared components */}
           <Tabs defaultValue="general" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="w-full overflow-x-auto flex flex-nowrap gap-1 pb-1">
               <TabsTrigger value="general">General</TabsTrigger>
               <TabsTrigger value="concrete">Concrete</TabsTrigger>
               <TabsTrigger value="pump">Pump</TabsTrigger>

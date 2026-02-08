@@ -85,7 +85,7 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
         </DialogHeader>
         
         <Tabs defaultValue={defaultTab} key={defaultTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="w-full overflow-x-auto flex flex-nowrap gap-1 pb-1">
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="concrete">Concrete</TabsTrigger>
             <TabsTrigger value="pump">Pump</TabsTrigger>

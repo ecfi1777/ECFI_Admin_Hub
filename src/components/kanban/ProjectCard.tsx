@@ -14,9 +14,10 @@ interface ProjectCardProps {
   project: KanbanProject;
   onClick: (projectId: string) => void;
   isDragOverlay?: boolean;
+  isMobile?: boolean;
 }
 
-export function ProjectCard({ project, onClick, isDragOverlay }: ProjectCardProps) {
+export function ProjectCard({ project, onClick, isDragOverlay, isMobile = false }: ProjectCardProps) {
   const {
     attributes,
     listeners,
@@ -26,6 +27,7 @@ export function ProjectCard({ project, onClick, isDragOverlay }: ProjectCardProp
   } = useDraggable({
     id: project.id,
     data: { type: "project", project },
+    disabled: isMobile,
   });
 
   const style = {
@@ -42,9 +44,9 @@ export function ProjectCard({ project, onClick, isDragOverlay }: ProjectCardProp
       {...(!isDragOverlay ? attributes : {})}
       {...(!isDragOverlay ? listeners : {})}
       onClick={() => onClick(project.id)}
-      className={`p-3 cursor-grab active:cursor-grabbing border-border bg-card hover:bg-accent/50 transition-colors ${
-        isDragging && !isDragOverlay ? "shadow-lg ring-2 ring-primary/30" : ""
-      }`}
+      className={`p-3 border-border bg-card hover:bg-accent/50 transition-colors ${
+        isMobile ? "cursor-pointer" : "cursor-grab active:cursor-grabbing"
+      } ${isDragging && !isDragOverlay ? "shadow-lg ring-2 ring-primary/30" : ""}`}
     >
       <div className="space-y-1.5">
         <div className="flex items-center gap-1.5 text-sm font-medium text-foreground">

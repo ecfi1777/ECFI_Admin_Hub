@@ -434,9 +434,12 @@ export function ScheduleTable({ entries }: ScheduleTableProps) {
                   <TableCell className="py-2">
                     <div className="flex items-center gap-1">
                       <Button
+                        type="button"
                         size="icon"
                         variant="ghost"
-                        onClick={() => {
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setEditEntry(entry);
                           setEditEntryTab("general");
                         }}
@@ -448,8 +451,11 @@ export function ScheduleTable({ entries }: ScheduleTableProps) {
                       <Popover>
                         <PopoverTrigger asChild>
                           <Button
+                            type="button"
                             size="icon"
                             variant="ghost"
+                            onPointerDown={(e) => e.stopPropagation()}
+                            onClick={(e) => e.stopPropagation()}
                             className="h-7 w-7 text-muted-foreground hover:text-foreground"
                             title="Move to another date"
                           >
@@ -488,9 +494,14 @@ export function ScheduleTable({ entries }: ScheduleTableProps) {
                         </PopoverContent>
                       </Popover>
                       <Button
+                        type="button"
                         size="icon"
                         variant="ghost"
-                        onClick={() => setDeleteEntryId(entry.id)}
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteEntryId(entry.id);
+                        }}
                         className="h-7 w-7 text-muted-foreground hover:text-destructive"
                         title="Delete entry"
                       >

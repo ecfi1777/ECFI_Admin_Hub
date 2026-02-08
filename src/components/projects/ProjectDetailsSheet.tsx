@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,12 +9,21 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Pencil, ExternalLink, MapPin, FileText, Building, Home, Download } from "lucide-react";
 import { ProjectScheduleHistory } from "./ProjectScheduleHistory";
 import { ProjectDocuments } from "./ProjectDocuments";
 import { generateProjectPdf } from "@/lib/generateProjectPdf";
 import { toast } from "sonner";
 import { getStatusColor } from "@/lib/statusColors";
+import { useOrganization } from "@/hooks/useOrganization";
+import { useProjectStatuses } from "@/hooks/useReferenceData";
 
 interface ProjectDetailsSheetProps {
   projectId: string | null;
@@ -23,12 +32,47 @@ interface ProjectDetailsSheetProps {
   onEdit: () => void;
 }
 
+const KANBAN_STATUSES = ["No Status", "Upcoming", "Ready to Start", "In Progress", "Complete"];
+
 export function ProjectDetailsSheet({
   projectId,
   isOpen,
   onClose,
   onEdit,
 }: ProjectDetailsSheetProps) {
+  const { organizationId } = useOrganization();
+  const queryClient = useQueryClient();
+  const { data: statuses = [] } = useProjectStatuses();
+
+  const statusUpdateMutation = useMutation({
+    mutationFn: async (newStatusId: string | null) => {
+      if (!projectId) return;
+      const { error } = await supabase
+        .from("projects")
+        .update({ status_id: newStatusId })
+        .eq("id", projectId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["kanban-projects", organizationId] });
+      queryClient.invalidateQueries({ queryKey: ["projects", organizationId] });
+      queryClient.invalidateQueries({ queryKey: ["project", projectId] });
+      toast.success("Status updated");
+    },
+    onError: () => {
+      toast.error("Failed to update status");
+    },
+  });
+
+  const handleStatusChange = (value: string) => {
+    const newStatusId = value === "no-status" ? null : value;
+    statusUpdateMutation.mutate(newStatusId);
+  };
+
+  // Filter statuses to only show Kanban-relevant ones
+  const kanbanStatuses = statuses.filter((s) =>
+    KANBAN_STATUSES.includes(s.name)
+  );
 
   const { data: project, isLoading } = useQuery({
     queryKey: ["project", projectId],
@@ -149,14 +193,32 @@ export function ProjectDetailsSheet({
                     )}
                   </div>
                 </div>
-                {project.project_statuses && (
-                  <Badge
-                    variant="outline"
-                    className={getStatusColor(project.project_statuses.name)}
+                <div className="flex flex-col items-end gap-2">
+                  {project.project_statuses && (
+                    <Badge
+                      variant="outline"
+                      className={getStatusColor(project.project_statuses.name)}
+                    >
+                      {project.project_statuses.name}
+                    </Badge>
+                  )}
+                  <Select
+                    value={project.status_id || "no-status"}
+                    onValueChange={handleStatusChange}
                   >
-                    {project.project_statuses.name}
-                  </Badge>
-                )}
+                    <SelectTrigger className="w-[160px] h-8 bg-slate-700 border-slate-600 text-slate-300 text-xs">
+                      <SelectValue placeholder="Move to Phase" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="no-status">No Status</SelectItem>
+                      {kanbanStatuses.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               {/* Project Info Grid */}
