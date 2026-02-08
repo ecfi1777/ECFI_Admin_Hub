@@ -437,14 +437,26 @@ export function ScheduleTable({ entries }: ScheduleTableProps) {
                         type="button"
                         size="icon"
                         variant="ghost"
-                        onPointerDown={(e) => e.stopPropagation()}
+                        className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                        title="Edit full details"
+                        onPointerDownCapture={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                        }}
+                        onTouchStartCapture={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                        }}
+                        onClickCapture={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                        }}
                         onClick={(e) => {
+                          e.preventDefault();
                           e.stopPropagation();
                           setEditEntry(entry);
                           setEditEntryTab("general");
                         }}
-                        className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                        title="Edit full details"
                       >
                         <Pencil className="w-3 h-3" />
                       </Button>
