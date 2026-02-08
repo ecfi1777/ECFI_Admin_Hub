@@ -557,6 +557,7 @@ export type Database = {
           notes: string | null
           organization_id: string
           permit_number: string | null
+          status_changed_at: string | null
           status_id: string | null
           updated_at: string
           wall_height: string | null
@@ -576,6 +577,7 @@ export type Database = {
           notes?: string | null
           organization_id: string
           permit_number?: string | null
+          status_changed_at?: string | null
           status_id?: string | null
           updated_at?: string
           wall_height?: string | null
@@ -595,6 +597,7 @@ export type Database = {
           notes?: string | null
           organization_id?: string
           permit_number?: string | null
+          status_changed_at?: string | null
           status_id?: string | null
           updated_at?: string
           wall_height?: string | null
@@ -904,6 +907,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      auto_archive_completed_projects: { Args: never; Returns: undefined }
       generate_invite_code: { Args: never; Returns: string }
       get_user_organization_id: { Args: { p_user_id: string }; Returns: string }
       seed_organization_defaults: {
