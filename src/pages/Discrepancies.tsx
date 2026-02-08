@@ -164,14 +164,14 @@ export default function Discrepancies() {
       group.totalSupplierYards += entry.ready_mix_yards_billed || 0;
     });
 
-    // Compute discrepancy and sort
+    // Compute discrepancy, filter out matches, and sort
     grouped.forEach((g) => {
       g.discrepancy = g.totalCrewYards - g.totalSupplierYards;
     });
 
-    return Array.from(grouped.values()).sort(
-      (a, b) => Math.abs(b.discrepancy) - Math.abs(a.discrepancy)
-    );
+    return Array.from(grouped.values())
+      .filter((g) => Math.abs(g.discrepancy) >= 0.05)
+      .sort((a, b) => Math.abs(b.discrepancy) - Math.abs(a.discrepancy));
   }, [completeEntries, searchQuery, filterBuilder, filterCrew, filterLocation]);
 
   const hasActiveFilters =
