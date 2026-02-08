@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -41,6 +41,13 @@ export function ProjectDetailsSheet({
   onClose,
 }: ProjectDetailsSheetProps) {
   const [isEditOpen, setIsEditOpen] = useState(false);
+
+  // Reset edit state when the sheet reopens for a new project
+  useEffect(() => {
+    if (isOpen) {
+      setIsEditOpen(false);
+    }
+  }, [isOpen, projectId]);
 
   const { organizationId } = useOrganization();
   const queryClient = useQueryClient();
