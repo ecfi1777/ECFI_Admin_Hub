@@ -62,7 +62,7 @@ export function ProjectCard({ project, onClick, onArchive, isDragOverlay, isMobi
             <Button
               variant="ghost"
               size="sm"
-              className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+              className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground flex-shrink-0"
               onClick={(e) => {
                 e.stopPropagation();
                 onArchive(project.id);
