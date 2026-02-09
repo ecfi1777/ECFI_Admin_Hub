@@ -307,7 +307,7 @@ export function DailySchedule() {
                     {saveDailyNotesMutation.isPending ? "Saving..." : "Save"}
                   </Button>
                 </div>
-              ) : (
+              ) : canManage ? (
                 <Button
                   size="sm"
                   variant="ghost"
@@ -316,7 +316,7 @@ export function DailySchedule() {
                 >
                   Edit
                 </Button>
-              )}
+              ) : null}
             </CardHeader>
             <CardContent className="px-4 pb-4">
               {isNotesEditing ? (

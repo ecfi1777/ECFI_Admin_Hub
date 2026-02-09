@@ -69,9 +69,10 @@ interface ScheduleEntry {
 
 interface ProjectScheduleHistoryProps {
   projectId: string;
+  readOnly?: boolean;
 }
 
-export function ProjectScheduleHistory({ projectId }: ProjectScheduleHistoryProps) {
+export function ProjectScheduleHistory({ projectId, readOnly = false }: ProjectScheduleHistoryProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { organizationId } = useOrganization();
@@ -380,15 +381,17 @@ export function ProjectScheduleHistory({ projectId }: ProjectScheduleHistoryProp
                               </div>
                             )}
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => handleEditClick(entry, e)}
-                            className="text-slate-400 hover:text-white h-7 px-2"
-                          >
-                            <Pencil className="w-3 h-3 mr-1" />
-                            Edit
-                          </Button>
+                          {!readOnly && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => handleEditClick(entry, e)}
+                              className="text-slate-400 hover:text-white h-7 px-2"
+                            >
+                              <Pencil className="w-3 h-3 mr-1" />
+                              Edit
+                            </Button>
+                          )}
                         </div>
 
                         {/* Vendor Details - only show if data exists */}
@@ -410,12 +413,12 @@ export function ProjectScheduleHistory({ projectId }: ProjectScheduleHistoryProp
                                   Billed: {entry.ready_mix_yards_billed} yds
                                 </div>
                               )}
-                              {entry.ready_mix_invoice_number && (
+                              {!readOnly && entry.ready_mix_invoice_number && (
                                 <div className="text-slate-400">
                                   Inv: {entry.ready_mix_invoice_number}
                                 </div>
                               )}
-                              {formatCurrency(entry.ready_mix_invoice_amount) && (
+                              {!readOnly && formatCurrency(entry.ready_mix_invoice_amount) && (
                                 <div className="text-green-400">
                                   {formatCurrency(entry.ready_mix_invoice_amount)}
                                 </div>
@@ -440,12 +443,12 @@ export function ProjectScheduleHistory({ projectId }: ProjectScheduleHistoryProp
                                   {entry.pump_vendors.code || entry.pump_vendors.name}
                                 </div>
                               )}
-                              {entry.pump_invoice_number && (
+                              {!readOnly && entry.pump_invoice_number && (
                                 <div className="text-slate-400">
                                   Inv: {entry.pump_invoice_number}
                                 </div>
                               )}
-                              {formatCurrency(entry.pump_invoice_amount) && (
+                              {!readOnly && formatCurrency(entry.pump_invoice_amount) && (
                                 <div className="text-green-400">
                                   {formatCurrency(entry.pump_invoice_amount)}
                                 </div>
@@ -475,12 +478,12 @@ export function ProjectScheduleHistory({ projectId }: ProjectScheduleHistoryProp
                                   {entry.inspectors.name}
                                 </div>
                               )}
-                              {entry.inspection_invoice_number && (
+                              {!readOnly && entry.inspection_invoice_number && (
                                 <div className="text-slate-400">
                                   Inv: {entry.inspection_invoice_number}
                                 </div>
                               )}
-                              {formatCurrency(entry.inspection_amount) && (
+                              {!readOnly && formatCurrency(entry.inspection_amount) && (
                                 <div className="text-green-400">
                                   {formatCurrency(entry.inspection_amount)}
                                 </div>
@@ -513,8 +516,8 @@ export function ProjectScheduleHistory({ projectId }: ProjectScheduleHistoryProp
                             </div>
                           )}
 
-                          {/* Invoicing */}
-                          {(entry.to_be_invoiced || entry.invoice_complete || entry.invoice_number) && (
+                          {/* Invoicing - hidden for viewers */}
+                          {!readOnly && (entry.to_be_invoiced || entry.invoice_complete || entry.invoice_number) && (
                             <div className="bg-slate-900 rounded p-2 space-y-1">
                               <div className="flex items-center gap-1 text-slate-400 text-xs font-medium">
                                 <FileText className="w-3 h-3" />

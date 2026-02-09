@@ -23,6 +23,7 @@ import { EditEntryDialog } from "@/components/schedule/EditEntryDialog";
 import { AddEntryDialog } from "@/components/schedule/AddEntryDialog";
 import { useCalendarEntries, useCrewsWithColors } from "@/hooks/useCalendarData";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useUserRole } from "@/hooks/useUserRole";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ScheduleEntry } from "@/types/schedule";
 
@@ -31,6 +32,7 @@ type ViewMode = "week" | "month";
 export default function CalendarView() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { canManage } = useUserRole();
   const [viewMode, setViewMode] = useState<ViewMode>("week");
   const [currentDate, setCurrentDate] = useState(new Date());
   
@@ -111,9 +113,10 @@ export default function CalendarView() {
   );
 
   const handleEntryClick = useCallback((entry: ScheduleEntry) => {
+    if (!canManage) return; // Viewers cannot edit entries
     setEditEntry(entry);
     setEditDialogOpen(true);
-  }, []);
+  }, [canManage]);
 
   const handleShowDayDetail = useCallback((date: Date, dayEntries: ScheduleEntry[]) => {
     setDayDetailDate(date);
@@ -207,7 +210,7 @@ export default function CalendarView() {
             onDayClick={handleDayClick}
             onEntryClick={handleEntryClick}
             onShowDayDetail={handleShowDayDetail}
-            onAddEntry={handleAddEntry}
+            onAddEntry={canManage ? handleAddEntry : undefined}
             isMobile={isMobile}
           />
         ) : (
@@ -218,7 +221,7 @@ export default function CalendarView() {
             onDayClick={handleDayClick}
             onEntryClick={handleEntryClick}
             onShowDayDetail={handleShowDayDetail}
-            onAddEntry={handleAddEntry}
+            onAddEntry={canManage ? handleAddEntry : undefined}
             isMobile={isMobile}
           />
         )}
