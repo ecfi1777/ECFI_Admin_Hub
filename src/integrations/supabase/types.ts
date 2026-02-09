@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           code: string | null
           created_at: string
+          display_order: number
           id: string
           is_active: boolean
           name: string
@@ -27,6 +28,7 @@ export type Database = {
         Insert: {
           code?: string | null
           created_at?: string
+          display_order?: number
           id?: string
           is_active?: boolean
           name: string
@@ -36,6 +38,7 @@ export type Database = {
         Update: {
           code?: string | null
           created_at?: string
+          display_order?: number
           id?: string
           is_active?: boolean
           name?: string
@@ -220,6 +223,7 @@ export type Database = {
       inspection_types: {
         Row: {
           created_at: string
+          display_order: number
           id: string
           is_active: boolean
           name: string
@@ -228,6 +232,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          display_order?: number
           id?: string
           is_active?: boolean
           name: string
@@ -236,6 +241,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          display_order?: number
           id?: string
           is_active?: boolean
           name?: string
@@ -255,6 +261,7 @@ export type Database = {
       inspectors: {
         Row: {
           created_at: string
+          display_order: number
           id: string
           is_active: boolean
           name: string
@@ -263,6 +270,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          display_order?: number
           id?: string
           is_active?: boolean
           name: string
@@ -271,6 +279,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          display_order?: number
           id?: string
           is_active?: boolean
           name?: string
@@ -290,6 +299,7 @@ export type Database = {
       locations: {
         Row: {
           created_at: string
+          display_order: number
           id: string
           is_active: boolean
           name: string
@@ -298,6 +308,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          display_order?: number
           id?: string
           is_active?: boolean
           name: string
@@ -306,6 +317,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          display_order?: number
           id?: string
           is_active?: boolean
           name?: string
@@ -637,6 +649,7 @@ export type Database = {
         Row: {
           code: string | null
           created_at: string
+          display_order: number
           id: string
           is_active: boolean
           name: string
@@ -646,6 +659,7 @@ export type Database = {
         Insert: {
           code?: string | null
           created_at?: string
+          display_order?: number
           id?: string
           is_active?: boolean
           name: string
@@ -655,6 +669,7 @@ export type Database = {
         Update: {
           code?: string | null
           created_at?: string
+          display_order?: number
           id?: string
           is_active?: boolean
           name?: string
@@ -924,6 +939,7 @@ export type Database = {
         Row: {
           code: string | null
           created_at: string
+          display_order: number
           id: string
           is_active: boolean
           name: string
@@ -933,6 +949,7 @@ export type Database = {
         Insert: {
           code?: string | null
           created_at?: string
+          display_order?: number
           id?: string
           is_active?: boolean
           name: string
@@ -942,6 +959,7 @@ export type Database = {
         Update: {
           code?: string | null
           created_at?: string
+          display_order?: number
           id?: string
           is_active?: boolean
           name?: string

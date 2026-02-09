@@ -70,7 +70,6 @@ export default function Settings() {
                   tableName={tab.table as any} 
                   displayName={tab.label}
                   hasCode={["builders", "suppliers", "pump_vendors"].includes(tab.table || "")}
-                  hasOrder={["phases", "project_statuses", "concrete_mixes"].includes(tab.table || "")}
                 />
               )}
             </TabsContent>
