@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   DndContext,
   DragEndEvent,
@@ -76,12 +76,30 @@ export default function Kanban() {
           locations(name),
           project_statuses(id, name)
         `)
-        .eq("organization_id", organizationId);
+        .eq("organization_id", organizationId)
+        .eq("is_archived", false);
       if (error) throw error;
-      return (data as (KanbanProject & { project_statuses: { id: string; name: string } | null })[])
-        .filter((p) => p.project_statuses?.name !== "Archived");
+      return data as (KanbanProject & { project_statuses: { id: string; name: string } | null })[];
     },
     enabled: !!organizationId,
+  });
+
+  const archiveMutation = useMutation({
+    mutationFn: async (projectId: string) => {
+      const { error } = await supabase
+        .from("projects")
+        .update({ is_archived: true } as any)
+        .eq("id", projectId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["kanban-projects", organizationId] });
+      queryClient.invalidateQueries({ queryKey: ["projects", organizationId] });
+      toast.success("Project archived. You can restore it from the Projects page.");
+    },
+    onError: () => {
+      toast.error("Failed to archive project");
+    },
   });
 
   const statusMap = useMemo(() => {
@@ -250,6 +268,7 @@ export default function Kanban() {
                     isCollapsed={!!collapsed[status]}
                     onToggleCollapse={() => toggleCollapse(status)}
                     onProjectClick={handleProjectClick}
+                    onArchive={canManage ? (id) => archiveMutation.mutate(id) : undefined}
                   />
                 ))}
               </div>
@@ -272,6 +291,7 @@ export default function Kanban() {
                   isCollapsed={!!collapsed[status]}
                   onToggleCollapse={() => toggleCollapse(status)}
                   onProjectClick={handleProjectClick}
+                  onArchive={canManage ? (id) => archiveMutation.mutate(id) : undefined}
                   isMobile
                 />
               ))}
