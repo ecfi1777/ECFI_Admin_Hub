@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
+import { getUserFriendlyError } from "@/lib/errorHandler";
 import { Trash2, CalendarIcon, MoreVertical, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -87,7 +88,7 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
       setEditingCell(null);
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      toast.error(getUserFriendlyError(error));
     },
   });
 
@@ -105,7 +106,7 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
       setDeleteEntryId(null);
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      toast.error(getUserFriendlyError(error));
     },
   });
 
@@ -124,7 +125,7 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
       setMoveDate(undefined);
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      toast.error(getUserFriendlyError(error));
     },
   });
 

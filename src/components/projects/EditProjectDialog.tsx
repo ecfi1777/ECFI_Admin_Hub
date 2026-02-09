@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { getUserFriendlyError } from "@/lib/errorHandler";
 import { ProjectFormFields } from "./ProjectFormFields";
 
 interface Builder {
@@ -125,7 +126,7 @@ export function EditProjectDialog({
       onClose();
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      toast.error(getUserFriendlyError(error));
     },
   });
 

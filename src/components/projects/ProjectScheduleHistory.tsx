@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { getUserFriendlyError } from "@/lib/errorHandler";
 import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
 import { Calendar, Users, Truck, Building, ClipboardCheck, Pencil, FileText } from "lucide-react";
@@ -203,7 +204,7 @@ export function ProjectScheduleHistory({ projectId }: ProjectScheduleHistoryProp
       setEditingEntry(null);
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      toast.error(getUserFriendlyError(error));
     },
   });
 

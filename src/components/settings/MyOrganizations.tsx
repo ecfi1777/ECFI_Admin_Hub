@@ -10,6 +10,7 @@ import { CreateOrganizationDialog } from "./CreateOrganizationDialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { getUserFriendlyError } from "@/lib/errorHandler";
 import { useQueryClient } from "@tanstack/react-query";
 
 export function MyOrganizations() {
@@ -53,8 +54,8 @@ export function MyOrganizations() {
       // Refresh memberships
       queryClient.invalidateQueries({ queryKey: ["organization-memberships"] });
     } catch (error: any) {
-      console.error("Leave org error:", error);
-      toast.error(error.message || "Failed to leave organization.");
+      if (import.meta.env.DEV) console.error("Leave org error:", error);
+      toast.error(getUserFriendlyError(error, "Leave organization"));
     } finally {
       setIsLeaving(false);
       setLeaveOrgId(null);

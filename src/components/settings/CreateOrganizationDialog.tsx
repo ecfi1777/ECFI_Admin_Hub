@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useOrganization } from "@/hooks/useOrganization";
 import { toast } from "sonner";
+import { getUserFriendlyError } from "@/lib/errorHandler";
 import {
   Dialog,
   DialogContent,
@@ -82,7 +83,7 @@ export function CreateOrganizationDialog({ open, onOpenChange }: CreateOrganizat
         .rpc("seed_organization_defaults", { p_organization_id: orgId });
 
       if (seedError) {
-        console.error("Failed to seed defaults:", seedError);
+        if (import.meta.env.DEV) console.error("Failed to seed defaults:", seedError);
         // Don't throw - org was created successfully
       }
 
@@ -92,7 +93,7 @@ export function CreateOrganizationDialog({ open, onOpenChange }: CreateOrganizat
       setCompanyName("");
       onOpenChange(false);
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(getUserFriendlyError(error, "Create organization"));
       isSubmittingRef.current = false;
     } finally {
       setLoading(false);

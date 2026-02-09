@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
+import { getUserFriendlyError } from "@/lib/errorHandler";
 import { HardHat, Eye, EyeOff } from "lucide-react";
 
 export default function ResetPassword() {
@@ -48,7 +49,7 @@ export default function ResetPassword() {
     });
 
     if (error) {
-      toast.error(error.message);
+      toast.error(getUserFriendlyError(error, "Reset password"));
     } else {
       toast.success("Your password has been successfully changed.");
       navigate("/");

@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { getUserFriendlyError } from "@/lib/errorHandler";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -91,7 +92,7 @@ export function CrewMembersTable() {
       closeDialog();
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      toast.error(getUserFriendlyError(error));
     },
   });
 
@@ -106,7 +107,7 @@ export function CrewMembersTable() {
       closeDialog();
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      toast.error(getUserFriendlyError(error));
     },
   });
 
@@ -119,7 +120,7 @@ export function CrewMembersTable() {
       queryClient.invalidateQueries({ queryKey: ["crew_members"] });
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      toast.error(getUserFriendlyError(error));
     },
   });
 

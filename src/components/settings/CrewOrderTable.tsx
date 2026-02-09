@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { getUserFriendlyError } from "@/lib/errorHandler";
 import { GripVertical, Save } from "lucide-react";
 import {
   DndContext,
@@ -149,7 +150,7 @@ export function CrewOrderTable() {
       toast.success("Crew order saved");
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      toast.error(getUserFriendlyError(error));
     },
   });
 

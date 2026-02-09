@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { getUserFriendlyError } from "@/lib/errorHandler";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -61,8 +62,8 @@ export function DeleteAccount() {
       window.location.href = "/auth";
       
     } catch (error: any) {
-      console.error("Delete account error:", error);
-      toast.error(error.message || "Failed to delete account. Please try again.");
+      if (import.meta.env.DEV) console.error("Delete account error:", error);
+      toast.error(getUserFriendlyError(error, "Delete account"));
     } finally {
       setLoading(false);
       setDialogOpen(false);

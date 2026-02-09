@@ -14,6 +14,7 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { getUserFriendlyError } from "@/lib/errorHandler";
 import { useOrganization } from "@/hooks/useOrganization";
 
 interface Builder {
@@ -94,7 +95,7 @@ export function ProjectFormFields({
       toast.success("Builder created");
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      toast.error(getUserFriendlyError(error));
     },
   });
 
@@ -117,7 +118,7 @@ export function ProjectFormFields({
       toast.success("Location created");
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      toast.error(getUserFriendlyError(error));
     },
   });
 

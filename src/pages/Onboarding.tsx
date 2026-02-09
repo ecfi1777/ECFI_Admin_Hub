@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { HardHat, Building2, Users, Loader2, LogOut } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { getUserFriendlyError } from "@/lib/errorHandler";
 
 export default function Onboarding() {
   const [companyName, setCompanyName] = useState("");
@@ -50,8 +51,8 @@ export default function Onboarding() {
         .rpc("generate_invite_code");
 
       if (codeError) {
-        console.error("Failed to generate invite code:", codeError);
-        throw new Error(`Failed to generate invite code: ${codeError.message}`);
+        if (import.meta.env.DEV) console.error("Failed to generate invite code:", codeError);
+        throw new Error("Failed to generate invite code.");
       }
       console.log("Invite code generated:", generatedCode);
 
@@ -68,8 +69,8 @@ export default function Onboarding() {
         });
 
       if (orgError) {
-        console.error("Failed to create organization:", orgError);
-        throw new Error(`Failed to create organization: ${orgError.message}`);
+        if (import.meta.env.DEV) console.error("Failed to create organization:", orgError);
+        throw new Error("Failed to create organization.");
       }
       console.log("Organization created:", orgId);
 
@@ -84,8 +85,8 @@ export default function Onboarding() {
         });
 
       if (membershipError) {
-        console.error("Failed to create membership:", membershipError);
-        throw new Error(`Failed to create membership: ${membershipError.message}`);
+        if (import.meta.env.DEV) console.error("Failed to create membership:", membershipError);
+        throw new Error("Failed to create membership.");
       }
       console.log("Membership created");
 
@@ -95,7 +96,7 @@ export default function Onboarding() {
         .rpc("seed_organization_defaults", { p_organization_id: orgId });
 
       if (seedError) {
-        console.error("Failed to seed defaults:", seedError);
+        if (import.meta.env.DEV) console.error("Failed to seed defaults:", seedError);
         toast.error("Organization created but some default data may be missing.");
       } else {
         console.log("Default data seeded");
@@ -109,8 +110,8 @@ export default function Onboarding() {
       // Force a page reload to ensure clean state
       window.location.href = "/";
     } catch (error: any) {
-      console.error("Organization creation failed:", error);
-      toast.error(error.message || "An unexpected error occurred.");
+      if (import.meta.env.DEV) console.error("Organization creation failed:", error);
+      toast.error(getUserFriendlyError(error, "Organization creation"));
       isSubmittingRef.current = false;
     } finally {
       setLoading(false);
@@ -151,7 +152,7 @@ export default function Onboarding() {
       toast.success(`Welcome to ${org.name}.`);
       window.location.href = "/";
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(getUserFriendlyError(error, "Join organization"));
     } finally {
       setLoading(false);
     }

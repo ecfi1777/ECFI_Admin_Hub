@@ -10,6 +10,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { getUserFriendlyError } from "@/lib/errorHandler";
 import { Plus } from "lucide-react";
 import { ProjectFormFields } from "./ProjectFormFields";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -96,7 +97,7 @@ export function AddProjectDialog({ builders, locations, statuses }: AddProjectDi
       });
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      toast.error(getUserFriendlyError(error));
     },
   });
 

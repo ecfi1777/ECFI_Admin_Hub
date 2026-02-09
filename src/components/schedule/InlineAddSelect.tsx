@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { getUserFriendlyError } from "@/lib/errorHandler";
 import {
   Select,
   SelectContent,
@@ -73,7 +74,7 @@ export function InlineAddSelect({
       toast.success(`${label} created`);
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      toast.error(getUserFriendlyError(error));
     },
   });
 
