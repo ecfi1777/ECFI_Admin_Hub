@@ -213,7 +213,7 @@ export default function Kanban() {
         <Card className="mb-4">
           <CardContent className="p-3">
             <div className="flex flex-col md:flex-row gap-3">
-              <div className="w-full md:flex-1 md:min-w-[180px]">
+              <div className="w-full md:flex-1 md:max-w-sm">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
