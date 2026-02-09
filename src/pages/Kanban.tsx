@@ -32,7 +32,7 @@ import { ProjectDetailsSheet } from "@/components/projects/ProjectDetailsSheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const COLLAPSE_STORAGE_KEY = "ecfi_kanban_collapsed";
-const KANBAN_STATUSES = ["No Status", "Upcoming", "Ready to Start", "In Progress", "Complete"];
+const KANBAN_STATUSES = ["Upcoming", "Ready to Start", "In Progress", "Complete"];
 
 function getInitialCollapsed(): Record<string, boolean> {
   try {
@@ -129,8 +129,8 @@ export default function Kanban() {
     const groups: Record<string, KanbanProject[]> = {};
     KANBAN_STATUSES.forEach((s) => { groups[s] = []; });
     filtered.forEach((p) => {
-      const statusName = (p as any).project_statuses?.name || "No Status";
-      const col = KANBAN_STATUSES.includes(statusName) ? statusName : "No Status";
+      const statusName = (p as any).project_statuses?.name || "Upcoming";
+      const col = KANBAN_STATUSES.includes(statusName) ? statusName : "Upcoming";
       groups[col].push(p);
     });
     Object.values(groups).forEach((arr) =>
@@ -158,10 +158,10 @@ export default function Kanban() {
     if (!over) return;
     const projectId = active.id as string;
     const targetColumn = over.id as string;
-    const newStatusId = targetColumn === "No Status" ? null : statusMap[targetColumn] || null;
+    const newStatusId = statusMap[targetColumn] || null;
     const project = projects.find((p) => p.id === projectId);
     if (!project) return;
-    const currentStatusName = (project as any).project_statuses?.name || "No Status";
+    const currentStatusName = (project as any).project_statuses?.name || "Upcoming";
     if (currentStatusName === targetColumn) return;
 
     queryClient.setQueryData(
@@ -169,7 +169,7 @@ export default function Kanban() {
       (old: any[]) =>
         old?.map((p) =>
           p.id === projectId
-            ? { ...p, status_id: newStatusId, project_statuses: newStatusId ? { id: newStatusId, name: targetColumn } : null }
+            ? { ...p, status_id: newStatusId, project_statuses: { id: newStatusId, name: targetColumn } }
             : p
         )
     );

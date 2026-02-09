@@ -33,7 +33,7 @@ interface ProjectDetailsSheetProps {
   onClose: () => void;
 }
 
-const KANBAN_STATUSES = ["No Status", "Upcoming", "Ready to Start", "In Progress", "Complete"];
+const KANBAN_STATUSES = ["Upcoming", "Ready to Start", "In Progress", "Complete"];
 
 export function ProjectDetailsSheet({
   projectId,
@@ -89,8 +89,7 @@ export function ProjectDetailsSheet({
   });
 
   const handleStatusChange = (value: string) => {
-    const newStatusId = value === "no-status" ? null : value;
-    statusUpdateMutation.mutate(newStatusId);
+    statusUpdateMutation.mutate(value);
   };
 
   // Filter statuses to only show Kanban-relevant ones
@@ -251,14 +250,13 @@ export function ProjectDetailsSheet({
                       )}
                     </div>
                     <Select
-                      value={project.status_id || "no-status"}
+                      value={project.status_id}
                       onValueChange={handleStatusChange}
                     >
                       <SelectTrigger className="w-[160px] h-8 bg-slate-700 border-slate-600 text-slate-300 text-xs">
-                        <SelectValue placeholder="Move to Phase" />
+                        <SelectValue placeholder="Select status" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="no-status">No Status</SelectItem>
                         {kanbanStatuses.map((s) => (
                           <SelectItem key={s.id} value={s.id}>
                             {s.name}

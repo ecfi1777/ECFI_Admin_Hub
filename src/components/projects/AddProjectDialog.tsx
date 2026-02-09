@@ -39,11 +39,13 @@ interface AddProjectDialogProps {
 
 export function AddProjectDialog({ builders, locations, statuses }: AddProjectDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
+  // Default status to the first status (Upcoming / display_order 1)
+  const defaultStatusId = statuses.length > 0 ? statuses[0].id : "";
   const [formData, setFormData] = useState({
     builderId: "",
     locationId: "",
     lotNumber: "",
-    statusId: "",
+    statusId: defaultStatusId,
     notes: "",
     fullAddress: "",
     county: "",
@@ -65,7 +67,7 @@ export function AddProjectDialog({ builders, locations, statuses }: AddProjectDi
         builder_id: formData.builderId || null,
         location_id: formData.locationId || null,
         lot_number: formData.lotNumber,
-        status_id: formData.statusId || null,
+        status_id: formData.statusId,
         notes: formData.notes || null,
         full_address: formData.fullAddress || null,
         county: formData.county || null,
@@ -85,7 +87,7 @@ export function AddProjectDialog({ builders, locations, statuses }: AddProjectDi
         builderId: "",
         locationId: "",
         lotNumber: "",
-        statusId: "",
+        statusId: defaultStatusId,
         notes: "",
         fullAddress: "",
         county: "",
