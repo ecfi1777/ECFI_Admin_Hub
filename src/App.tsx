@@ -106,7 +106,7 @@ const App = () => (
                 {/* Viewer-accessible routes */}
                 <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                 <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
-                <Route path="/kanban" element={<ProtectedRoute><Kanban /></ProtectedRoute>} />
+                <Route path="/kanban" element={<ProtectedRoute><ManagerRoute><Kanban /></ManagerRoute></ProtectedRoute>} />
                 <Route path="/calendar" element={<ProtectedRoute><CalendarView /></ProtectedRoute>} />
                 <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                 {/* Manager+ only routes */}

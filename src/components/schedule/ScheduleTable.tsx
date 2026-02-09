@@ -186,6 +186,10 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
     displayValue: string,
     className?: string
   ) => {
+    if (readOnly) {
+      return <span className={`px-1 py-0.5 block truncate ${className || ""}`}>{displayValue}</span>;
+    }
+
     const isEditing = editingCell?.entryId === entry.id && editingCell?.field === field;
     
     if (isEditing) {
@@ -218,6 +222,9 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
     options: { id: string; name: string }[],
     displayValue: string
   ) => {
+    if (readOnly) {
+      return <span className="px-1 py-0.5 block truncate text-sm">{displayValue}</span>;
+    }
     return (
       <Select
         value={currentId || "none"}
@@ -244,6 +251,9 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
     displayValue: string,
     quickEditTab: "concrete" | "pump" | "inspection"
   ) => {
+    if (readOnly) {
+      return <span className="px-1 py-0.5 block truncate text-sm">{displayValue}</span>;
+    }
     return (
       <div className="group flex items-center gap-1">
         <div className="flex-1 min-w-0">
@@ -310,23 +320,27 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
             {entries.map((entry) => (
                 <TableRow key={entry.id} className="border-border hover:bg-muted/50">
                   <TableCell className="text-foreground text-sm py-2">
-                    <div className="group flex items-center gap-1">
-                      <span className="flex-1 truncate">
-                        {entry.crews?.name || "-"}
-                      </span>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => {
-                          setEditEntry(entry);
-                          setEditEntryTab("crew");
-                        }}
-                        className="h-6 w-6 text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
-                        title="Edit crew details"
-                      >
-                        <MoreVertical className="w-3 h-3" />
-                      </Button>
-                    </div>
+                    {readOnly ? (
+                      <span className="truncate block">{entry.crews?.name || "-"}</span>
+                    ) : (
+                      <div className="group flex items-center gap-1">
+                        <span className="flex-1 truncate">
+                          {entry.crews?.name || "-"}
+                        </span>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => {
+                            setEditEntry(entry);
+                            setEditEntryTab("crew");
+                          }}
+                          className="h-6 w-6 text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                          title="Edit crew details"
+                        >
+                          <MoreVertical className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell className="text-foreground text-sm py-2">
                     <button

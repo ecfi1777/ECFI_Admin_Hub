@@ -30,9 +30,10 @@ interface ProjectDocument {
 
 interface ProjectDocumentsProps {
   projectId: string;
+  readOnly?: boolean;
 }
 
-export function ProjectDocuments({ projectId }: ProjectDocumentsProps) {
+export function ProjectDocuments({ projectId, readOnly = false }: ProjectDocumentsProps) {
   const [uploadingCategory, setUploadingCategory] = useState<string | null>(null);
   const [documentToDelete, setDocumentToDelete] = useState<ProjectDocument | null>(null);
   const queryClient = useQueryClient();
@@ -195,44 +196,48 @@ export function ProjectDocuments({ projectId }: ProjectDocumentsProps) {
                   >
                     <ExternalLink className="w-3 h-3" />
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setDocumentToDelete(doc)}
-                    disabled={deleteMutation.isPending}
-                    className="text-slate-400 hover:text-red-400 h-6 w-6 p-0"
-                  >
-                    <X className="w-3 h-3" />
-                  </Button>
+                  {!readOnly && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setDocumentToDelete(doc)}
+                      disabled={deleteMutation.isPending}
+                      className="text-slate-400 hover:text-red-400 h-6 w-6 p-0"
+                    >
+                      <X className="w-3 h-3" />
+                    </Button>
+                  )}
                 </div>
               ))}
 
-              <div
-                className="border-2 border-dashed border-slate-600 rounded-md p-3 text-center cursor-pointer hover:border-amber-500 transition-colors"
-                onDrop={(e) => handleDrop(cat.id, e)}
-                onDragOver={(e) => e.preventDefault()}
-                onClick={() => {
-                  const input = document.createElement("input");
-                  input.type = "file";
-                  input.onchange = (e) => {
-                    const file = (e.target as HTMLInputElement).files?.[0];
-                    if (file) handleFileSelect(cat.id, file);
-                  };
-                  input.click();
-                }}
-              >
-                {isUploading ? (
-                  <div className="flex items-center justify-center gap-2 text-amber-500">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span className="text-sm">Uploading...</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center gap-2 text-slate-400">
-                    <Upload className="w-4 h-4" />
-                    <span className="text-sm">Drop file or click to upload</span>
-                  </div>
-                )}
-              </div>
+              {!readOnly && (
+                <div
+                  className="border-2 border-dashed border-slate-600 rounded-md p-3 text-center cursor-pointer hover:border-amber-500 transition-colors"
+                  onDrop={(e) => handleDrop(cat.id, e)}
+                  onDragOver={(e) => e.preventDefault()}
+                  onClick={() => {
+                    const input = document.createElement("input");
+                    input.type = "file";
+                    input.onchange = (e) => {
+                      const file = (e.target as HTMLInputElement).files?.[0];
+                      if (file) handleFileSelect(cat.id, file);
+                    };
+                    input.click();
+                  }}
+                >
+                  {isUploading ? (
+                    <div className="flex items-center justify-center gap-2 text-amber-500">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span className="text-sm">Uploading...</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center gap-2 text-slate-400">
+                      <Upload className="w-4 h-4" />
+                      <span className="text-sm">Drop file or click to upload</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           );
         })}

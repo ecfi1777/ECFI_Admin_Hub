@@ -25,6 +25,7 @@ import { generateProjectPdf } from "@/lib/generateProjectPdf";
 import { toast } from "sonner";
 import { getStatusColor } from "@/lib/statusColors";
 import { useOrganization } from "@/hooks/useOrganization";
+import { useUserRole } from "@/hooks/useUserRole";
 import { useBuilders, useLocations, useProjectStatuses } from "@/hooks/useReferenceData";
 
 interface ProjectDetailsSheetProps {
@@ -43,6 +44,7 @@ export function ProjectDetailsSheet({
   const [editProject, setEditProject] = useState<any>(null);
 
   const { organizationId } = useOrganization();
+  const { canManage } = useUserRole();
   const queryClient = useQueryClient();
   const { data: statuses = [] } = useProjectStatuses();
   const { data: builders = [] } = useBuilders();
@@ -185,39 +187,43 @@ export function ProjectDetailsSheet({
                   <div>
                     <SheetTitle className="text-white text-xl flex items-center gap-2">
                       <span className="text-amber-500">{project.lot_number}</span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          onClose();
-                          setEditProject(project);
-                        }}
-                        className="text-slate-400 hover:text-white h-8 w-8 p-0"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleExportPdf}
-                        className="text-slate-400 hover:text-white h-8 w-8 p-0"
-                        title="Export to PDF"
-                      >
-                        <Download className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => archiveMutation.mutate(!(project as any).is_archived)}
-                        className="text-slate-400 hover:text-white h-8 w-8 p-0"
-                        title={(project as any).is_archived ? "Unarchive project" : "Archive project"}
-                      >
-                        {(project as any).is_archived ? (
-                          <ArchiveRestore className="w-4 h-4" />
-                        ) : (
-                          <Archive className="w-4 h-4" />
-                        )}
-                      </Button>
+                      {canManage && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              onClose();
+                              setEditProject(project);
+                            }}
+                            className="text-slate-400 hover:text-white h-8 w-8 p-0"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleExportPdf}
+                            className="text-slate-400 hover:text-white h-8 w-8 p-0"
+                            title="Export to PDF"
+                          >
+                            <Download className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => archiveMutation.mutate(!(project as any).is_archived)}
+                            className="text-slate-400 hover:text-white h-8 w-8 p-0"
+                            title={(project as any).is_archived ? "Unarchive project" : "Archive project"}
+                          >
+                            {(project as any).is_archived ? (
+                              <ArchiveRestore className="w-4 h-4" />
+                            ) : (
+                              <Archive className="w-4 h-4" />
+                            )}
+                          </Button>
+                        </>
+                      )}
                     </SheetTitle>
                     <div className="flex items-center gap-2 mt-1">
                       {project.builders && (
@@ -249,21 +255,23 @@ export function ProjectDetailsSheet({
                         </Badge>
                       )}
                     </div>
-                    <Select
-                      value={project.status_id}
-                      onValueChange={handleStatusChange}
-                    >
-                      <SelectTrigger className="w-[160px] h-8 bg-slate-700 border-slate-600 text-slate-300 text-xs">
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {kanbanStatuses.map((s) => (
-                          <SelectItem key={s.id} value={s.id}>
-                            {s.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    {canManage && (
+                      <Select
+                        value={project.status_id}
+                        onValueChange={handleStatusChange}
+                      >
+                        <SelectTrigger className="w-[160px] h-8 bg-slate-700 border-slate-600 text-slate-300 text-xs">
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {kanbanStatuses.map((s) => (
+                            <SelectItem key={s.id} value={s.id}>
+                              {s.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
                   </div>
                 </div>
 
@@ -343,10 +351,10 @@ export function ProjectDetailsSheet({
                   </TabsTrigger>
                 </TabsList>
                 <TabsContent value="history" className="mt-4">
-                  <ProjectScheduleHistory projectId={projectId} />
+                  <ProjectScheduleHistory projectId={projectId} readOnly={!canManage} />
                 </TabsContent>
                 <TabsContent value="documents" className="mt-4">
-                  <ProjectDocuments projectId={projectId} />
+                  <ProjectDocuments projectId={projectId} readOnly={!canManage} />
                 </TabsContent>
               </Tabs>
             </>

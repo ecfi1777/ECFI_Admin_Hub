@@ -34,6 +34,7 @@ import { AddProjectDialog } from "@/components/projects/AddProjectDialog";
 import { ProjectDetailsSheet } from "@/components/projects/ProjectDetailsSheet";
 import { toast } from "sonner";
 import { useOrganization } from "@/hooks/useOrganization";
+import { useUserRole } from "@/hooks/useUserRole";
 import { useBuilders, useLocations, useProjectStatuses } from "@/hooks/useReferenceData";
 import { getStatusColor } from "@/lib/statusColors";
 
@@ -68,6 +69,7 @@ export default function Projects() {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const { organizationId } = useOrganization();
+  const { canManage } = useUserRole();
   const queryClient = useQueryClient();
 
   const { data: projects = [], isLoading } = useQuery({
@@ -200,11 +202,13 @@ export default function Projects() {
             <h1 className="text-2xl font-bold text-foreground">Projects</h1>
             <p className="text-muted-foreground">Manage all your jobs and projects</p>
           </div>
-          <AddProjectDialog
-            builders={builders}
-            locations={locations}
-            statuses={statuses}
-          />
+          {canManage && (
+            <AddProjectDialog
+              builders={builders}
+              locations={locations}
+              statuses={statuses}
+            />
+          )}
         </div>
 
         {/* Filters */}
@@ -297,7 +301,7 @@ export default function Projects() {
                     <TableHead className="text-muted-foreground">Status</TableHead>
                      <TableHead className="text-muted-foreground">Created</TableHead>
                      <TableHead className="text-muted-foreground w-16 text-center">Docs</TableHead>
-                     <TableHead className="text-muted-foreground w-12"></TableHead>
+                     {canManage && <TableHead className="text-muted-foreground w-12"></TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -372,29 +376,31 @@ export default function Projects() {
                           </Popover>
                         )}
                        </TableCell>
-                       <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
-                         {(project as any).is_archived ? (
-                           <Button
-                             variant="ghost"
-                             size="sm"
-                             className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-                             onClick={() => archiveMutation.mutate({ projectId: project.id, archive: false })}
-                             title="Unarchive project"
-                           >
-                             <ArchiveRestore className="w-4 h-4" />
-                           </Button>
-                         ) : (
-                           <Button
-                             variant="ghost"
-                             size="sm"
-                             className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-                             onClick={() => archiveMutation.mutate({ projectId: project.id, archive: true })}
-                             title="Archive project"
-                           >
-                             <Archive className="w-4 h-4" />
-                           </Button>
-                         )}
-                       </TableCell>
+                       {canManage && (
+                         <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                           {(project as any).is_archived ? (
+                             <Button
+                               variant="ghost"
+                               size="sm"
+                               className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                               onClick={() => archiveMutation.mutate({ projectId: project.id, archive: false })}
+                               title="Unarchive project"
+                             >
+                               <ArchiveRestore className="w-4 h-4" />
+                             </Button>
+                           ) : (
+                             <Button
+                               variant="ghost"
+                               size="sm"
+                               className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                               onClick={() => archiveMutation.mutate({ projectId: project.id, archive: true })}
+                               title="Archive project"
+                             >
+                               <Archive className="w-4 h-4" />
+                             </Button>
+                           )}
+                         </TableCell>
+                       )}
                      </TableRow>
                   ))}
                 </TableBody>
