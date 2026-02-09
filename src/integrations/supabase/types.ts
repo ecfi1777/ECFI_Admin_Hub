@@ -337,6 +337,7 @@ export type Database = {
       organization_memberships: {
         Row: {
           created_at: string
+          display_order: number
           id: string
           organization_id: string
           role: string
@@ -344,6 +345,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          display_order?: number
           id?: string
           organization_id: string
           role?: string
@@ -351,6 +353,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          display_order?: number
           id?: string
           organization_id?: string
           role?: string

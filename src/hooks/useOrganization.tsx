@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { useState, useEffect, useCallback, createContext, useContext, ReactNode, useMemo, useRef } from "react";
@@ -9,9 +9,11 @@ interface Organization {
 }
 
 interface OrganizationMembership {
+  id: string;
   organization_id: string;
   role: string;
   created_at: string;
+  display_order: number;
   organizations: Organization;
 }
 
@@ -26,8 +28,7 @@ interface OrganizationContextValue {
   error: Error | null;
   refetch: () => void;
   hasOrganization: boolean;
-  defaultOrganizationId: string | null;
-  setDefaultOrganization: (orgId: string | null) => Promise<void>;
+  saveOrganizationOrder: (orderedIds: string[]) => Promise<void>;
 }
 
 const OrganizationContext = createContext<OrganizationContextValue | null>(null);
@@ -40,7 +41,6 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
   const hasInitializedActiveOrg = useRef(false);
   const previousUserId = useRef<string | null>(null);
   
-  // Get active org from localStorage, with fallback to first org
   const [activeOrgId, setActiveOrgIdState] = useState<string | null>(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem(ACTIVE_ORG_KEY);
@@ -48,29 +48,9 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
     return null;
   });
 
-  // Only enable query when auth is fully ready AND we have a user
   const shouldFetchOrgs = authInitialized && !!user?.id;
 
-  // Fetch the user's default_organization_id from their profile
-  const { data: profileData } = useQuery({
-    queryKey: ["profile-default-org", user?.id],
-    queryFn: async () => {
-      if (!user?.id) return null;
-      const { data } = await supabase
-        .from("profiles")
-        .select("default_organization_id")
-        .eq("user_id", user.id)
-        .limit(1)
-        .maybeSingle();
-      return data;
-    },
-    enabled: shouldFetchOrgs,
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const defaultOrganizationId = profileData?.default_organization_id ?? null;
-
-  // Fetch ALL organizations the user belongs to
+  // Fetch ALL organizations the user belongs to, sorted by display_order
   const { data: allMemberships, isLoading: queryLoading, error, refetch, isFetched } = useQuery({
     queryKey: ["organizations", user?.id],
     queryFn: async () => {
@@ -79,15 +59,18 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabase
         .from("organization_memberships")
         .select(`
+          id,
           organization_id,
           role,
           created_at,
+          display_order,
           organizations (
             id,
             name
           )
         `)
         .eq("user_id", user.id)
+        .order("display_order", { ascending: true })
         .order("created_at", { ascending: true });
 
       if (error) {
@@ -103,68 +86,57 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
     retry: false,
   });
 
-  // Determine the current active organization (memoized to prevent recalculation)
   const currentMembership = useMemo(() => {
     if (!allMemberships || allMemberships.length === 0) return null;
     return allMemberships.find(m => m.organization_id === activeOrgId) || allMemberships[0];
   }, [allMemberships, activeOrgId]);
 
-  // Sync activeOrgId with localStorage and ensure it's valid - only run once per data load
-  // Use the user's default org preference when no saved active org exists
+  // On first load, if no valid saved org, use the first in sorted order (= user's default)
   useEffect(() => {
     if (!allMemberships || allMemberships.length === 0) return;
     if (hasInitializedActiveOrg.current && previousUserId.current === user?.id) return;
     
     const validOrg = allMemberships.find(m => m.organization_id === activeOrgId);
     if (!validOrg) {
-      // No valid saved org - try default org, then fall back to first
-      const defaultOrg = defaultOrganizationId
-        ? allMemberships.find(m => m.organization_id === defaultOrganizationId)
-        : null;
-      const targetOrgId = defaultOrg ? defaultOrg.organization_id : allMemberships[0].organization_id;
+      const targetOrgId = allMemberships[0].organization_id;
       setActiveOrgIdState(targetOrgId);
       localStorage.setItem(ACTIVE_ORG_KEY, targetOrgId);
     }
     hasInitializedActiveOrg.current = true;
     previousUserId.current = user?.id ?? null;
-  }, [allMemberships, activeOrgId, user?.id, defaultOrganizationId]);
+  }, [allMemberships, activeOrgId, user?.id]);
 
-  // Reset initialization flag when user changes
   useEffect(() => {
     if (user?.id !== previousUserId.current) {
       hasInitializedActiveOrg.current = false;
     }
   }, [user?.id]);
 
-  // Switch organization - updates state and invalidates queries
   const switchOrganization = useCallback((orgId: string) => {
-    if (orgId === activeOrgId) return; // No-op if same org
+    if (orgId === activeOrgId) return;
     setActiveOrgIdState(orgId);
     localStorage.setItem(ACTIVE_ORG_KEY, orgId);
-    // Invalidate all queries to force refetch with new org
     queryClient.invalidateQueries();
   }, [queryClient, activeOrgId]);
 
-  // Set or clear the default organization preference
-  const setDefaultOrganization = useCallback(async (orgId: string | null) => {
-    if (!user?.id) return;
-    await supabase
-      .from("profiles")
-      .update({ default_organization_id: orgId })
-      .eq("user_id", user.id);
-    queryClient.invalidateQueries({ queryKey: ["profile-default-org"] });
-  }, [user?.id, queryClient]);
+  // Save reordered organization display_order
+  const saveOrganizationOrder = useCallback(async (orderedMembershipIds: string[]) => {
+    const updates = orderedMembershipIds.map((id, index) => 
+      supabase
+        .from("organization_memberships")
+        .update({ display_order: index + 1 })
+        .eq("id", id)
+    );
+    await Promise.all(updates);
+    queryClient.invalidateQueries({ queryKey: ["organizations"] });
+  }, [queryClient]);
 
-  // Simplified loading state:
-  // - If auth isn't initialized, we're loading
-  // - If we have a user and haven't fetched orgs yet, we're loading
   const isLoading = useMemo(() => {
     if (!authInitialized) return true;
     if (user && !isFetched) return true;
     return false;
   }, [authInitialized, user, isFetched]);
 
-  // Memoize the context value to prevent unnecessary re-renders
   const value = useMemo<OrganizationContextValue>(() => ({
     organizationId: currentMembership?.organization_id ?? null,
     organization: currentMembership?.organizations ?? null,
@@ -176,9 +148,8 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
     error: error as Error | null,
     refetch,
     hasOrganization: (allMemberships?.length ?? 0) > 0,
-    defaultOrganizationId,
-    setDefaultOrganization,
-  }), [currentMembership, allMemberships, switchOrganization, isLoading, error, refetch, defaultOrganizationId, setDefaultOrganization]);
+    saveOrganizationOrder,
+  }), [currentMembership, allMemberships, switchOrganization, isLoading, error, refetch, saveOrganizationOrder]);
 
   return (
     <OrganizationContext.Provider value={value}>
