@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
-import { HardHat, Building2, Users, Loader2 } from "lucide-react";
+import { HardHat, Building2, Users, Loader2, LogOut } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 export default function Onboarding() {
@@ -275,6 +275,19 @@ export default function Onboarding() {
             </TabsContent>
           </Tabs>
         </CardContent>
+        <div className="px-6 pb-6 pt-2 text-center">
+          <button
+            type="button"
+            onClick={async () => {
+              await supabase.auth.signOut();
+              window.location.href = "/auth";
+            }}
+            className="text-sm text-slate-400 hover:text-white transition-colors inline-flex items-center gap-1.5"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            Sign out
+          </button>
+        </div>
       </Card>
     </div>
   );
