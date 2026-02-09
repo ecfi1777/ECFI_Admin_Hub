@@ -348,7 +348,7 @@ export function ProjectFormFields({
 
       {/* Status */}
       <div className="space-y-2">
-        <Label className="text-slate-300">Status</Label>
+        <Label className="text-slate-300">Status *</Label>
         <Select value={formData.statusId} onValueChange={(v) => onChange("statusId", v)}>
           <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
             <SelectValue placeholder="Select status" />

@@ -585,7 +585,7 @@ export type Database = {
           organization_id: string
           permit_number: string | null
           status_changed_at: string | null
-          status_id: string | null
+          status_id: string
           updated_at: string
           wall_height: string | null
         }
@@ -606,7 +606,7 @@ export type Database = {
           organization_id: string
           permit_number?: string | null
           status_changed_at?: string | null
-          status_id?: string | null
+          status_id: string
           updated_at?: string
           wall_height?: string | null
         }
@@ -627,7 +627,7 @@ export type Database = {
           organization_id?: string
           permit_number?: string | null
           status_changed_at?: string | null
-          status_id?: string | null
+          status_id?: string
           updated_at?: string
           wall_height?: string | null
         }
