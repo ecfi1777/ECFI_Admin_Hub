@@ -49,16 +49,16 @@ export function CreateOrganizationDialog({ open, onOpenChange }: CreateOrganizat
         throw new Error(`Failed to generate invite code: ${codeError.message}`);
       }
 
-      // Create organization
-      const { data: org, error: orgError } = await supabase
+      // Create organization (generate ID client-side to avoid SELECT policy issue)
+      const orgId = crypto.randomUUID();
+      const { error: orgError } = await supabase
         .from("organizations")
         .insert({
+          id: orgId,
           name: companyName.trim(),
           invite_code: generatedCode,
           created_by: user.id,
-        })
-        .select()
-        .single();
+        });
 
       if (orgError) {
         throw new Error(`Failed to create organization: ${orgError.message}`);
@@ -68,7 +68,7 @@ export function CreateOrganizationDialog({ open, onOpenChange }: CreateOrganizat
       const { error: membershipError } = await supabase
         .from("organization_memberships")
         .insert({
-          organization_id: org.id,
+          organization_id: orgId,
           user_id: user.id,
           role: "owner",
         });
@@ -79,7 +79,7 @@ export function CreateOrganizationDialog({ open, onOpenChange }: CreateOrganizat
 
       // Seed default reference data
       const { error: seedError } = await supabase
-        .rpc("seed_organization_defaults", { p_organization_id: org.id });
+        .rpc("seed_organization_defaults", { p_organization_id: orgId });
 
       if (seedError) {
         console.error("Failed to seed defaults:", seedError);

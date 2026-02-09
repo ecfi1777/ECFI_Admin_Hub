@@ -55,30 +55,30 @@ export default function Onboarding() {
       }
       console.log("Invite code generated:", generatedCode);
 
-      // Step 2: Create organization
+      // Step 2: Create organization (generate ID client-side to avoid SELECT policy issue)
       console.log("Step 2: Creating organization...");
-      const { data: org, error: orgError } = await supabase
+      const orgId = crypto.randomUUID();
+      const { error: orgError } = await supabase
         .from("organizations")
         .insert({
+          id: orgId,
           name: companyName.trim(),
           invite_code: generatedCode,
           created_by: user.id,
-        })
-        .select()
-        .single();
+        });
 
       if (orgError) {
         console.error("Failed to create organization:", orgError);
         throw new Error(`Failed to create organization: ${orgError.message}`);
       }
-      console.log("Organization created:", org.id);
+      console.log("Organization created:", orgId);
 
       // Step 3: Create membership as owner
       console.log("Step 3: Creating membership...");
       const { error: membershipError } = await supabase
         .from("organization_memberships")
         .insert({
-          organization_id: org.id,
+          organization_id: orgId,
           user_id: user.id,
           role: "owner",
         });
@@ -92,7 +92,7 @@ export default function Onboarding() {
       // Step 4: Seed default reference data
       console.log("Step 4: Seeding default data...");
       const { error: seedError } = await supabase
-        .rpc("seed_organization_defaults", { p_organization_id: org.id });
+        .rpc("seed_organization_defaults", { p_organization_id: orgId });
 
       if (seedError) {
         console.error("Failed to seed defaults:", seedError);
