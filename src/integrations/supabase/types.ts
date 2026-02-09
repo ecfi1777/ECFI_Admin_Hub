@@ -965,6 +965,7 @@ export type Database = {
     Functions: {
       auto_archive_completed_projects: { Args: never; Returns: undefined }
       generate_invite_code: { Args: never; Returns: string }
+      get_my_role: { Args: { p_organization_id: string }; Returns: string }
       get_user_organization_id: { Args: { p_user_id: string }; Returns: string }
       join_organization_by_invite_code: {
         Args: { p_invite_code: string }
