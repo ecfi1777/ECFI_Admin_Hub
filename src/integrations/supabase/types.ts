@@ -973,6 +973,10 @@ export type Database = {
           name: string
         }[]
       }
+      lookup_organization_by_invite_code: {
+        Args: { p_invite_code: string }
+        Returns: string
+      }
       seed_organization_defaults: {
         Args: { p_organization_id: string }
         Returns: undefined
