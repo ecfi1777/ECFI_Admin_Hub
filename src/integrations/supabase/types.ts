@@ -864,6 +864,62 @@ export type Database = {
           },
         ]
       }
+      schedule_entry_financials: {
+        Row: {
+          created_at: string
+          inspection_amount: number | null
+          inspection_invoice_number: string | null
+          invoice_complete: boolean
+          invoice_number: string | null
+          pump_invoice_amount: number | null
+          pump_invoice_number: string | null
+          ready_mix_invoice_amount: number | null
+          ready_mix_invoice_number: string | null
+          ready_mix_yards_billed: number | null
+          schedule_entry_id: string
+          to_be_invoiced: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          inspection_amount?: number | null
+          inspection_invoice_number?: string | null
+          invoice_complete?: boolean
+          invoice_number?: string | null
+          pump_invoice_amount?: number | null
+          pump_invoice_number?: string | null
+          ready_mix_invoice_amount?: number | null
+          ready_mix_invoice_number?: string | null
+          ready_mix_yards_billed?: number | null
+          schedule_entry_id: string
+          to_be_invoiced?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          inspection_amount?: number | null
+          inspection_invoice_number?: string | null
+          invoice_complete?: boolean
+          invoice_number?: string | null
+          pump_invoice_amount?: number | null
+          pump_invoice_number?: string | null
+          ready_mix_invoice_amount?: number | null
+          ready_mix_invoice_number?: string | null
+          ready_mix_yards_billed?: number | null
+          schedule_entry_id?: string
+          to_be_invoiced?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_entry_financials_schedule_entry_id_fkey"
+            columns: ["schedule_entry_id"]
+            isOneToOne: true
+            referencedRelation: "schedule_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       suppliers: {
         Row: {
           code: string | null
@@ -915,6 +971,10 @@ export type Database = {
         Returns: undefined
       }
       user_belongs_to_organization: {
+        Args: { p_organization_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      user_has_manage_access: {
         Args: { p_organization_id: string; p_user_id: string }
         Returns: boolean
       }
