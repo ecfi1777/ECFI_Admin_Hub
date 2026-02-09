@@ -24,6 +24,7 @@ import {
 import { Search } from "lucide-react";
 import { toast } from "sonner";
 import { useOrganization } from "@/hooks/useOrganization";
+import { useUserRole } from "@/hooks/useUserRole";
 import { useBuilders, useLocations, useProjectStatuses } from "@/hooks/useReferenceData";
 import { KanbanColumn } from "@/components/kanban/KanbanColumn";
 import { ProjectCard, KanbanProject } from "@/components/kanban/ProjectCard";
@@ -52,6 +53,7 @@ export default function Kanban() {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   const { organizationId } = useOrganization();
+  const { canManage } = useUserRole();
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
   const { data: builders = [] } = useBuilders();
@@ -62,7 +64,6 @@ export default function Kanban() {
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
 
-  // Fetch projects (exclude Archived)
   const { data: projects = [] } = useQuery({
     queryKey: ["kanban-projects", organizationId],
     queryFn: async () => {
@@ -77,21 +78,18 @@ export default function Kanban() {
         `)
         .eq("organization_id", organizationId);
       if (error) throw error;
-      // Filter out Archived
       return (data as (KanbanProject & { project_statuses: { id: string; name: string } | null })[])
         .filter((p) => p.project_statuses?.name !== "Archived");
     },
     enabled: !!organizationId,
   });
 
-  // Status lookup map
   const statusMap = useMemo(() => {
     const map: Record<string, string> = {};
     statuses.forEach((s) => { map[s.name] = s.id; });
     return map;
   }, [statuses]);
 
-  // Filter projects
   const filtered = useMemo(() => {
     return projects.filter((p) => {
       const q = searchQuery.toLowerCase();
@@ -109,23 +107,16 @@ export default function Kanban() {
     });
   }, [projects, searchQuery, filterBuilder, filterLocation, builders, locations]);
 
-  // Group projects into columns, sorted by builder name
   const columns = useMemo(() => {
     const groups: Record<string, KanbanProject[]> = {};
     KANBAN_STATUSES.forEach((s) => { groups[s] = []; });
-
     filtered.forEach((p) => {
-      const statusName =
-        (p as any).project_statuses?.name || "No Status";
+      const statusName = (p as any).project_statuses?.name || "No Status";
       const col = KANBAN_STATUSES.includes(statusName) ? statusName : "No Status";
       groups[col].push(p);
     });
-
-    // Sort each column by builder name
     Object.values(groups).forEach((arr) =>
-      arr.sort((a, b) =>
-        (a.builders?.name || "").localeCompare(b.builders?.name || "")
-      )
+      arr.sort((a, b) => (a.builders?.name || "").localeCompare(b.builders?.name || ""))
     );
     return groups;
   }, [filtered]);
@@ -147,32 +138,20 @@ export default function Kanban() {
     setActiveProject(null);
     const { active, over } = event;
     if (!over) return;
-
     const projectId = active.id as string;
     const targetColumn = over.id as string;
-
-    // Determine new status_id
     const newStatusId = targetColumn === "No Status" ? null : statusMap[targetColumn] || null;
-
-    // Check if status actually changed
     const project = projects.find((p) => p.id === projectId);
     if (!project) return;
     const currentStatusName = (project as any).project_statuses?.name || "No Status";
     if (currentStatusName === targetColumn) return;
 
-    // Optimistic update
     queryClient.setQueryData(
       ["kanban-projects", organizationId],
       (old: any[]) =>
         old?.map((p) =>
           p.id === projectId
-            ? {
-                ...p,
-                status_id: newStatusId,
-                project_statuses: newStatusId
-                  ? { id: newStatusId, name: targetColumn }
-                  : null,
-              }
+            ? { ...p, status_id: newStatusId, project_statuses: newStatusId ? { id: newStatusId, name: targetColumn } : null }
             : p
         )
     );
@@ -187,7 +166,6 @@ export default function Kanban() {
       queryClient.invalidateQueries({ queryKey: ["kanban-projects", organizationId] });
     } else {
       toast.success(`Moved to ${targetColumn}`);
-      // Also invalidate the projects list for the Projects page
       queryClient.invalidateQueries({ queryKey: ["projects", organizationId] });
     }
   };
@@ -197,17 +175,23 @@ export default function Kanban() {
     setIsDetailsOpen(true);
   };
 
+  // Viewers: no DnD at all (mobile or desktop)
+  const isDndEnabled = canManage && !isMobile;
+
   return (
     <AppLayout>
       <div className="p-3 md:p-6 h-full flex flex-col">
         <div className="mb-4">
           <h1 className="text-2xl font-bold text-foreground">Kanban</h1>
           <p className="text-muted-foreground">
-            {isMobile ? "Tap a project to change status" : "Drag projects between columns to update status"}
+            {!canManage
+              ? "View project status board (read-only)"
+              : isMobile
+              ? "Tap a project to change status"
+              : "Drag projects between columns to update status"}
           </p>
         </div>
 
-        {/* Filters */}
         <Card className="mb-4">
           <CardContent className="p-3">
             <div className="flex flex-col md:flex-row gap-3">
@@ -248,24 +232,8 @@ export default function Kanban() {
           </CardContent>
         </Card>
 
-        {/* Kanban Board */}
         <div className="flex-1 overflow-x-auto">
-          {isMobile ? (
-            <div className="flex gap-4 h-full pb-4 snap-x snap-mandatory overflow-x-auto" style={{ touchAction: "pan-x" }}>
-              {KANBAN_STATUSES.map((status) => (
-                <KanbanColumn
-                  key={status}
-                  id={status}
-                  title={status}
-                  projects={columns[status] || []}
-                  isCollapsed={!!collapsed[status]}
-                  onToggleCollapse={() => toggleCollapse(status)}
-                  onProjectClick={handleProjectClick}
-                  isMobile
-                />
-              ))}
-            </div>
-          ) : (
+          {isDndEnabled ? (
             <DndContext
               sensors={sensors}
               collisionDetection={pointerWithin}
@@ -285,19 +253,29 @@ export default function Kanban() {
                   />
                 ))}
               </div>
-
               <DragOverlay>
                 {activeProject ? (
                   <div className="w-[260px]">
-                    <ProjectCard
-                      project={activeProject}
-                      onClick={() => {}}
-                      isDragOverlay
-                    />
+                    <ProjectCard project={activeProject} onClick={() => {}} isDragOverlay />
                   </div>
                 ) : null}
               </DragOverlay>
             </DndContext>
+          ) : (
+            <div className="flex gap-4 h-full pb-4 snap-x snap-mandatory overflow-x-auto" style={{ touchAction: "pan-x" }}>
+              {KANBAN_STATUSES.map((status) => (
+                <KanbanColumn
+                  key={status}
+                  id={status}
+                  title={status}
+                  projects={columns[status] || []}
+                  isCollapsed={!!collapsed[status]}
+                  onToggleCollapse={() => toggleCollapse(status)}
+                  onProjectClick={handleProjectClick}
+                  isMobile
+                />
+              ))}
+            </div>
           )}
         </div>
       </div>

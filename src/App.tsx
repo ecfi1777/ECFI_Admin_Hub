@@ -1,13 +1,15 @@
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@/hooks/useTheme";
 import { useAuth } from "@/hooks/useAuth";
 import { useOrganization, OrganizationProvider } from "@/hooks/useOrganization";
+import { useUserRole } from "@/hooks/useUserRole";
 import { useMemo, memo } from "react";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { LoadingScreen } from "@/components/ui/loading-screen";
+import { AccessDenied } from "@/components/layout/AccessDenied";
 import Auth from "./pages/Auth";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
@@ -27,52 +29,38 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
+      staleTime: 5 * 60 * 1000,
       refetchOnWindowFocus: false,
       retry: 1,
     },
   },
 });
 
-// Single unified auth check component - memoized to prevent re-renders
 const ProtectedRoute = memo(function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, initialized: authInitialized } = useAuth();
   const { hasOrganization, isLoading: orgLoading } = useOrganization();
 
-  // Compute render state once
   const renderState = useMemo(() => {
-    // Auth not ready yet
     if (!authInitialized) return "loading-auth";
-    
-    // No user - redirect to auth
     if (!user) return "redirect-auth";
-    
-    // User exists but org check still loading
     if (orgLoading) return "loading-org";
-    
-    // User exists, org check complete, but no org
     if (!hasOrganization) return "redirect-onboarding";
-    
-    // All good
     return "render";
   }, [authInitialized, user, orgLoading, hasOrganization]);
 
-  if (renderState === "loading-auth") {
-    return <LoadingScreen message="Initializing..." />;
-  }
+  if (renderState === "loading-auth") return <LoadingScreen message="Initializing..." />;
+  if (renderState === "loading-org") return <LoadingScreen message="Loading workspace..." />;
+  if (renderState === "redirect-auth") return <Navigate to="/auth" replace />;
+  if (renderState === "redirect-onboarding") return <Navigate to="/onboarding" replace />;
+  return <>{children}</>;
+});
 
-  if (renderState === "loading-org") {
-    return <LoadingScreen message="Loading workspace..." />;
-  }
+/** Route guard for manager+ only pages */
+const ManagerRoute = memo(function ManagerRoute({ children }: { children: React.ReactNode }) {
+  const { canManage, isLoading } = useUserRole();
 
-  if (renderState === "redirect-auth") {
-    return <Navigate to="/auth" replace />;
-  }
-
-  if (renderState === "redirect-onboarding") {
-    return <Navigate to="/onboarding" replace />;
-  }
-
+  if (isLoading) return <LoadingScreen message="Checking access..." />;
+  if (!canManage) return <AccessDenied />;
   return <>{children}</>;
 });
 
@@ -88,34 +76,16 @@ const OnboardingRoute = memo(function OnboardingRoute({ children }: { children: 
     return "render";
   }, [authInitialized, user, orgLoading, hasOrganization]);
 
-  if (renderState === "loading") {
-    return <LoadingScreen message="Checking your account..." />;
-  }
-
-  if (renderState === "redirect-auth") {
-    return <Navigate to="/auth" replace />;
-  }
-
-  if (renderState === "redirect-dashboard") {
-    return <Navigate to="/" replace />;
-  }
-
+  if (renderState === "loading") return <LoadingScreen message="Checking your account..." />;
+  if (renderState === "redirect-auth") return <Navigate to="/auth" replace />;
+  if (renderState === "redirect-dashboard") return <Navigate to="/" replace />;
   return <>{children}</>;
 });
 
 const AuthRoute = memo(function AuthRoute({ children }: { children: React.ReactNode }) {
   const { user, initialized } = useAuth();
-
-  // Show nothing during init to prevent flash
-  if (!initialized) {
-    return <LoadingScreen message="Initializing..." />;
-  }
-
-  // User already logged in - redirect to dashboard
-  if (user) {
-    return <Navigate to="/" replace />;
-  }
-
+  if (!initialized) return <LoadingScreen message="Initializing..." />;
+  if (user) return <Navigate to="/" replace />;
   return <>{children}</>;
 });
 
@@ -133,15 +103,17 @@ const App = () => (
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/logout" element={<Logout />} />
                 <Route path="/onboarding" element={<OnboardingRoute><Onboarding /></OnboardingRoute>} />
+                {/* Viewer-accessible routes */}
                 <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                 <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
                 <Route path="/kanban" element={<ProtectedRoute><Kanban /></ProtectedRoute>} />
                 <Route path="/calendar" element={<ProtectedRoute><CalendarView /></ProtectedRoute>} />
-                <Route path="/invoices" element={<ProtectedRoute><Invoices /></ProtectedRoute>} />
-                <Route path="/vendor-invoices" element={<ProtectedRoute><VendorInvoices /></ProtectedRoute>} />
-                <Route path="/discrepancies" element={<ProtectedRoute><Discrepancies /></ProtectedRoute>} />
-                <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
                 <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+                {/* Manager+ only routes */}
+                <Route path="/invoices" element={<ProtectedRoute><ManagerRoute><Invoices /></ManagerRoute></ProtectedRoute>} />
+                <Route path="/vendor-invoices" element={<ProtectedRoute><ManagerRoute><VendorInvoices /></ManagerRoute></ProtectedRoute>} />
+                <Route path="/discrepancies" element={<ProtectedRoute><ManagerRoute><Discrepancies /></ManagerRoute></ProtectedRoute>} />
+                <Route path="/reports" element={<ProtectedRoute><ManagerRoute><Reports /></ManagerRoute></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>

@@ -130,55 +130,25 @@ export default function Onboarding() {
     }
 
     setLoading(true);
-    console.log("Attempting to join with code:", inviteCode.trim());
-    
     try {
-      // Find organization by invite code (case-insensitive search)
-      const codeToSearch = inviteCode.trim();
-      console.log("Searching for invite code:", codeToSearch);
-      
-      const { data: org, error: orgError } = await supabase
-        .from("organizations")
-        .select("id, name, invite_code")
-        .ilike("invite_code", codeToSearch)
-        .single();
+      const { data, error } = await supabase.rpc("join_organization_by_invite_code" as any, {
+        p_invite_code: inviteCode.trim(),
+      });
 
-      console.log("Organization lookup result:", { org, orgError });
+      if (error) {
+        if (error.message?.includes("Invalid invite code")) {
+          throw new Error("Invalid invite code. Please check and try again.");
+        }
+        throw error;
+      }
 
-      if (orgError || !org) {
-        console.error("Invite code lookup failed:", orgError);
+      const org = Array.isArray(data) ? data[0] : data;
+      if (!org) {
         throw new Error("Invalid invite code. Please check and try again.");
       }
 
-      // Check if already a member
-      const { data: existingMembership } = await supabase
-        .from("organization_memberships")
-        .select("id")
-        .eq("organization_id", org.id)
-        .eq("user_id", user.id)
-        .single();
-
-      if (existingMembership) {
-        throw new Error("You are already a member of this organization.");
-      }
-
-      // Create membership as member
-      const { error: membershipError } = await supabase
-        .from("organization_memberships")
-        .insert({
-          organization_id: org.id,
-          user_id: user.id,
-          role: "member",
-        });
-
-      if (membershipError) throw membershipError;
-
-      // Invalidate organization queries and navigate
       await queryClient.invalidateQueries({ queryKey: ["organizations"] });
-
       toast.success(`Welcome to ${org.name}.`);
-
-      // Force a page reload to ensure clean state
       window.location.href = "/";
     } catch (error: any) {
       toast.error(error.message);

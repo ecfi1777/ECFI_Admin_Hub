@@ -51,9 +51,10 @@ import type { ScheduleEntry } from "@/types/schedule";
 
 interface ScheduleTableProps {
   entries: ScheduleEntry[];
+  readOnly?: boolean;
 }
 
-export function ScheduleTable({ entries }: ScheduleTableProps) {
+export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps) {
   const [editingCell, setEditingCell] = useState<{ entryId: string; field: string } | null>(null);
   const [editValue, setEditValue] = useState<string>("");
   const [deleteEntryId, setDeleteEntryId] = useState<string | null>(null);
@@ -300,8 +301,8 @@ export function ScheduleTable({ entries }: ScheduleTableProps) {
               <TableHead className="text-muted-foreground w-24">Inspector</TableHead>
               <TableHead className="text-muted-foreground w-20">Supplier</TableHead>
               <TableHead className="text-muted-foreground w-16">Qty Ord</TableHead>
-              <TableHead className="text-muted-foreground w-16 text-center">Need to Inv.</TableHead>
-              <TableHead className="text-muted-foreground w-24">Actions</TableHead>
+              {!readOnly && <TableHead className="text-muted-foreground w-16 text-center">Need to Inv.</TableHead>}
+              {!readOnly && <TableHead className="text-muted-foreground w-24">Actions</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -424,96 +425,100 @@ export function ScheduleTable({ entries }: ScheduleTableProps) {
                       entry.qty_ordered || "-"
                     )}
                   </TableCell>
-                  <TableCell className="py-2 text-center">
-                    <Checkbox
-                      checked={entry.to_be_invoiced}
-                      onCheckedChange={() => handleCheckboxChange(entry.id, entry.to_be_invoiced)}
-                      className="border-muted-foreground data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                    />
-                  </TableCell>
-                  <TableCell className="py-2">
-                    <div className="flex items-center gap-1">
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="ghost"
-                        className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                        title="Edit full details"
-                        onPointerDown={(e) => e.stopPropagation()}
-                        onTouchEnd={(e) => {
-                          e.stopPropagation();
-                          setEditEntry(entry);
-                          setEditEntryTab("general");
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditEntry(entry);
-                          setEditEntryTab("general");
-                        }}
-                      >
-                        <Pencil className="w-3 h-3" />
-                      </Button>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            type="button"
-                            size="icon"
-                            variant="ghost"
-                            onPointerDown={(e) => e.stopPropagation()}
-                            onClick={(e) => e.stopPropagation()}
-                            className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                            title="Move to another date"
-                          >
-                            <CalendarIcon className="w-3 h-3" />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0 bg-popover border-border" align="end">
-                          <Calendar
-                            mode="single"
-                            selected={moveDate}
-                            onSelect={(date) => {
-                              if (date) {
-                                setMoveDate(date);
-                                setMoveEntryId(entry.id);
-                              }
-                            }}
-                            initialFocus
-                          />
-                          {moveDate && moveEntryId === entry.id && (
-                            <div className="p-2 border-t border-border flex justify-end gap-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => { setMoveDate(undefined); setMoveEntryId(null); }}
-                              >
-                                Cancel
-                              </Button>
-                              <Button
-                                size="sm"
-                                onClick={confirmMove}
-                              >
-                                Move
-                              </Button>
-                            </div>
-                          )}
-                        </PopoverContent>
-                      </Popover>
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="ghost"
-                        onPointerDown={(e) => e.stopPropagation()}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setDeleteEntryId(entry.id);
-                        }}
-                        className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                        title="Delete entry"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  </TableCell>
+                  {!readOnly && (
+                    <TableCell className="py-2 text-center">
+                      <Checkbox
+                        checked={entry.to_be_invoiced}
+                        onCheckedChange={() => handleCheckboxChange(entry.id, entry.to_be_invoiced)}
+                        className="border-muted-foreground data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                      />
+                    </TableCell>
+                  )}
+                  {!readOnly && (
+                    <TableCell className="py-2">
+                      <div className="flex items-center gap-1">
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                          title="Edit full details"
+                          onPointerDown={(e) => e.stopPropagation()}
+                          onTouchEnd={(e) => {
+                            e.stopPropagation();
+                            setEditEntry(entry);
+                            setEditEntryTab("general");
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditEntry(entry);
+                            setEditEntryTab("general");
+                          }}
+                        >
+                          <Pencil className="w-3 h-3" />
+                        </Button>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              type="button"
+                              size="icon"
+                              variant="ghost"
+                              onPointerDown={(e) => e.stopPropagation()}
+                              onClick={(e) => e.stopPropagation()}
+                              className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                              title="Move to another date"
+                            >
+                              <CalendarIcon className="w-3 h-3" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0 bg-popover border-border" align="end">
+                            <Calendar
+                              mode="single"
+                              selected={moveDate}
+                              onSelect={(date) => {
+                                if (date) {
+                                  setMoveDate(date);
+                                  setMoveEntryId(entry.id);
+                                }
+                              }}
+                              initialFocus
+                            />
+                            {moveDate && moveEntryId === entry.id && (
+                              <div className="p-2 border-t border-border flex justify-end gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => { setMoveDate(undefined); setMoveEntryId(null); }}
+                                >
+                                  Cancel
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onClick={confirmMove}
+                                >
+                                  Move
+                                </Button>
+                              </div>
+                            )}
+                          </PopoverContent>
+                        </Popover>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          onPointerDown={(e) => e.stopPropagation()}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeleteEntryId(entry.id);
+                          }}
+                          className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                          title="Delete entry"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
           </TableBody>

@@ -32,38 +32,26 @@ export function JoinOrganizationDialog({ open, onOpenChange }: JoinOrganizationD
 
     setLoading(true);
     try {
-      // Find organization by invite code (case-insensitive)
-      const { data: org, error: orgError } = await supabase
-        .from("organizations")
-        .select("id, name, invite_code")
-        .ilike("invite_code", inviteCode.trim())
-        .single();
+      const { data, error } = await supabase.rpc("join_organization_by_invite_code" as any, {
+        p_invite_code: inviteCode.trim(),
+      });
 
-      if (orgError || !org) {
+      if (error) {
+        if (error.message?.includes("Invalid invite code")) {
+          throw new Error("Invalid invite code. Please check and try again.");
+        }
+        if (error.message?.includes("already")) {
+          throw new Error("You are already a member of this organization.");
+        }
+        throw error;
+      }
+
+      const org = Array.isArray(data) ? data[0] : data;
+      if (!org) {
         throw new Error("Invalid invite code. Please check and try again.");
       }
 
-      // Check if already a member
-      const alreadyMember = allOrganizations.some(
-        (m) => m.organization_id === org.id
-      );
-      if (alreadyMember) {
-        throw new Error("You are already a member of this organization.");
-      }
-
-      // Create membership as member
-      const { error: membershipError } = await supabase
-        .from("organization_memberships")
-        .insert({
-          organization_id: org.id,
-          user_id: user.id,
-          role: "member",
-        });
-
-      if (membershipError) throw membershipError;
-
       toast.success(`You are now a member of ${org.name}.`);
-
       await refetch();
       setInviteCode("");
       onOpenChange(false);
