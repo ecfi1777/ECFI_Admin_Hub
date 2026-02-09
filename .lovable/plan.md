@@ -1,44 +1,58 @@
 
 
-# Fix: Organization Creation RLS Policy
+# Add Drag-and-Drop Editing to All Settings Lists
 
-## Problem
+## Overview
+Redesign the `ReferenceDataTable` component to match the drag-and-drop style used in the Crews management section. Every reference data list (Builders, Locations, Phases, Statuses, Suppliers, Pump Vendors, Concrete Mixes, Inspection Types, Inspectors) will get grip handles for reordering, inline active toggles, and edit buttons -- all in the same visual style as Crews.
 
-The current INSERT policy on the `organizations` table uses `auth.role() = 'authenticated'` in the `WITH CHECK` clause. This function can behave inconsistently depending on the PostgREST/Supabase version, causing authenticated users to be rejected when trying to create an organization.
+## What Changes
 
-The database logs confirm repeated RLS violations on the `organizations` table matching the error you're seeing.
+### 1. Database Migration
+Six tables currently lack a `display_order` column. A migration will add it (defaulting to `0`) to:
+- `builders`
+- `inspection_types`
+- `inspectors`
+- `locations`
+- `pump_vendors`
+- `suppliers`
 
-## Solution
+### 2. Redesigned ReferenceDataTable Component
+Replace the current table-based layout with a drag-and-drop list matching the Crews style:
 
-Replace the current INSERT policy with one that uses `TO authenticated` in the policy definition. This is the modern, recommended approach -- it lets PostgREST handle role checking directly rather than relying on the `auth.role()` function inside the policy expression.
+- **Grip handle** (drag icon) on the left for reordering
+- **Position number** showing current order
+- **Item name** displayed inline
+- **Code badge** (for Builders, Suppliers, Pump Vendors) shown next to the name
+- **Active/Inactive toggle** switch
+- **Edit button** (pencil icon) to open the edit dialog
+- **"Save Order" button** appears when order changes are detected (unsaved reordering)
+- **"+ Add" button** at the top to create new items
+
+### 3. Settings Page Update
+Remove the `hasOrder` prop from the Settings page since all tables will now support ordering via drag-and-drop.
 
 ## Technical Details
 
-### Database Migration
-
-Drop and recreate the INSERT policy on the `organizations` table:
-
-```text
--- Drop the old policy
-DROP POLICY "Authenticated users can create organizations" ON public.organizations;
-
--- Create the new policy scoped to the authenticated role
-CREATE POLICY "Authenticated users can create organizations"
-  ON public.organizations
-  FOR INSERT
-  TO authenticated
-  WITH CHECK (true);
+### Database Migration SQL
+```sql
+ALTER TABLE public.builders ADD COLUMN IF NOT EXISTS display_order integer NOT NULL DEFAULT 0;
+ALTER TABLE public.inspection_types ADD COLUMN IF NOT EXISTS display_order integer NOT NULL DEFAULT 0;
+ALTER TABLE public.inspectors ADD COLUMN IF NOT EXISTS display_order integer NOT NULL DEFAULT 0;
+ALTER TABLE public.locations ADD COLUMN IF NOT EXISTS display_order integer NOT NULL DEFAULT 0;
+ALTER TABLE public.pump_vendors ADD COLUMN IF NOT EXISTS display_order integer NOT NULL DEFAULT 0;
+ALTER TABLE public.suppliers ADD COLUMN IF NOT EXISTS display_order integer NOT NULL DEFAULT 0;
 ```
 
-### Why This Works
+### Component Architecture
+- Create a new `SortableReferenceRow` sub-component using `@dnd-kit/sortable` (same pattern as `SortableCrewRow`)
+- Refactor `ReferenceDataTable` to use `DndContext` + `SortableContext` with vertical list strategy
+- Add local state for ordered items and a `hasOrderChanges` flag
+- Add a save-order mutation that updates `display_order` for each item
+- Keep the existing Add/Edit dialog for name and code fields
+- Remove the manual "Display Order" number input field from the dialog (replaced by drag-and-drop)
 
-- `TO authenticated` restricts the policy to only apply when PostgREST is operating under the `authenticated` PostgreSQL role (i.e., the user has a valid JWT)
-- `WITH CHECK (true)` allows any authenticated user to insert -- the same intent as the original policy, but more reliable
-- No code changes are needed; the Onboarding and CreateOrganizationDialog components already work correctly
-
-### No Other Changes Required
-
-- The `organization_memberships` INSERT policy (`auth.uid() = user_id`) is fine -- it correctly validates the user ID
-- The application code in `Onboarding.tsx` and `CreateOrganizationDialog.tsx` correctly passes `created_by: user.id`
-- The `seed_organization_defaults` RPC already has its own ownership check
+### Files Modified
+- `src/components/settings/ReferenceDataTable.tsx` -- full rewrite to drag-and-drop style
+- `src/pages/Settings.tsx` -- remove `hasOrder` prop (no longer needed)
+- New migration file for adding `display_order` columns
 
