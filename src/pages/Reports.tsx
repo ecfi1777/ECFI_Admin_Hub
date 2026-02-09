@@ -107,7 +107,7 @@ export default function Reports() {
       }
 
       // Generate and download Excel file
-      generateScheduleExcel(entries as any, month, year);
+      await generateScheduleExcel(entries as any, month, year);
       
       toast.success(`Exported ${entries.length} schedule entries`);
     } catch (error) {
