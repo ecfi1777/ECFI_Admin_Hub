@@ -11,6 +11,7 @@ import { AddEntryDialog } from "./AddEntryDialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useOrganization } from "@/hooks/useOrganization";
+import { useUserRole } from "@/hooks/useUserRole";
 import { useCrewsAll, type Crew } from "@/hooks/useReferenceData";
 import type { ScheduleEntry } from "@/types/schedule";
 import { SchedulePageSkeleton } from "@/components/ui/loading-screen";
@@ -27,6 +28,7 @@ export function DailySchedule() {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const { organizationId } = useOrganization();
+  const { canManage } = useUserRole();
   const dateParam = searchParams.get("date");
   
   // Parse date from URL or use today
@@ -241,20 +243,22 @@ export function DailySchedule() {
                 <CardTitle className={`text-lg font-semibold ${crew.is_active ? "text-amber-500" : "text-muted-foreground"}`}>
                   Crew {crew.name}{!crew.is_active && " (Inactive)"}
                 </CardTitle>
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    setSelectedCrewId(crew.id);
-                    setIsAddDialogOpen(true);
-                  }}
-                  className="bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border-0"
-                >
-                  <Plus className="w-4 h-4 mr-1" />
-                  Add Entry
-                </Button>
+                {canManage && (
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setSelectedCrewId(crew.id);
+                      setIsAddDialogOpen(true);
+                    }}
+                    className="bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border-0"
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    Add Entry
+                  </Button>
+                )}
               </CardHeader>
               <CardContent className="p-0">
-                <ScheduleTable entries={entriesByCrew[crew.id] || []} />
+                <ScheduleTable entries={entriesByCrew[crew.id] || []} readOnly={!canManage} />
               </CardContent>
             </Card>
           ))}
@@ -267,7 +271,7 @@ export function DailySchedule() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                <ScheduleTable entries={unassignedEntries} />
+                <ScheduleTable entries={unassignedEntries} readOnly={!canManage} />
               </CardContent>
             </Card>
           )}

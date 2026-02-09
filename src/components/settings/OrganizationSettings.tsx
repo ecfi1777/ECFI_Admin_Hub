@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useOrganization } from "@/hooks/useOrganization";
+import { useUserRole } from "@/hooks/useUserRole";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,8 +14,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useAuth } from "@/hooks/useAuth";
+
 export function OrganizationSettings() {
   const { organization, allOrganizations, switchOrganization, isOwner, isLoading } = useOrganization();
+  const { canManage } = useUserRole();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -28,17 +31,12 @@ export function OrganizationSettings() {
   const regenerateMutation = useMutation({
     mutationFn: async () => {
       if (!organization?.id) throw new Error("No organization");
-      
-      // Call database function to generate new invite code
       const { data: newCode, error: codeError } = await supabase.rpc("generate_invite_code");
       if (codeError) throw codeError;
-      
-      // Update organization with new code
       const { error: updateError } = await supabase
         .from("organizations")
         .update({ invite_code: newCode })
         .eq("id", organization.id);
-      
       if (updateError) throw updateError;
       return newCode;
     },
@@ -54,12 +52,10 @@ export function OrganizationSettings() {
   const updateNameMutation = useMutation({
     mutationFn: async (newName: string) => {
       if (!organization?.id) throw new Error("No organization");
-      
       const { error } = await supabase
         .from("organizations")
         .update({ name: newName.trim() })
         .eq("id", organization.id);
-      
       if (error) throw error;
     },
     onSuccess: async () => {
@@ -75,24 +71,16 @@ export function OrganizationSettings() {
   const deleteOrgMutation = useMutation({
     mutationFn: async () => {
       if (!organization?.id || !user?.id) throw new Error("No organization or user");
-      
-      // First delete all memberships for this organization
       const { error: membershipsError } = await supabase
         .from("organization_memberships")
         .delete()
         .eq("organization_id", organization.id);
-      
       if (membershipsError) throw membershipsError;
-      
-      // Then delete the organization itself
       const { error: orgError } = await supabase
         .from("organizations")
         .delete()
         .eq("id", organization.id);
-      
       if (orgError) throw orgError;
-      
-      // Return info about remaining orgs for navigation
       const remainingOrgs = allOrganizations.filter(
         o => o.organization_id !== organization.id
       );
@@ -102,14 +90,10 @@ export function OrganizationSettings() {
       await queryClient.resetQueries({ queryKey: ["organizations"] });
       await queryClient.resetQueries({ queryKey: ["organization-memberships"] });
       toast.success("Your organization has been permanently deleted.");
-      
-      // If user has other orgs, switch to one of them
       if (remainingOrgs.length > 0) {
         switchOrganization(remainingOrgs[0].organization_id);
-        // Reload to ensure clean state
         window.location.href = "/settings";
       } else {
-        // No orgs left - redirect to onboarding
         navigate("/onboarding");
       }
     },
@@ -120,7 +104,6 @@ export function OrganizationSettings() {
 
   const handleCopyInviteCode = async () => {
     if (!organization?.invite_code) return;
-    
     try {
       await navigator.clipboard.writeText(organization.invite_code);
       setCopied(true);
@@ -156,7 +139,6 @@ export function OrganizationSettings() {
 
   return (
     <div className="space-y-6">
-      {/* My Organizations Section */}
       <MyOrganizations />
 
       <Card>
@@ -234,6 +216,7 @@ export function OrganizationSettings() {
         </CardContent>
       </Card>
 
+      {/* Invite Code — owner only */}
       {isOwner && (
         <Card>
           <CardHeader>
@@ -300,7 +283,8 @@ export function OrganizationSettings() {
         </Card>
       )}
 
-      {isOwner && (
+      {/* Team Members — owner and manager can see, but controls are role-gated inside */}
+      {canManage && (
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
@@ -308,7 +292,9 @@ export function OrganizationSettings() {
               <CardTitle>Team Members</CardTitle>
             </div>
             <CardDescription>
-              Manage users who have access to your organization
+              {isOwner
+                ? "Manage users who have access to your organization"
+                : "View users who have access to your organization"}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -317,6 +303,7 @@ export function OrganizationSettings() {
         </Card>
       )}
 
+      {/* Danger Zone — owner only */}
       {isOwner && (
         <Card className="border-destructive/50">
           <CardHeader>

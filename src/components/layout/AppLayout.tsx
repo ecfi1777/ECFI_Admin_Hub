@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
 import { useOrganization } from "@/hooks/useOrganization";
+import { useUserRole } from "@/hooks/useUserRole";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -29,25 +30,33 @@ interface AppLayoutProps {
   children: ReactNode;
 }
 
-const navItems = [
-  { href: "/projects", label: "Projects", icon: FolderKanban },
-  { href: "/", label: "Schedule", icon: Calendar },
-  { href: "/calendar", label: "Calendar", icon: CalendarDays },
-  { href: "/kanban", label: "Kanban", icon: Columns3 },
-  { href: "/invoices", label: "Jobs to Invoice", icon: FileText },
-  { href: "/vendor-invoices", label: "Vendor Details", icon: Receipt },
-  { href: "/discrepancies", label: "Discrepancies", icon: AlertTriangle },
-  { href: "/reports", label: "Reports", icon: ClipboardList },
-  { href: "/settings", label: "Settings", icon: Settings },
+const allNavItems = [
+  { href: "/projects", label: "Projects", icon: FolderKanban, minRole: "viewer" as const },
+  { href: "/", label: "Schedule", icon: Calendar, minRole: "viewer" as const },
+  { href: "/calendar", label: "Calendar", icon: CalendarDays, minRole: "viewer" as const },
+  { href: "/kanban", label: "Kanban", icon: Columns3, minRole: "viewer" as const },
+  { href: "/invoices", label: "Jobs to Invoice", icon: FileText, minRole: "manager" as const },
+  { href: "/vendor-invoices", label: "Vendor Details", icon: Receipt, minRole: "manager" as const },
+  { href: "/discrepancies", label: "Discrepancies", icon: AlertTriangle, minRole: "manager" as const },
+  { href: "/reports", label: "Reports", icon: ClipboardList, minRole: "manager" as const },
+  { href: "/settings", label: "Settings", icon: Settings, minRole: "viewer" as const },
 ];
 
 export function AppLayout({ children }: AppLayoutProps) {
   const { user, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { organizationId } = useOrganization();
+  const { canManage } = useUserRole();
   const location = useLocation();
   const isMobile = useIsMobile();
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // Filter nav items based on role
+  const navItems = allNavItems.filter((item) => {
+    if (item.minRole === "viewer") return true;
+    if (item.minRole === "manager") return canManage;
+    return false;
+  });
 
   const renderNavLinks = (onNavigate?: () => void) =>
     navItems.map((item) => {
@@ -116,7 +125,6 @@ export function AppLayout({ children }: AppLayoutProps) {
   if (isMobile) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
-        {/* Sticky mobile header */}
         <header className="sticky top-0 z-40 bg-background border-b border-border flex items-center justify-between px-3 h-14">
           <Button
             variant="ghost"
@@ -132,15 +140,12 @@ export function AppLayout({ children }: AppLayoutProps) {
             </div>
             <span className="font-bold text-foreground">ECFI Hub</span>
           </div>
-          {/* Spacer to center the logo */}
           <div className="min-w-[44px]" />
         </header>
 
-        {/* Mobile drawer */}
         <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
           <SheetContent side="left" className="p-0 flex flex-col w-[280px]">
             <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
-            {/* Logo */}
             <div className="p-4 border-b border-border">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center">
@@ -152,16 +157,10 @@ export function AppLayout({ children }: AppLayoutProps) {
                 </div>
               </div>
             </div>
-
-            {/* Organization Switcher */}
             <OrganizationSwitcher />
-
-            {/* Navigation */}
             <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
               {renderNavLinks(() => setDrawerOpen(false))}
             </nav>
-
-            {/* Theme Toggle & User */}
             <div className="p-4 border-t border-border space-y-3">
               {renderThemeToggle()}
               {renderUserSection()}
@@ -169,7 +168,6 @@ export function AppLayout({ children }: AppLayoutProps) {
           </SheetContent>
         </Sheet>
 
-        {/* Main Content */}
         <main key={organizationId || "loading"} className="flex-1 overflow-auto">
           {children}
         </main>
@@ -177,12 +175,9 @@ export function AppLayout({ children }: AppLayoutProps) {
     );
   }
 
-  // Desktop layout — unchanged
   return (
     <div className="min-h-screen bg-background flex">
-      {/* Sidebar */}
       <aside className="w-64 bg-card border-r border-border flex flex-col">
-        {/* Logo */}
         <div className="p-4 border-b border-border">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center">
@@ -194,16 +189,10 @@ export function AppLayout({ children }: AppLayoutProps) {
             </div>
           </div>
         </div>
-
-        {/* Organization Switcher */}
         <OrganizationSwitcher />
-
-        {/* Navigation */}
         <nav className="flex-1 p-4 space-y-1">
           {renderNavLinks()}
         </nav>
-
-        {/* Theme Toggle & User */}
         <div className="p-4 border-t border-border space-y-3">
           {renderThemeToggle()}
           <div className="flex items-center justify-between">
@@ -224,7 +213,6 @@ export function AppLayout({ children }: AppLayoutProps) {
         </div>
       </aside>
 
-      {/* Main Content */}
       <main key={organizationId || "loading"} className="flex-1 overflow-auto">
         {children}
       </main>
