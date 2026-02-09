@@ -1,93 +1,100 @@
 
 
-## Migrate Archiving from Status-Based to Boolean Flag
+# Global Viewer Restrictions
 
-This plan replaces the "Archived" project status with a simple `is_archived` boolean flag on the projects table, making archiving independent of the status workflow.
+## Overview
+Enforce comprehensive view-only access for users with the "viewer" role across the entire application. This covers navigation restrictions, hiding all mutating actions, hiding financial data, and making Settings read-only for viewers.
 
----
+## Current State
+- Navigation already hides Invoices, Vendor Details, Discrepancies, and Reports from viewers (minRole: "manager")
+- Route guards (`ManagerRoute`) already protect those four pages at the router level
+- Kanban is currently accessible to viewers (minRole: "viewer" in nav + no `ManagerRoute` wrapper)
+- `useUserRole()` hook with `canManage` flag is well-established
+- Schedule page partially uses `readOnly` prop via `canManage`
+- Projects page has no viewer restrictions on Add, Edit, Archive actions
+- ProjectDetailsSheet has no viewer restrictions on Edit, Archive, Status change
+- ProjectScheduleHistory shows financial data (dollar amounts, invoice numbers) to all users
+- Calendar page allows editing/adding entries for viewers
+- Settings already hides manager-only tabs but Organization and Account tabs need read-only enforcement
+- ProjectDocuments allows upload/delete for all users
 
-### Step 1: Database Migration
+## Changes
 
-A single migration that performs the following operations in order:
+### 1. Navigation and Routing (AppLayout.tsx, App.tsx)
+- Change Kanban's `minRole` from `"viewer"` to `"manager"` in `allNavItems` so it is hidden from viewers
+- Wrap the `/kanban` route with `ManagerRoute` in `App.tsx` to block direct URL access
 
-1. **Add column**: `is_archived BOOLEAN NOT NULL DEFAULT false` to `projects`
-2. **Migrate data**: For projects currently assigned to an "Archived" status, set `is_archived = true` and reassign their status to "Complete" (or the highest `display_order` status if "Complete" doesn't exist for that org)
-3. **Delete "Archived" status rows** from `project_statuses`
-4. **Drop function**: `auto_archive_completed_projects()`
-5. **Unschedule cron job**: `cron.unschedule('auto-archive-completed-projects')` wrapped in `BEGIN/EXCEPTION` block so it won't fail if the job doesn't exist
-6. **Update `seed_organization_defaults()`**: Remove "Archived" from seeded statuses (keep Upcoming, Ready to Start, In Progress, Complete with display_order 1-4)
-7. **Create index**: `idx_projects_is_archived` on `(organization_id, is_archived)`
+### 2. Projects Page (Projects.tsx)
+- Import `useUserRole` and get `canManage`
+- Conditionally hide the `AddProjectDialog` button when `!canManage`
+- Hide the archive/unarchive action column (last TableHead + TableCell) when `!canManage`
 
----
+### 3. Project Details Sheet (ProjectDetailsSheet.tsx)
+- Import `useUserRole` and get `canManage`
+- Hide the Edit (pencil) button, Archive button, and PDF export button when `!canManage`
+- Hide the status change `Select` dropdown when `!canManage`
+- Hide financial data from the schedule history: pass `canManage` down or handle in ProjectScheduleHistory
 
-### Step 2: Kanban Board
+### 4. Project Schedule History (ProjectScheduleHistory.tsx)
+- Accept a `readOnly` prop (or import `useUserRole` directly)
+- Hide the "Edit" button on each entry when viewer
+- Hide all dollar amounts: `ready_mix_invoice_amount`, `pump_invoice_amount`, `inspection_amount`
+- Hide invoice numbers: `ready_mix_invoice_number`, `pump_invoice_number`, `inspection_invoice_number`, `invoice_number`
+- Hide the "Invoicing" section entirely for viewers
 
-**File: `src/pages/Kanban.tsx`**
+### 5. Project Documents (ProjectDocuments.tsx)
+- Accept a `readOnly` prop or import `useUserRole`
+- Hide the upload drop zone and delete buttons when viewer
+- Viewers can still view/open documents but cannot upload or delete
 
-- Replace the client-side `.filter((p) => p.project_statuses?.name !== "Archived")` (line 82) with `.eq("is_archived", false)` in the Supabase query
-- Add an `onArchive` callback prop passed to `ProjectCard` -- on click, updates `is_archived = true`, invalidates queries, shows toast: "Project archived. You can restore it from the Projects page."
+### 6. Schedule Page - DailySchedule (DailySchedule.tsx)
+- Already uses `canManage` to hide "Add Entry" buttons and passes `readOnly={!canManage}` -- verify this is complete
+- Hide the daily notes "Edit" button for viewers (currently visible to all)
 
-**File: `src/components/kanban/ProjectCard.tsx`**
+### 7. Schedule Table (ScheduleTable.tsx)
+- Already uses `readOnly` prop to hide "Need to Inv." column and Actions column
+- When `readOnly` is true, make inline cells non-editable: disable click-to-edit on `renderEditableCell` and replace `Select` dropdowns with plain text display
+- Hide the quick-edit (MoreVertical) buttons on crew/supplier/pump/inspection cells
 
-- Add optional `onArchive` prop
-- Add a small archive icon button (using `Archive` from lucide-react) that calls `onArchive` on click, with `e.stopPropagation()` to prevent opening the details sheet
-- Only show the archive button when `onArchive` is provided (allows hiding it for the drag overlay)
+### 8. Calendar View (CalendarView.tsx)
+- Import `useUserRole` and get `canManage`
+- Hide the `AddEntryDialog` trigger: don't pass `onAddEntry` to week/month views when `!canManage`
+- Replace the `EditEntryDialog` with a read-only view or simply don't open it for viewers (navigate to schedule date instead)
 
-No changes to columns, drag-and-drop, collapse, search, or filters.
+### 9. Settings Page (Settings.tsx, OrganizationSettings.tsx, ChangePassword.tsx)
+- Settings is already partially gated: only "Organization" and "Account" tabs show for viewers
+- **OrganizationSettings**: No changes needed -- it already hides edit controls from non-owners, and the Team Members section is behind `canManage`
+- **ChangePassword**: Keep as-is -- viewers should be able to change their own password (it's their account security)
 
----
+### 10. Hide Financial Data Globally
+Financial data appears in these locations (all need viewer guards):
+- **ScheduleTable**: `to_be_invoiced` checkbox column -- already hidden via `readOnly`
+- **ProjectScheduleHistory**: Dollar amounts, invoice numbers in Concrete/Pump/Inspection sections, and the Invoicing section
+- **EditEntryDialog**: Invoicing tab -- not reachable if edit button is hidden
+- **ProjectDetailsSheet PDF export**: Contains financial data -- hide export button for viewers (covered in step 3)
 
-### Step 3: Projects Page
+## Technical Details
 
-**File: `src/pages/Projects.tsx`**
+### Implementation Pattern
+All changes use the existing `useUserRole()` hook and its `canManage` boolean. Components that already accept a `readOnly` prop will receive `!canManage`. Components that don't will either:
+1. Import `useUserRole` directly (for top-level page components), or
+2. Receive a `readOnly` prop from their parent (for child components, to avoid duplicate hook calls)
 
-- Change the "Include Archived" filter (line 151) from `project.project_statuses?.name === "Archived"` to checking `project.is_archived`
-  - Toggle OFF (default): only show projects where `is_archived === false`
-  - Toggle ON: show all projects
-- Add an archive/unarchive action per row:
-  - Non-archived projects: small "Archive" icon button
-  - Archived projects (when toggle is ON): small "Unarchive" icon button
-  - Each button updates `is_archived` via Supabase, invalidates queries, shows a toast
-- Add a visual indicator (e.g., "Archived" badge) next to the status badge for archived projects
-- Remove any filtering logic that hides "Archived" from the status dropdown (it won't exist after migration)
+### Files to Modify
+| File | Changes |
+|------|---------|
+| `src/components/layout/AppLayout.tsx` | Change Kanban minRole to "manager" |
+| `src/App.tsx` | Wrap `/kanban` with `ManagerRoute` |
+| `src/pages/Projects.tsx` | Hide Add Project button and archive column for viewers |
+| `src/components/projects/ProjectDetailsSheet.tsx` | Hide edit/archive/status-change/export for viewers |
+| `src/components/projects/ProjectScheduleHistory.tsx` | Hide edit buttons and all financial data for viewers |
+| `src/components/projects/ProjectDocuments.tsx` | Hide upload/delete for viewers |
+| `src/components/schedule/DailySchedule.tsx` | Hide daily notes edit button for viewers |
+| `src/components/schedule/ScheduleTable.tsx` | Make cells read-only (plain text) when `readOnly` is true |
+| `src/pages/CalendarView.tsx` | Hide add/edit entry dialogs for viewers |
 
----
-
-### Step 4: Project Details Panel
-
-**File: `src/components/projects/ProjectDetailsSheet.tsx`**
-
-- Add an "Archive" / "Unarchive" button in the header next to the edit and PDF export buttons
-- Show an "Archived" badge when `project.is_archived === true`
-- The `KANBAN_STATUSES` constant (line 36) already only lists the 4 active statuses plus "No Status" -- no change needed since "Archived" was never in it
-- Invalidate all relevant queries on archive/unarchive
-
----
-
-### Step 5: Status Colors
-
-**File: `src/lib/statusColors.ts`**
-
-- Remove the `"Archived"` case (lines 14-15) from `getStatusColor()` since it's no longer a status
-
----
-
-### Step 6: Project Form
-
-**File: `src/components/projects/ProjectFormFields.tsx`**
-
-- No changes needed. Since "Archived" will be deleted from `project_statuses`, the dropdown will naturally show only the remaining 4 statuses.
-
----
-
-### Technical Summary
-
-| File | Change |
-|------|--------|
-| Database migration | Add column, migrate data, drop function, unschedule cron, update seed, add index |
-| `src/pages/Kanban.tsx` | Add `.eq("is_archived", false)` to query; remove client-side filter; pass `onArchive` to cards |
-| `src/components/kanban/ProjectCard.tsx` | Add archive icon button with `onArchive` prop |
-| `src/pages/Projects.tsx` | Update archived filter to use `is_archived`; add archive/unarchive row actions + badge |
-| `src/components/projects/ProjectDetailsSheet.tsx` | Add archive/unarchive button + archived badge |
-| `src/lib/statusColors.ts` | Remove "Archived" case |
+### Cleanup
+- Remove any now-redundant conditional checks
+- Consolidate the `readOnly` / `canManage` pattern to avoid duplicate `useUserRole` calls in nested components
+- Remove unused imports after changes
 
