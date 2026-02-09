@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Plus, Users, Check, LogOut } from "lucide-react";
+import { Building2, Plus, Users, Check, LogOut, Star } from "lucide-react";
 import { JoinOrganizationDialog } from "./JoinOrganizationDialog";
 import { CreateOrganizationDialog } from "./CreateOrganizationDialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -14,7 +14,7 @@ import { getUserFriendlyError } from "@/lib/errorHandler";
 import { useQueryClient } from "@tanstack/react-query";
 
 export function MyOrganizations() {
-  const { allOrganizations, organizationId, switchOrganization, isLoading } = useOrganization();
+  const { allOrganizations, organizationId, switchOrganization, isLoading, defaultOrganizationId, setDefaultOrganization } = useOrganization();
   const [joinOpen, setJoinOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [leaveOrgId, setLeaveOrgId] = useState<string | null>(null);
@@ -97,6 +97,7 @@ export function MyOrganizations() {
               {allOrganizations.map((membership) => {
                 const isActive = membership.organization_id === organizationId;
                 const isOwner = membership.role === "owner";
+                const isDefault = membership.organization_id === defaultOrganizationId;
                 return (
                   <div
                     key={membership.organization_id}
@@ -129,6 +130,12 @@ export function MyOrganizations() {
                               Active
                             </Badge>
                           )}
+                          {isDefault && (
+                            <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">
+                              <Star className="w-3 h-3 mr-1 fill-amber-500" />
+                              Default
+                            </Badge>
+                          )}
                         </div>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <Badge variant="outline" className="text-xs capitalize">
@@ -141,7 +148,36 @@ export function MyOrganizations() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
+                      {!isDefault ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-muted-foreground hover:text-amber-600"
+                          title="Set as default"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDefaultOrganization(membership.organization_id);
+                            toast.success(`"${membership.organizations.name}" set as default.`);
+                          }}
+                        >
+                          <Star className="w-4 h-4" />
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-amber-500"
+                          title="Remove default"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDefaultOrganization(null);
+                            toast.success("Default organization cleared.");
+                          }}
+                        >
+                          <Star className="w-4 h-4 fill-amber-500" />
+                        </Button>
+                      )}
                       {isActive && (
                         <Check className="w-5 h-5 text-primary" />
                       )}

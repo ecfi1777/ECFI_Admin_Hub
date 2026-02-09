@@ -434,6 +434,7 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
+          default_organization_id: string | null
           display_name: string | null
           email: string | null
           id: string
@@ -442,6 +443,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          default_organization_id?: string | null
           display_name?: string | null
           email?: string | null
           id?: string
@@ -450,13 +452,22 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          default_organization_id?: string | null
           display_name?: string | null
           email?: string | null
           id?: string
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_default_organization_id_fkey"
+            columns: ["default_organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       project_documents: {
         Row: {
