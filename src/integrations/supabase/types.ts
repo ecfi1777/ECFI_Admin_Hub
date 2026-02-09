@@ -578,6 +578,7 @@ export type Database = {
           full_address: string | null
           google_drive_url: string | null
           id: string
+          is_archived: boolean
           location_id: string | null
           lot_number: string
           notes: string | null
@@ -598,6 +599,7 @@ export type Database = {
           full_address?: string | null
           google_drive_url?: string | null
           id?: string
+          is_archived?: boolean
           location_id?: string | null
           lot_number: string
           notes?: string | null
@@ -618,6 +620,7 @@ export type Database = {
           full_address?: string | null
           google_drive_url?: string | null
           id?: string
+          is_archived?: boolean
           location_id?: string | null
           lot_number?: string
           notes?: string | null
@@ -995,7 +998,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      auto_archive_completed_projects: { Args: never; Returns: undefined }
       generate_invite_code: { Args: never; Returns: string }
       get_invite_code: { Args: { p_organization_id: string }; Returns: string }
       get_my_role: { Args: { p_organization_id: string }; Returns: string }

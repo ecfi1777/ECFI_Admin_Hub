@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -27,7 +27,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Search, Paperclip, X, FileText, ExternalLink } from "lucide-react";
+import { Search, Paperclip, X, FileText, ExternalLink, Archive, ArchiveRestore } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { AddProjectDialog } from "@/components/projects/AddProjectDialog";
@@ -52,6 +52,7 @@ interface Project {
   wall_height: string | null;
   basement_type: string | null;
   google_drive_url: string | null;
+  is_archived: boolean;
   builders: { id: string; name: string; code: string | null } | null;
   locations: { id: string; name: string } | null;
   project_statuses: { id: string; name: string } | null;
@@ -67,6 +68,7 @@ export default function Projects() {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const { organizationId } = useOrganization();
+  const queryClient = useQueryClient();
 
   const { data: projects = [], isLoading } = useQuery({
     queryKey: ["projects", organizationId],
@@ -146,9 +148,27 @@ export default function Projects() {
   const { data: locations = [] } = useLocations();
   const { data: statuses = [] } = useProjectStatuses();
 
+  const archiveMutation = useMutation({
+    mutationFn: async ({ projectId, archive }: { projectId: string; archive: boolean }) => {
+      const { error } = await supabase
+        .from("projects")
+        .update({ is_archived: archive } as any)
+        .eq("id", projectId);
+      if (error) throw error;
+    },
+    onSuccess: (_, { archive }) => {
+      queryClient.invalidateQueries({ queryKey: ["projects", organizationId] });
+      queryClient.invalidateQueries({ queryKey: ["kanban-projects", organizationId] });
+      toast.success(archive ? "Project archived" : "Project unarchived");
+    },
+    onError: () => {
+      toast.error("Failed to update project");
+    },
+  });
+
   const filteredProjects = projects.filter((project) => {
     // Hide archived unless toggle is on
-    if (!includeArchived && project.project_statuses?.name === "Archived") {
+    if (!includeArchived && (project as any).is_archived) {
       return false;
     }
 
@@ -275,8 +295,9 @@ export default function Projects() {
                     <TableHead className="text-muted-foreground">Location</TableHead>
                     <TableHead className="text-muted-foreground">Lot #</TableHead>
                     <TableHead className="text-muted-foreground">Status</TableHead>
-                    <TableHead className="text-muted-foreground">Created</TableHead>
-                    <TableHead className="text-muted-foreground w-16 text-center">Docs</TableHead>
+                     <TableHead className="text-muted-foreground">Created</TableHead>
+                     <TableHead className="text-muted-foreground w-16 text-center">Docs</TableHead>
+                     <TableHead className="text-muted-foreground w-12"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -295,14 +316,21 @@ export default function Projects() {
                       <TableCell className="text-primary font-medium">
                         {project.lot_number}
                       </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant="outline"
-                          className={getStatusColor(project.project_statuses?.name)}
-                        >
-                          {project.project_statuses?.name || "No Status"}
-                        </Badge>
-                      </TableCell>
+                       <TableCell>
+                         <div className="flex items-center gap-1.5">
+                           <Badge
+                             variant="outline"
+                             className={getStatusColor(project.project_statuses?.name)}
+                           >
+                             {project.project_statuses?.name || "No Status"}
+                           </Badge>
+                           {(project as any).is_archived && (
+                             <Badge variant="outline" className="bg-muted text-muted-foreground border-border text-xs">
+                               Archived
+                             </Badge>
+                           )}
+                         </div>
+                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {format(new Date(project.created_at), "M/d/yyyy")}
                       </TableCell>
@@ -343,8 +371,31 @@ export default function Projects() {
                             </PopoverContent>
                           </Popover>
                         )}
-                      </TableCell>
-                    </TableRow>
+                       </TableCell>
+                       <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                         {(project as any).is_archived ? (
+                           <Button
+                             variant="ghost"
+                             size="sm"
+                             className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                             onClick={() => archiveMutation.mutate({ projectId: project.id, archive: false })}
+                             title="Unarchive project"
+                           >
+                             <ArchiveRestore className="w-4 h-4" />
+                           </Button>
+                         ) : (
+                           <Button
+                             variant="ghost"
+                             size="sm"
+                             className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                             onClick={() => archiveMutation.mutate({ projectId: project.id, archive: true })}
+                             title="Archive project"
+                           >
+                             <Archive className="w-4 h-4" />
+                           </Button>
+                         )}
+                       </TableCell>
+                     </TableRow>
                   ))}
                 </TableBody>
               </Table>

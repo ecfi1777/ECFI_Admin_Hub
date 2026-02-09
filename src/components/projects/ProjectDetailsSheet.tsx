@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Pencil, ExternalLink, MapPin, FileText, Building, Home, Download } from "lucide-react";
+import { Pencil, ExternalLink, MapPin, FileText, Building, Home, Download, Archive, ArchiveRestore } from "lucide-react";
 import { ProjectScheduleHistory } from "./ProjectScheduleHistory";
 import { ProjectDocuments } from "./ProjectDocuments";
 import { EditProjectDialog } from "./EditProjectDialog";
@@ -65,6 +65,26 @@ export function ProjectDetailsSheet({
     },
     onError: () => {
       toast.error("Failed to update status");
+    },
+  });
+
+  const archiveMutation = useMutation({
+    mutationFn: async (archive: boolean) => {
+      if (!projectId) return;
+      const { error } = await supabase
+        .from("projects")
+        .update({ is_archived: archive } as any)
+        .eq("id", projectId);
+      if (error) throw error;
+    },
+    onSuccess: (_, archive) => {
+      queryClient.invalidateQueries({ queryKey: ["kanban-projects", organizationId] });
+      queryClient.invalidateQueries({ queryKey: ["projects", organizationId] });
+      queryClient.invalidateQueries({ queryKey: ["project", projectId] });
+      toast.success(archive ? "Project archived" : "Project unarchived");
+    },
+    onError: () => {
+      toast.error("Failed to update project");
     },
   });
 
@@ -186,6 +206,19 @@ export function ProjectDetailsSheet({
                       >
                         <Download className="w-4 h-4" />
                       </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => archiveMutation.mutate(!(project as any).is_archived)}
+                        className="text-slate-400 hover:text-white h-8 w-8 p-0"
+                        title={(project as any).is_archived ? "Unarchive project" : "Archive project"}
+                      >
+                        {(project as any).is_archived ? (
+                          <ArchiveRestore className="w-4 h-4" />
+                        ) : (
+                          <Archive className="w-4 h-4" />
+                        )}
+                      </Button>
                     </SheetTitle>
                     <div className="flex items-center gap-2 mt-1">
                       {project.builders && (
@@ -202,14 +235,21 @@ export function ProjectDetailsSheet({
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-2">
-                    {project.project_statuses && (
-                      <Badge
-                        variant="outline"
-                        className={getStatusColor(project.project_statuses.name)}
-                      >
-                        {project.project_statuses.name}
-                      </Badge>
-                    )}
+                    <div className="flex items-center gap-1.5">
+                      {(project as any).is_archived && (
+                        <Badge variant="outline" className="bg-muted text-muted-foreground border-border text-xs">
+                          Archived
+                        </Badge>
+                      )}
+                      {project.project_statuses && (
+                        <Badge
+                          variant="outline"
+                          className={getStatusColor(project.project_statuses.name)}
+                        >
+                          {project.project_statuses.name}
+                        </Badge>
+                      )}
+                    </div>
                     <Select
                       value={project.status_id || "no-status"}
                       onValueChange={handleStatusChange}
