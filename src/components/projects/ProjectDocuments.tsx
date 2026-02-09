@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
+import { getUserFriendlyError } from "@/lib/errorHandler";
 import { Upload, File, X, Loader2, ExternalLink, CheckCircle } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -80,7 +81,7 @@ export function ProjectDocuments({ projectId }: ProjectDocumentsProps) {
       setUploadingCategory(null);
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      toast.error(getUserFriendlyError(error));
       setUploadingCategory(null);
     },
   });
@@ -107,7 +108,7 @@ export function ProjectDocuments({ projectId }: ProjectDocumentsProps) {
       setDocumentToDelete(null);
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      toast.error(getUserFriendlyError(error));
       setDocumentToDelete(null);
     },
   });

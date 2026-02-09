@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
+import { getUserFriendlyError } from "@/lib/errorHandler";
 import { HardHat, ArrowLeft } from "lucide-react";
 
 export default function ForgotPassword() {
@@ -22,7 +23,7 @@ export default function ForgotPassword() {
     });
 
     if (error) {
-      toast.error(error.message);
+      toast.error(getUserFriendlyError(error, "Forgot password"));
     } else {
       setSent(true);
       toast.success("We sent you a password reset link.");

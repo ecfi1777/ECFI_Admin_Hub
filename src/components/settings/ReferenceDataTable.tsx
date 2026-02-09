@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { getUserFriendlyError } from "@/lib/errorHandler";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -83,7 +84,7 @@ export function ReferenceDataTable({ tableName, displayName, hasCode, hasOrder }
       closeDialog();
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      toast.error(getUserFriendlyError(error));
     },
   });
 
@@ -98,7 +99,7 @@ export function ReferenceDataTable({ tableName, displayName, hasCode, hasOrder }
       closeDialog();
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      toast.error(getUserFriendlyError(error));
     },
   });
 
@@ -111,7 +112,7 @@ export function ReferenceDataTable({ tableName, displayName, hasCode, hasOrder }
       queryClient.invalidateQueries({ queryKey: [tableName] });
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      toast.error(getUserFriendlyError(error));
     },
   });
 

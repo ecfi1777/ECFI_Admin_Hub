@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { getUserFriendlyError } from "@/lib/errorHandler";
 import {
   Plus,
   Pencil,
@@ -348,7 +349,7 @@ export function CrewsManagement() {
       toast.success("Crew order saved");
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      toast.error(getUserFriendlyError(error));
     },
   });
 
@@ -369,7 +370,7 @@ export function CrewsManagement() {
       closeCrewDialog();
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      toast.error(getUserFriendlyError(error));
     },
   });
 
@@ -385,7 +386,7 @@ export function CrewsManagement() {
       closeCrewDialog();
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      toast.error(getUserFriendlyError(error));
     },
   });
 
@@ -399,7 +400,7 @@ export function CrewsManagement() {
       queryClient.invalidateQueries({ queryKey: ["crews-all"] });
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      toast.error(getUserFriendlyError(error));
     },
   });
 
@@ -415,7 +416,7 @@ export function CrewsManagement() {
       closeMemberDialog();
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      toast.error(getUserFriendlyError(error));
     },
   });
 
@@ -430,7 +431,7 @@ export function CrewsManagement() {
       closeMemberDialog();
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      toast.error(getUserFriendlyError(error));
     },
   });
 
@@ -443,7 +444,7 @@ export function CrewsManagement() {
       queryClient.invalidateQueries({ queryKey: ["crew-members-management"] });
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      toast.error(getUserFriendlyError(error));
     },
   });
 
@@ -459,7 +460,7 @@ export function CrewsManagement() {
       setMemberToDelete(null);
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      toast.error(getUserFriendlyError(error));
     },
   });
 

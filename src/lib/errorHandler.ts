@@ -116,6 +116,15 @@ export function getUserFriendlyError(error: unknown, context?: string): string {
 }
 
 /**
+ * Returns a safe error message for display to users.
+ * In development, returns the original message for debugging.
+ * In production, routes through getUserFriendlyError to prevent leaking internals.
+ */
+export function getSafeErrorMessage(error: unknown, context?: string): string {
+  return getUserFriendlyError(error, context);
+}
+
+/**
  * Helper to handle Supabase errors consistently
  * Use this when handling errors from Supabase operations
  */

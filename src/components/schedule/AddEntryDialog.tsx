@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { getUserFriendlyError } from "@/lib/errorHandler";
 import { Search } from "lucide-react";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useProjects } from "@/hooks/useReferenceData";
@@ -90,7 +91,7 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate 
       onOpenChange(false);
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      toast.error(getUserFriendlyError(error));
     },
   });
 

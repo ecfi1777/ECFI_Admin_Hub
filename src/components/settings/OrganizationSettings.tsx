@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { getUserFriendlyError } from "@/lib/errorHandler";
 import { Building2, Copy, Check, Users, RefreshCw, Pencil, X, Trash2, AlertTriangle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { TeamMembersTable } from "./TeamMembersTable";
@@ -45,7 +46,7 @@ export function OrganizationSettings() {
       toast.success("The old invite code is no longer valid. Share the new code with team members.");
     },
     onError: (error: any) => {
-      toast.error(error.message);
+      toast.error(getUserFriendlyError(error));
     },
   });
 
@@ -64,7 +65,7 @@ export function OrganizationSettings() {
       toast.success("Your organization name has been changed successfully.");
     },
     onError: (error: any) => {
-      toast.error(error.message);
+      toast.error(getUserFriendlyError(error));
     },
   });
 
@@ -98,7 +99,7 @@ export function OrganizationSettings() {
       }
     },
     onError: (error: any) => {
-      toast.error(error.message);
+      toast.error(getUserFriendlyError(error));
     },
   });
 

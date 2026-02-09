@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useOrganization } from "@/hooks/useOrganization";
 import { toast } from "sonner";
+import { getUserFriendlyError } from "@/lib/errorHandler";
 import {
   Dialog,
   DialogContent,
@@ -56,7 +57,7 @@ export function JoinOrganizationDialog({ open, onOpenChange }: JoinOrganizationD
       setInviteCode("");
       onOpenChange(false);
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(getUserFriendlyError(error, "Join organization"));
     } finally {
       setLoading(false);
     }

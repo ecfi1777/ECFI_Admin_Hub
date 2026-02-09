@@ -23,7 +23,9 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("ErrorBoundary caught an error:", error, errorInfo);
+    if (import.meta.env.DEV) {
+      console.error("ErrorBoundary caught an error:", error, errorInfo);
+    }
     this.setState({ errorInfo });
   }
 
@@ -72,11 +74,13 @@ class ErrorBoundary extends Component<Props, State> {
               </p>
             </div>
 
-            <div className="bg-slate-700/50 rounded p-3 mb-6 max-h-32 overflow-auto">
-              <p className="text-red-400 text-xs font-mono break-words">
-                {this.state.error?.message || "Unknown error"}
-              </p>
-            </div>
+            {import.meta.env.DEV && this.state.error?.message && (
+              <div className="bg-slate-700/50 rounded p-3 mb-6 max-h-32 overflow-auto">
+                <p className="text-red-400 text-xs font-mono break-words">
+                  {this.state.error.message}
+                </p>
+              </div>
+            )}
 
             <div className="space-y-3">
               <button

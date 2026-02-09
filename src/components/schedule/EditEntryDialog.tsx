@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { getUserFriendlyError } from "@/lib/errorHandler";
 import { useEntryForm } from "./entry-form/useEntryForm";
 import { 
   GeneralTab, 
@@ -61,7 +62,7 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
       onOpenChange(false);
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      toast.error(getUserFriendlyError(error));
     },
   });
 
