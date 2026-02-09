@@ -6,7 +6,6 @@ import { useState, useEffect, useCallback, createContext, useContext, ReactNode,
 interface Organization {
   id: string;
   name: string;
-  invite_code: string;
 }
 
 interface OrganizationMembership {
@@ -64,8 +63,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
           created_at,
           organizations (
             id,
-            name,
-            invite_code
+            name
           )
         `)
         .eq("user_id", user.id)

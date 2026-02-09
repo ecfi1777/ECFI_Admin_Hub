@@ -12,7 +12,7 @@ import { useNavigate } from "react-router-dom";
 import { TeamMembersTable } from "./TeamMembersTable";
 import { MyOrganizations } from "./MyOrganizations";
 import { supabase } from "@/integrations/supabase/client";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -29,6 +29,21 @@ export function OrganizationSettings() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
 
+  // Fetch invite code via secure RPC — only for owners
+  const { data: inviteCode } = useQuery({
+    queryKey: ["invite-code", organization?.id],
+    queryFn: async () => {
+      if (!organization?.id) return null;
+      const { data, error } = await supabase.rpc("get_invite_code" as any, {
+        p_organization_id: organization.id,
+      });
+      if (error) throw error;
+      return data as string | null;
+    },
+    enabled: isOwner && !!organization?.id,
+    staleTime: 5 * 60 * 1000,
+  });
+
   const regenerateMutation = useMutation({
     mutationFn: async () => {
       if (!organization?.id) throw new Error("No organization");
@@ -42,6 +57,7 @@ export function OrganizationSettings() {
       return newCode;
     },
     onSuccess: async () => {
+      await queryClient.resetQueries({ queryKey: ["invite-code", organization?.id] });
       await queryClient.resetQueries({ queryKey: ["organizations"] });
       toast.success("The old invite code is no longer valid. Share the new code with team members.");
     },
@@ -104,9 +120,9 @@ export function OrganizationSettings() {
   });
 
   const handleCopyInviteCode = async () => {
-    if (!organization?.invite_code) return;
+    if (!inviteCode) return;
     try {
-      await navigator.clipboard.writeText(organization.invite_code);
+      await navigator.clipboard.writeText(inviteCode);
       setCopied(true);
       toast.success("Invite code copied to clipboard.");
       setTimeout(() => setCopied(false), 2000);
@@ -235,7 +251,7 @@ export function OrganizationSettings() {
               <div className="flex gap-2">
                 <Input
                   id="invite-code"
-                  value={organization.invite_code}
+                  value={inviteCode || ""}
                   readOnly
                   className="font-mono text-lg tracking-widest bg-muted"
                 />
