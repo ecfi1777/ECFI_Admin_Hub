@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useOrganization } from "@/hooks/useOrganization";
-import { useUserRole } from "@/hooks/useUserRole";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +18,7 @@ import { useAuth } from "@/hooks/useAuth";
 
 export function OrganizationSettings() {
   const { organization, allOrganizations, switchOrganization, isOwner, isLoading } = useOrganization();
-  const { canManage } = useUserRole();
+  
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -300,8 +300,8 @@ export function OrganizationSettings() {
         </Card>
       )}
 
-      {/* Team Members — owner and manager can see, but controls are role-gated inside */}
-      {canManage && (
+      {/* Team Members — owner only */}
+      {isOwner && (
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
