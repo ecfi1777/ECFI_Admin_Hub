@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
-import { useUserRole } from "@/hooks/useUserRole";
+
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import {
@@ -38,7 +38,7 @@ interface TeamMember {
 
 export function TeamMembersTable() {
   const { organization, isOwner, refetch: refetchOrg } = useOrganization();
-  const { isOwner: isRoleOwner } = useUserRole();
+  
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [memberToRemove, setMemberToRemove] = useState<TeamMember | null>(null);
@@ -196,7 +196,7 @@ export function TeamMembersTable() {
                   <TableCell>{member.display_name || "—"}</TableCell>
                   <TableCell>
                     {/* Owner can change roles of non-owners */}
-                    {isRoleOwner && !isMemberOwner && !isCurrentUser ? (
+                    {isOwner && !isMemberOwner && !isCurrentUser ? (
                       <Select
                         value={member.role}
                         onValueChange={(newRole) =>
