@@ -5,6 +5,7 @@ import { ReferenceDataTable } from "@/components/settings/ReferenceDataTable";
 import { CrewsManagement } from "@/components/settings/CrewsManagement";
 import { ChangePassword } from "@/components/settings/ChangePassword";
 import { OrganizationSettings } from "@/components/settings/OrganizationSettings";
+import { AuditLogViewer } from "@/components/settings/AuditLogViewer";
 import { useUserRole } from "@/hooks/useUserRole";
 
 const allTabs = [
@@ -19,14 +20,16 @@ const allTabs = [
   { value: "concrete_mixes", label: "Concrete Mixes", table: "concrete_mixes", minRole: "manager" as const },
   { value: "inspection_types", label: "Inspection Types", table: "inspection_types", minRole: "manager" as const },
   { value: "inspectors", label: "Inspectors", table: "inspectors", minRole: "manager" as const },
+  { value: "activity_log", label: "Activity Log", table: null, minRole: "owner" as const },
   { value: "account", label: "Account", table: null, minRole: "viewer" as const },
 ];
 
 export default function Settings() {
-  const { canManage } = useUserRole();
+  const { canManage, isOwner } = useUserRole();
   const tabs = allTabs.filter((tab) => {
     if (tab.minRole === "viewer") return true;
     if (tab.minRole === "manager") return canManage;
+    if (tab.minRole === "owner") return isOwner;
     return false;
   });
 
@@ -63,6 +66,8 @@ export default function Settings() {
                 <OrganizationSettings />
               ) : tab.value === "crews" ? (
                 <CrewsManagement />
+              ) : tab.value === "activity_log" ? (
+                <AuditLogViewer />
               ) : tab.value === "account" ? (
                 <ChangePassword />
               ) : (
