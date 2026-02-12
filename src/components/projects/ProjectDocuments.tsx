@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { getUserFriendlyError } from "@/lib/errorHandler";
-import { Upload, File, X, Loader2, ExternalLink, CheckCircle } from "lucide-react";
+import { File, X, Loader2, ExternalLink, CheckCircle } from "lucide-react";
+import { FileDropZone } from "@/components/ui/file-drop-zone";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useOrganization } from "@/hooks/useOrganization";
 
@@ -128,16 +129,7 @@ export function ProjectDocuments({ projectId, readOnly = false }: ProjectDocumen
     [uploadMutation]
   );
 
-  const handleDrop = useCallback(
-    (category: string, e: React.DragEvent) => {
-      e.preventDefault();
-      const file = e.dataTransfer.files[0];
-      if (file) {
-        handleFileSelect(category, file);
-      }
-    },
-    [handleFileSelect]
-  );
+
 
   const getDocumentUrl = async (filePath: string) => {
     const { data } = await supabase.storage
@@ -211,32 +203,10 @@ export function ProjectDocuments({ projectId, readOnly = false }: ProjectDocumen
               ))}
 
               {!readOnly && (
-                <div
-                  className="border-2 border-dashed border-slate-600 rounded-md p-3 text-center cursor-pointer hover:border-amber-500 transition-colors"
-                  onDrop={(e) => handleDrop(cat.id, e)}
-                  onDragOver={(e) => e.preventDefault()}
-                  onClick={() => {
-                    const input = document.createElement("input");
-                    input.type = "file";
-                    input.onchange = (e) => {
-                      const file = (e.target as HTMLInputElement).files?.[0];
-                      if (file) handleFileSelect(cat.id, file);
-                    };
-                    input.click();
-                  }}
-                >
-                  {isUploading ? (
-                    <div className="flex items-center justify-center gap-2 text-amber-500">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span className="text-sm">Uploading...</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center gap-2 text-slate-400">
-                      <Upload className="w-4 h-4" />
-                      <span className="text-sm">Drop file or click to upload</span>
-                    </div>
-                  )}
-                </div>
+                <FileDropZone
+                  onFileSelect={(file) => handleFileSelect(cat.id, file)}
+                  isUploading={isUploading}
+                />
               )}
             </div>
           );
