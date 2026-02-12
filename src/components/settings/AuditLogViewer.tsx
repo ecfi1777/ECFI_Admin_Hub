@@ -160,7 +160,7 @@ function buildRestorePayload(oldData: Record<string, unknown>) {
 function ExpandedDetail({ row, onRestored }: { row: AuditRow; onRestored: () => void }) {
   const oldData = row.old_data;
   const newData = row.new_data;
-  const canRestore = (row.action === "updated" || row.action === "deleted") && oldData !== null;
+  const canRestore = (row.action === "updated" || row.action === "deleted" || row.action === "restored") && oldData !== null;
   const [restoring, setRestoring] = useState(false);
 
   if (!oldData && !newData) {
@@ -179,8 +179,12 @@ function ExpandedDetail({ row, onRestored }: { row: AuditRow; onRestored: () => 
       const payload = buildRestorePayload(oldData);
 
       if (row.action === "deleted") {
-        const { error } = await supabase.from(tableName).upsert(payload as never);
-        if (error) throw error;
+        // Try update first (handles soft-deleted records that still exist), fall back to upsert (hard-deleted)
+        const { error: updateError } = await supabase.from(tableName).update(payload as never).eq("id", row.record_id);
+        if (updateError) {
+          const { error: upsertError } = await supabase.from(tableName).upsert(payload as never);
+          if (upsertError) throw upsertError;
+        }
       } else {
         const { error } = await supabase.from(tableName).update(payload as never).eq("id", row.record_id);
         if (error) throw error;
@@ -198,7 +202,7 @@ function ExpandedDetail({ row, onRestored }: { row: AuditRow; onRestored: () => 
 
   return (
     <div className="px-4 py-3 space-y-3 bg-muted/30 border-t border-border">
-      {row.action === "updated" && oldData && newData ? (
+      {(row.action === "updated" || row.action === "restored") && oldData && newData ? (
         <>
           <p className="text-sm font-medium text-foreground">Changes</p>
           {(() => {
