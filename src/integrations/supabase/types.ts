@@ -625,6 +625,7 @@ export type Database = {
           county: string | null
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           full_address: string | null
           google_drive_url: string | null
           id: string
@@ -646,6 +647,7 @@ export type Database = {
           county?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           full_address?: string | null
           google_drive_url?: string | null
           id?: string
@@ -667,6 +669,7 @@ export type Database = {
           county?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           full_address?: string | null
           google_drive_url?: string | null
           id?: string
