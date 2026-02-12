@@ -102,39 +102,41 @@ export function ProjectDetailsSheet({
 
   const softDeleteMutation = useMutation({
     mutationFn: async () => {
-      if (!projectId) return;
+      if (!projectId) throw new Error("No project ID");
       const { error } = await supabase
         .from("projects")
-        .update({ deleted_at: new Date().toISOString() } as any)
+        .update({ deleted_at: new Date().toISOString() })
         .eq("id", projectId);
-      if (error) throw error;
+      if (error) throw new Error(error.message);
     },
     onSuccess: () => {
       invalidateProjectQueries();
       onClose();
       toast.success("Project deleted. It can be restored within 90 days.");
     },
-    onError: () => {
-      toast.error("Failed to delete project");
+    onError: (err: Error) => {
+      toast.error(`Failed to delete project: ${err.message}`);
     },
   });
 
   const restoreMutation = useMutation({
     mutationFn: async () => {
-      if (!projectId) return;
-      const { error } = await supabase
+      if (!projectId) throw new Error("No project ID");
+      const { error, data, count } = await supabase
         .from("projects")
-        .update({ deleted_at: null } as any)
-        .eq("id", projectId);
-      if (error) throw error;
+        .update({ deleted_at: null })
+        .eq("id", projectId)
+        .select();
+      if (error) throw new Error(error.message);
+      if (!data || data.length === 0) throw new Error("No rows updated — you may not have permission");
     },
     onSuccess: () => {
       invalidateProjectQueries();
       onClose();
       toast.success("Project restored successfully.");
     },
-    onError: () => {
-      toast.error("Failed to restore project");
+    onError: (err: Error) => {
+      toast.error(`Failed to restore project: ${err.message}`);
     },
   });
 
