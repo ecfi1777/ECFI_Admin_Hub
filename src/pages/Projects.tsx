@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { format } from "date-fns";
+import { format, differenceInDays } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Input } from "@/components/ui/input";
@@ -54,6 +54,7 @@ interface Project {
   basement_type: string | null;
   google_drive_url: string | null;
   is_archived: boolean;
+  deleted_at: string | null;
   builders: { id: string; name: string; code: string | null } | null;
   locations: { id: string; name: string } | null;
   project_statuses: { id: string; name: string } | null;
@@ -65,13 +66,15 @@ export default function Projects() {
   const [filterLocation, setFilterLocation] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [includeArchived, setIncludeArchived] = useState(false);
+  const [showDeleted, setShowDeleted] = useState(false);
   
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const { organizationId } = useOrganization();
-  const { canManage } = useUserRole();
+  const { canManage, isOwner } = useUserRole();
   const queryClient = useQueryClient();
 
+  // Active projects query (deleted_at IS NULL enforced by RLS)
   const { data: projects = [], isLoading } = useQuery({
     queryKey: ["projects", organizationId],
     queryFn: async () => {
@@ -85,11 +88,34 @@ export default function Projects() {
           project_statuses(id, name)
         `)
         .eq("organization_id", organizationId)
+        .is("deleted_at" as any, null)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as Project[];
     },
     enabled: !!organizationId,
+  });
+
+  // Deleted projects query (only for owners, deleted_at IS NOT NULL)
+  const { data: deletedProjects = [], isLoading: isLoadingDeleted } = useQuery({
+    queryKey: ["deleted-projects", organizationId],
+    queryFn: async () => {
+      if (!organizationId) return [];
+      const { data, error } = await supabase
+        .from("projects")
+        .select(`
+          *,
+          builders(id, name, code),
+          locations(id, name),
+          project_statuses(id, name)
+        `)
+        .eq("organization_id", organizationId)
+        .not("deleted_at" as any, "is", null)
+        .order("deleted_at" as any, { ascending: false });
+      if (error) throw error;
+      return data as Project[];
+    },
+    enabled: !!organizationId && isOwner && showDeleted,
   });
 
   // Fetch all documents to show attachment indicator and list
@@ -168,9 +194,12 @@ export default function Projects() {
     },
   });
 
-  const filteredProjects = projects.filter((project) => {
-    // Hide archived unless toggle is on
-    if (!includeArchived && (project as any).is_archived) {
+  // Choose which list to display
+  const displayProjects = showDeleted ? deletedProjects : projects;
+
+  const filteredProjects = displayProjects.filter((project) => {
+    // Hide archived unless toggle is on (only relevant for active projects)
+    if (!showDeleted && !includeArchived && (project as any).is_archived) {
       return false;
     }
 
@@ -194,15 +223,28 @@ export default function Projects() {
     setIsDetailsOpen(true);
   };
 
+  const getDaysRemaining = (deletedAt: string) => {
+    const deletedDate = new Date(deletedAt + "T00:00:00");
+    const purgeDate = new Date(deletedDate);
+    purgeDate.setDate(purgeDate.getDate() + 90);
+    return Math.max(0, differenceInDays(purgeDate, new Date()));
+  };
+
   return (
     <AppLayout>
       <div className="p-3 md:p-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Projects</h1>
-            <p className="text-muted-foreground">Manage all your jobs and projects</p>
+            <h1 className="text-2xl font-bold text-foreground">
+              {showDeleted ? "Deleted Projects" : "Projects"}
+            </h1>
+            <p className="text-muted-foreground">
+              {showDeleted
+                ? "Projects pending permanent deletion"
+                : "Manage all your jobs and projects"}
+            </p>
           </div>
-          {canManage && (
+          {canManage && !showDeleted && (
             <AddProjectDialog
               builders={builders}
               locations={locations}
@@ -226,49 +268,65 @@ export default function Projects() {
                   />
                 </div>
               </div>
-              <Select value={filterBuilder} onValueChange={setFilterBuilder}>
-                <SelectTrigger className="w-full md:w-40">
-                  <SelectValue placeholder="All Builders" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Builders</SelectItem>
-                  {builders.map((b) => (
-                    <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={filterLocation} onValueChange={setFilterLocation}>
-                <SelectTrigger className="w-full md:w-44">
-                  <SelectValue placeholder="All Locations" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Locations</SelectItem>
-                  {locations.map((l) => (
-                    <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="w-full md:w-48">
-                  <SelectValue placeholder="All Statuses" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  {statuses.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="include-archived"
-                  checked={includeArchived}
-                  onCheckedChange={(checked) => setIncludeArchived(checked === true)}
-                />
-                <Label htmlFor="include-archived" className="text-sm text-muted-foreground cursor-pointer">
-                  Include Archived
-                </Label>
-              </div>
+              {!showDeleted && (
+                <>
+                  <Select value={filterBuilder} onValueChange={setFilterBuilder}>
+                    <SelectTrigger className="w-full md:w-40">
+                      <SelectValue placeholder="All Builders" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Builders</SelectItem>
+                      {builders.map((b) => (
+                        <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={filterLocation} onValueChange={setFilterLocation}>
+                    <SelectTrigger className="w-full md:w-44">
+                      <SelectValue placeholder="All Locations" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Locations</SelectItem>
+                      {locations.map((l) => (
+                        <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={filterStatus} onValueChange={setFilterStatus}>
+                    <SelectTrigger className="w-full md:w-48">
+                      <SelectValue placeholder="All Statuses" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Statuses</SelectItem>
+                      {statuses.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="include-archived"
+                      checked={includeArchived}
+                      onCheckedChange={(checked) => setIncludeArchived(checked === true)}
+                    />
+                    <Label htmlFor="include-archived" className="text-sm text-muted-foreground cursor-pointer">
+                      Include Archived
+                    </Label>
+                  </div>
+                </>
+              )}
+              {isOwner && (
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="show-deleted"
+                    checked={showDeleted}
+                    onCheckedChange={(checked) => setShowDeleted(checked === true)}
+                  />
+                  <Label htmlFor="show-deleted" className="text-sm text-destructive cursor-pointer">
+                    Show Deleted
+                  </Label>
+                </div>
+              )}
               {hasFiltersApplied && (
                 <Button
                   variant="ghost"
@@ -287,10 +345,12 @@ export default function Projects() {
         {/* Projects Table */}
         <Card>
           <CardContent className="p-0">
-            {isLoading ? (
+            {(showDeleted ? isLoadingDeleted : isLoading) ? (
               <div className="text-muted-foreground text-center py-12">Loading projects...</div>
             ) : filteredProjects.length === 0 ? (
-              <div className="text-muted-foreground text-center py-12">No projects found</div>
+              <div className="text-muted-foreground text-center py-12">
+                {showDeleted ? "No deleted projects" : "No projects found"}
+              </div>
             ) : (
               <Table>
                 <TableHeader>
@@ -299,36 +359,50 @@ export default function Projects() {
                     <TableHead className="text-muted-foreground">Location</TableHead>
                     <TableHead className="text-muted-foreground">Lot #</TableHead>
                     <TableHead className="text-muted-foreground">Status</TableHead>
-                     <TableHead className="text-muted-foreground">Created</TableHead>
-                     <TableHead className="text-muted-foreground w-16 text-center">Docs</TableHead>
-                     {canManage && <TableHead className="text-muted-foreground w-12"></TableHead>}
+                    <TableHead className="text-muted-foreground">
+                      {showDeleted ? "Deleted" : "Created"}
+                    </TableHead>
+                    {showDeleted && (
+                      <TableHead className="text-muted-foreground">Auto-Purge</TableHead>
+                    )}
+                    {!showDeleted && (
+                      <TableHead className="text-muted-foreground w-16 text-center">Docs</TableHead>
+                    )}
+                    {canManage && !showDeleted && <TableHead className="text-muted-foreground w-12"></TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredProjects.map((project) => (
                     <TableRow
                       key={project.id}
-                      className="cursor-pointer"
+                      className={`cursor-pointer ${showDeleted ? "opacity-60" : ""}`}
                       onClick={() => handleRowClick(project.id)}
                     >
-                      <TableCell className="text-foreground font-medium">
+                      <TableCell className={`font-medium ${showDeleted ? "text-muted-foreground" : "text-foreground"}`}>
                         {project.builders?.code || project.builders?.name || "-"}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {project.locations?.name || "-"}
                       </TableCell>
-                      <TableCell className="text-primary font-medium">
+                      <TableCell className={`font-medium ${showDeleted ? "text-muted-foreground" : "text-primary"}`}>
                         {project.lot_number}
                       </TableCell>
                        <TableCell>
                          <div className="flex items-center gap-1.5">
-                           <Badge
-                             variant="outline"
-                             className={getStatusColor(project.project_statuses?.name)}
-                           >
-                             {project.project_statuses?.name || "No Status"}
-                           </Badge>
-                           {(project as any).is_archived && (
+                           {showDeleted && (
+                             <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/30 text-xs">
+                               Deleted
+                             </Badge>
+                           )}
+                           {!showDeleted && (
+                             <Badge
+                               variant="outline"
+                               className={getStatusColor(project.project_statuses?.name)}
+                             >
+                               {project.project_statuses?.name || "No Status"}
+                             </Badge>
+                           )}
+                           {!showDeleted && (project as any).is_archived && (
                              <Badge variant="outline" className="bg-muted text-muted-foreground border-border text-xs">
                                Archived
                              </Badge>
@@ -336,71 +410,84 @@ export default function Projects() {
                          </div>
                        </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {format(new Date(project.created_at), "M/d/yyyy")}
+                        {showDeleted && project.deleted_at
+                          ? format(new Date(project.deleted_at), "M/d/yyyy")
+                          : format(new Date(project.created_at), "M/d/yyyy")}
                       </TableCell>
-                      <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
-                        {documentsByProject[project.id]?.length > 0 && (
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0"
+                      {showDeleted && (
+                        <TableCell className="text-muted-foreground text-sm">
+                          {project.deleted_at && (
+                            <span>
+                              {getDaysRemaining(project.deleted_at)} days remaining
+                            </span>
+                          )}
+                        </TableCell>
+                      )}
+                      {!showDeleted && (
+                        <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                          {documentsByProject[project.id]?.length > 0 && (
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0"
+                                >
+                                  <Paperclip className="w-4 h-4 text-primary" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent
+                                className="w-64 p-3"
+                                align="end"
                               >
-                                <Paperclip className="w-4 h-4 text-primary" />
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent
-                              className="w-64 p-3"
-                              align="end"
-                            >
-                              <div className="space-y-2">
-                                <h4 className="font-medium text-foreground text-sm">
-                                  Attached Documents ({documentsByProject[project.id].length})
-                                </h4>
-                                <div className="space-y-1 max-h-48 overflow-y-auto">
-                                  {documentsByProject[project.id].map((doc) => (
-                                    <button
-                                      key={doc.id}
-                                      onClick={() => openDocument(doc.file_path)}
-                                      className="flex items-center gap-2 text-sm text-muted-foreground py-1 w-full hover:text-primary transition-colors text-left group"
-                                    >
-                                      <FileText className="w-3 h-3 flex-shrink-0 group-hover:text-primary" />
-                                      <span className="truncate flex-1">{doc.file_name}</span>
-                                      <ExternalLink className="w-3 h-3 flex-shrink-0 opacity-0 group-hover:opacity-100" />
-                                    </button>
-                                  ))}
+                                <div className="space-y-2">
+                                  <h4 className="font-medium text-foreground text-sm">
+                                    Attached Documents ({documentsByProject[project.id].length})
+                                  </h4>
+                                  <div className="space-y-1 max-h-48 overflow-y-auto">
+                                    {documentsByProject[project.id].map((doc) => (
+                                      <button
+                                        key={doc.id}
+                                        onClick={() => openDocument(doc.file_path)}
+                                        className="flex items-center gap-2 text-sm text-muted-foreground py-1 w-full hover:text-primary transition-colors text-left group"
+                                      >
+                                        <FileText className="w-3 h-3 flex-shrink-0 group-hover:text-primary" />
+                                        <span className="truncate flex-1">{doc.file_name}</span>
+                                        <ExternalLink className="w-3 h-3 flex-shrink-0 opacity-0 group-hover:opacity-100" />
+                                      </button>
+                                    ))}
+                                  </div>
                                 </div>
-                              </div>
-                            </PopoverContent>
-                          </Popover>
-                        )}
-                       </TableCell>
-                       {canManage && (
-                         <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
-                           {(project as any).is_archived ? (
-                             <Button
-                               variant="ghost"
-                               size="sm"
-                               className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-                               onClick={() => archiveMutation.mutate({ projectId: project.id, archive: false })}
-                               title="Unarchive project"
-                             >
-                               <ArchiveRestore className="w-4 h-4" />
-                             </Button>
-                           ) : (
-                             <Button
-                               variant="ghost"
-                               size="sm"
-                               className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-                               onClick={() => archiveMutation.mutate({ projectId: project.id, archive: true })}
-                               title="Archive project"
-                             >
-                               <Archive className="w-4 h-4" />
-                             </Button>
-                           )}
-                         </TableCell>
-                       )}
+                              </PopoverContent>
+                            </Popover>
+                          )}
+                        </TableCell>
+                      )}
+                      {canManage && !showDeleted && (
+                        <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                          {(project as any).is_archived ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                              onClick={() => archiveMutation.mutate({ projectId: project.id, archive: false })}
+                              title="Unarchive project"
+                            >
+                              <ArchiveRestore className="w-4 h-4" />
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                              onClick={() => archiveMutation.mutate({ projectId: project.id, archive: true })}
+                              title="Archive project"
+                            >
+                              <Archive className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </TableCell>
+                      )}
                      </TableRow>
                   ))}
                 </TableBody>

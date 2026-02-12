@@ -17,10 +17,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Pencil, ExternalLink, MapPin, FileText, Building, Home, Download, Archive, ArchiveRestore } from "lucide-react";
+import { Pencil, ExternalLink, MapPin, FileText, Building, Home, Download, Archive, ArchiveRestore, Trash2, RotateCcw } from "lucide-react";
 import { ProjectScheduleHistory } from "./ProjectScheduleHistory";
 import { ProjectDocuments } from "./ProjectDocuments";
 import { EditProjectDialog } from "./EditProjectDialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { generateProjectPdf } from "@/lib/generateProjectPdf";
 import { toast } from "sonner";
 import { getStatusColor } from "@/lib/statusColors";
@@ -42,9 +43,11 @@ export function ProjectDetailsSheet({
   onClose,
 }: ProjectDetailsSheetProps) {
   const [editProject, setEditProject] = useState<any>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
 
   const { organizationId } = useOrganization();
-  const { canManage } = useUserRole();
+  const { canManage, isOwner } = useUserRole();
   const queryClient = useQueryClient();
   const { data: statuses = [] } = useProjectStatuses();
   const { data: builders = [] } = useBuilders();
@@ -87,6 +90,51 @@ export function ProjectDetailsSheet({
     },
     onError: () => {
       toast.error("Failed to update project");
+    },
+  });
+
+  const invalidateProjectQueries = () => {
+    queryClient.invalidateQueries({ queryKey: ["projects", organizationId] });
+    queryClient.invalidateQueries({ queryKey: ["deleted-projects", organizationId] });
+    queryClient.invalidateQueries({ queryKey: ["kanban-projects", organizationId] });
+    queryClient.invalidateQueries({ queryKey: ["project", projectId] });
+  };
+
+  const softDeleteMutation = useMutation({
+    mutationFn: async () => {
+      if (!projectId) return;
+      const { error } = await supabase
+        .from("projects")
+        .update({ deleted_at: new Date().toISOString() } as any)
+        .eq("id", projectId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      invalidateProjectQueries();
+      onClose();
+      toast.success("Project deleted. It can be restored within 90 days.");
+    },
+    onError: () => {
+      toast.error("Failed to delete project");
+    },
+  });
+
+  const restoreMutation = useMutation({
+    mutationFn: async () => {
+      if (!projectId) return;
+      const { error } = await supabase
+        .from("projects")
+        .update({ deleted_at: null } as any)
+        .eq("id", projectId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      invalidateProjectQueries();
+      onClose();
+      toast.success("Project restored successfully.");
+    },
+    onError: () => {
+      toast.error("Failed to restore project");
     },
   });
 
@@ -172,6 +220,8 @@ export function ProjectDetailsSheet({
     }
   };
 
+  const isDeleted = !!(project as any)?.deleted_at;
+
   if (!projectId && !editProject) return null;
 
   return (
@@ -187,7 +237,7 @@ export function ProjectDetailsSheet({
                   <div>
                     <SheetTitle className="text-white text-xl flex items-center gap-2">
                       <span className="text-amber-500">{project.lot_number}</span>
-                      {canManage && (
+                      {canManage && !isDeleted && (
                         <>
                           <Button
                             variant="ghost"
@@ -241,6 +291,11 @@ export function ProjectDetailsSheet({
                   </div>
                   <div className="flex flex-col items-end gap-2">
                     <div className="flex items-center gap-1.5">
+                      {isDeleted && (
+                        <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/30 text-xs">
+                          Deleted
+                        </Badge>
+                      )}
                       {(project as any).is_archived && (
                         <Badge variant="outline" className="bg-muted text-muted-foreground border-border text-xs">
                           Archived
@@ -255,7 +310,7 @@ export function ProjectDetailsSheet({
                         </Badge>
                       )}
                     </div>
-                    {canManage && (
+                    {canManage && !isDeleted && (
                       <Select
                         value={project.status_id}
                         onValueChange={handleStatusChange}
@@ -333,6 +388,33 @@ export function ProjectDetailsSheet({
                     {project.notes}
                   </div>
                 )}
+
+                {/* Soft-delete / Restore buttons for owners */}
+                {isOwner && (
+                  <div className="border-t border-slate-700 pt-3">
+                    {isDeleted ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowRestoreConfirm(true)}
+                        className="border-emerald-600 text-emerald-400 hover:bg-emerald-600/10 hover:text-emerald-300"
+                      >
+                        <RotateCcw className="w-4 h-4 mr-2" />
+                        Restore Project
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowDeleteConfirm(true)}
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Delete Project
+                      </Button>
+                    )}
+                  </div>
+                )}
               </SheetHeader>
 
               <Tabs defaultValue="history" className="mt-6">
@@ -351,10 +433,10 @@ export function ProjectDetailsSheet({
                   </TabsTrigger>
                 </TabsList>
                 <TabsContent value="history" className="mt-4">
-                  <ProjectScheduleHistory projectId={projectId} readOnly={!canManage} />
+                  <ProjectScheduleHistory projectId={projectId} readOnly={!canManage || isDeleted} />
                 </TabsContent>
                 <TabsContent value="documents" className="mt-4">
-                  <ProjectDocuments projectId={projectId} readOnly={!canManage} />
+                  <ProjectDocuments projectId={projectId} readOnly={!canManage || isDeleted} />
                 </TabsContent>
               </Tabs>
             </>
@@ -363,6 +445,40 @@ export function ProjectDetailsSheet({
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Delete confirmation */}
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        onOpenChange={setShowDeleteConfirm}
+        title="Delete Project"
+        description={
+          <>
+            This will delete <strong>{project?.lot_number}</strong> and hide it from all users. The project and all its schedule entries and documents will be permanently removed after 90 days. You can restore it from the Projects page before then.
+          </>
+        }
+        confirmLabel="Delete"
+        variant="destructive"
+        onConfirm={() => {
+          setShowDeleteConfirm(false);
+          softDeleteMutation.mutate();
+        }}
+        isLoading={softDeleteMutation.isPending}
+      />
+
+      {/* Restore confirmation */}
+      <ConfirmDialog
+        open={showRestoreConfirm}
+        onOpenChange={setShowRestoreConfirm}
+        title="Restore Project"
+        description="Restore this project? It will become visible to all users again."
+        confirmLabel="Restore"
+        variant="default"
+        onConfirm={() => {
+          setShowRestoreConfirm(false);
+          restoreMutation.mutate();
+        }}
+        isLoading={restoreMutation.isPending}
+      />
 
       {!!editProject && (
         <EditProjectDialog
