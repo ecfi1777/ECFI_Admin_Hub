@@ -5,7 +5,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChevronLeft, ChevronRight, Plus, Calendar, FileText } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, FileText } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import { ScheduleTable } from "./ScheduleTable";
 import { AddEntryDialog } from "./AddEntryDialog";
 import { Textarea } from "@/components/ui/textarea";
@@ -207,12 +210,28 @@ export function DailySchedule() {
             >
               <ChevronLeft className="w-4 h-4" />
             </Button>
-            <div className="flex items-center gap-2 px-3">
-              <Calendar className="w-4 h-4 text-amber-500" />
-              <span className="text-foreground font-medium min-w-[140px] text-center">
-                {format(selectedDate, "EEE, MMM d, yyyy")}
-              </span>
-            </div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="flex items-center gap-2 px-3 py-1 rounded-md hover:bg-accent/10 transition-colors cursor-pointer"
+                >
+                  <CalendarIcon className="w-4 h-4 text-amber-500" />
+                  <span className="text-foreground font-medium min-w-[140px] text-center">
+                    {format(selectedDate, "EEE, MMM d, yyyy")}
+                  </span>
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 bg-popover border-border" align="center">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={(date) => date && setSelectedDate(date)}
+                  defaultMonth={selectedDate}
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
             <Button
               variant="ghost"
               size="icon"
