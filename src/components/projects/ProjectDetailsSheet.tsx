@@ -272,6 +272,17 @@ export function ProjectDetailsSheet({
                               <Archive className="w-4 h-4" />
                             )}
                           </Button>
+                          {isOwner && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setShowDeleteConfirm(true)}
+                              className="text-slate-400 hover:text-white h-8 w-8 p-0"
+                              title="Delete project"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          )}
                         </>
                       )}
                     </SheetTitle>
@@ -389,30 +400,18 @@ export function ProjectDetailsSheet({
                   </div>
                 )}
 
-                {/* Soft-delete / Restore buttons for owners */}
-                {isOwner && (
+                {/* Restore button for owners viewing deleted projects */}
+                {isOwner && isDeleted && (
                   <div className="border-t border-slate-700 pt-3">
-                    {isDeleted ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowRestoreConfirm(true)}
-                        className="border-emerald-600 text-emerald-400 hover:bg-emerald-600/10 hover:text-emerald-300"
-                      >
-                        <RotateCcw className="w-4 h-4 mr-2" />
-                        Restore Project
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setShowDeleteConfirm(true)}
-                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                      >
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Delete Project
-                      </Button>
-                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowRestoreConfirm(true)}
+                      className="border-emerald-600 text-emerald-400 hover:bg-emerald-600/10 hover:text-emerald-300"
+                    >
+                      <RotateCcw className="w-4 h-4 mr-2" />
+                      Restore Project
+                    </Button>
                   </div>
                 )}
               </SheetHeader>
@@ -453,7 +452,7 @@ export function ProjectDetailsSheet({
         title="Delete Project"
         description={
           <>
-            This will delete <strong>{project?.lot_number}</strong> and hide it from all users. The project and all its schedule entries and documents will be permanently removed after 90 days. You can restore it from the Projects page before then.
+            This will delete <strong>{[project?.builders?.name, project?.locations?.name, project?.lot_number].filter(Boolean).join(" - ")}</strong> and hide it from all users. The project and all its schedule entries and documents will be permanently removed after 90 days. You can restore it from the Projects page before then.
           </>
         }
         confirmLabel="Delete"
