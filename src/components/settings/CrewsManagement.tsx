@@ -16,6 +16,8 @@ import {
   ChevronRight,
   Users,
   Trash2,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
@@ -249,6 +251,7 @@ export function CrewsManagement() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [orderedCrews, setOrderedCrews] = useState<Crew[]>([]);
   const [hasOrderChanges, setHasOrderChanges] = useState(false);
+  const [showInactive, setShowInactive] = useState(false);
 
   // Crew dialog state
   const [crewDialogOpen, setCrewDialogOpen] = useState(false);
@@ -558,7 +561,22 @@ export function CrewsManagement() {
             Drag to reorder crews. Click a row to manage crew members.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          {orderedCrews.some((c) => !c.is_active) && (
+            <Button
+              variant={showInactive ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => setShowInactive(!showInactive)}
+              className="text-muted-foreground"
+            >
+              {showInactive ? (
+                <EyeOff className="w-4 h-4 mr-2" />
+              ) : (
+                <Eye className="w-4 h-4 mr-2" />
+              )}
+              {showInactive ? "Hide" : "Show"} Inactive ({orderedCrews.filter((c) => !c.is_active).length})
+            </Button>
+          )}
           {hasOrderChanges && (
             <Button
               onClick={handleSaveOrder}
@@ -594,10 +612,10 @@ export function CrewsManagement() {
           onDragEnd={handleDragEnd}
         >
           <SortableContext
-            items={orderedCrews.map((c) => c.id)}
+            items={(showInactive ? orderedCrews : orderedCrews.filter((c) => c.is_active)).map((c) => c.id)}
             strategy={verticalListSortingStrategy}
           >
-            {orderedCrews.map((crew, index) => (
+            {(showInactive ? orderedCrews : orderedCrews.filter((c) => c.is_active)).map((crew, index) => (
               <SortableCrewRow
                 key={crew.id}
                 crew={crew}

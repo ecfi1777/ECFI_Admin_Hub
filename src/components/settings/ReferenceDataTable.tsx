@@ -13,7 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Save } from "lucide-react";
+import { Plus, Save, Eye, EyeOff } from "lucide-react";
 import { useOrganization } from "@/hooks/useOrganization";
 import {
   DndContext,
@@ -65,6 +65,7 @@ export function ReferenceDataTable({ tableName, displayName, hasCode = false }: 
   const [code, setCode] = useState("");
   const [orderedItems, setOrderedItems] = useState<ReferenceItem[]>([]);
   const [hasOrderChanges, setHasOrderChanges] = useState(false);
+  const [showInactive, setShowInactive] = useState(false);
 
   const queryClient = useQueryClient();
   const { organizationId } = useOrganization();
@@ -220,11 +221,31 @@ export function ReferenceDataTable({ tableName, displayName, hasCode = false }: 
     saveOrderMutation.mutate(updates);
   };
 
+  const inactiveCount = orderedItems.filter((i) => !i.is_active).length;
+  const displayItems = showInactive
+    ? orderedItems
+    : orderedItems.filter((i) => i.is_active);
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-foreground">{displayName}</CardTitle>
         <div className="flex items-center gap-2">
+          {inactiveCount > 0 && (
+            <Button
+              variant={showInactive ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => setShowInactive(!showInactive)}
+              className="text-muted-foreground"
+            >
+              {showInactive ? (
+                <EyeOff className="w-4 h-4 mr-2" />
+              ) : (
+                <Eye className="w-4 h-4 mr-2" />
+              )}
+              {showInactive ? "Hide" : "Show"} Inactive ({inactiveCount})
+            </Button>
+          )}
           {hasOrderChanges && (
             <Button
               onClick={handleSaveOrder}
@@ -247,8 +268,10 @@ export function ReferenceDataTable({ tableName, displayName, hasCode = false }: 
       <CardContent className="p-0">
         {isLoading ? (
           <div className="text-muted-foreground text-center py-8">Loading...</div>
-        ) : orderedItems.length === 0 ? (
-          <div className="text-muted-foreground text-center py-8">No items yet</div>
+        ) : displayItems.length === 0 ? (
+          <div className="text-muted-foreground text-center py-8">
+            {orderedItems.length > 0 ? "All items are inactive" : "No items yet"}
+          </div>
         ) : (
           <DndContext
             sensors={sensors}
@@ -256,10 +279,10 @@ export function ReferenceDataTable({ tableName, displayName, hasCode = false }: 
             onDragEnd={handleDragEnd}
           >
             <SortableContext
-              items={orderedItems.map((i) => i.id)}
+              items={displayItems.map((i) => i.id)}
               strategy={verticalListSortingStrategy}
             >
-              {orderedItems.map((item, index) => (
+              {displayItems.map((item, index) => (
                 <SortableReferenceRow
                   key={item.id}
                   item={item}
