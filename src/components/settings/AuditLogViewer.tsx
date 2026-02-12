@@ -192,8 +192,9 @@ function ExpandedDetail({ row, onRestored }: { row: AuditRow; onRestored: () => 
 
       toast.success("Record restored successfully");
       onRestored();
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Unknown error";
+    } catch (err: any) {
+      const message = err?.message || (typeof err === "string" ? err : "Unknown error");
+      if (import.meta.env.DEV) console.error("Restore failed:", err);
       toast.error(`Restore failed: ${message}`);
     } finally {
       setRestoring(false);
