@@ -19,6 +19,8 @@ export type Database = {
           action: string
           created_at: string | null
           id: string
+          new_data: Json | null
+          old_data: Json | null
           organization_id: string
           record_id: string
           record_label: string | null
@@ -30,6 +32,8 @@ export type Database = {
           action: string
           created_at?: string | null
           id?: string
+          new_data?: Json | null
+          old_data?: Json | null
           organization_id: string
           record_id: string
           record_label?: string | null
@@ -41,6 +45,8 @@ export type Database = {
           action?: string
           created_at?: string | null
           id?: string
+          new_data?: Json | null
+          old_data?: Json | null
           organization_id?: string
           record_id?: string
           record_label?: string | null
