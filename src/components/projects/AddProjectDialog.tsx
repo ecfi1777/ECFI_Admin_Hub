@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -11,9 +11,20 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { getUserFriendlyError } from "@/lib/errorHandler";
-import { Plus } from "lucide-react";
+import { Plus, File, X, CheckCircle } from "lucide-react";
 import { ProjectFormFields } from "./ProjectFormFields";
 import { useOrganization } from "@/hooks/useOrganization";
+import { FileDropZone } from "@/components/ui/file-drop-zone";
+
+const DOCUMENT_CATEGORIES = [
+  { id: "permit_copy", label: "Permit Copy" },
+  { id: "folder_copy_before", label: "Folder Copy - Before" },
+  { id: "folder_copy_complete", label: "Folder Copy - Complete" },
+  { id: "selection_sheet", label: "Selection Sheet" },
+  { id: "purchase_order", label: "Purchase Order" },
+  { id: "materials_list", label: "Materials List" },
+  { id: "additional_documents", label: "Additional Project Documents" },
+];
 
 interface Builder {
   id: string;
@@ -31,6 +42,11 @@ interface Status {
   name: string;
 }
 
+interface StagedFile {
+  category: string;
+  file: File;
+}
+
 interface AddProjectDialogProps {
   builders: Builder[];
   locations: Location[];
@@ -39,7 +55,7 @@ interface AddProjectDialogProps {
 
 export function AddProjectDialog({ builders, locations, statuses }: AddProjectDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
-  // Default status to the first status (Upcoming / display_order 1)
+  const [activeTab, setActiveTab] = useState<"details" | "documents">("details");
   const defaultStatusId = statuses.length > 0 ? statuses[0].id : "";
   const [formData, setFormData] = useState({
     builderId: "",
@@ -55,48 +71,95 @@ export function AddProjectDialog({ builders, locations, statuses }: AddProjectDi
     basementType: "",
     googleDriveUrl: "",
   });
+  const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([]);
 
   const queryClient = useQueryClient();
   const { organizationId } = useOrganization();
 
+  const resetForm = () => {
+    setFormData({
+      builderId: "",
+      locationId: "",
+      lotNumber: "",
+      statusId: defaultStatusId,
+      notes: "",
+      fullAddress: "",
+      county: "",
+      permitNumber: "",
+      authorizationNumbers: "",
+      wallHeight: "",
+      basementType: "",
+      googleDriveUrl: "",
+    });
+    setStagedFiles([]);
+    setActiveTab("details");
+  };
+
+  const uploadStagedFiles = async (projectId: string) => {
+    if (!organizationId || stagedFiles.length === 0) return;
+
+    const errors: string[] = [];
+    for (const { file, category } of stagedFiles) {
+      try {
+        const fileExt = file.name.split(".").pop();
+        const filePath = `${projectId}/${category}/${Date.now()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("project-documents")
+          .upload(filePath, file);
+        if (uploadError) throw uploadError;
+
+        const { error: dbError } = await supabase.from("project_documents").insert({
+          organization_id: organizationId,
+          project_id: projectId,
+          category,
+          file_name: file.name,
+          file_path: filePath,
+          file_size: file.size,
+          content_type: file.type,
+        });
+        if (dbError) throw dbError;
+      } catch (err) {
+        errors.push(file.name);
+      }
+    }
+    if (errors.length > 0) {
+      toast.error(`Failed to upload: ${errors.join(", ")}. You can add them later via edit.`);
+    }
+  };
+
   const createMutation = useMutation({
     mutationFn: async () => {
       if (!organizationId) throw new Error("No organization found");
-      const { error } = await supabase.from("projects").insert({
-        organization_id: organizationId,
-        builder_id: formData.builderId || null,
-        location_id: formData.locationId || null,
-        lot_number: formData.lotNumber,
-        status_id: formData.statusId,
-        notes: formData.notes || null,
-        full_address: formData.fullAddress || null,
-        county: formData.county || null,
-        permit_number: formData.permitNumber || null,
-        authorization_numbers: formData.authorizationNumbers || null,
-        wall_height: formData.wallHeight || null,
-        basement_type: formData.basementType || null,
-        google_drive_url: formData.googleDriveUrl || null,
-      });
+      const { data, error } = await supabase
+        .from("projects")
+        .insert({
+          organization_id: organizationId,
+          builder_id: formData.builderId || null,
+          location_id: formData.locationId || null,
+          lot_number: formData.lotNumber,
+          status_id: formData.statusId,
+          notes: formData.notes || null,
+          full_address: formData.fullAddress || null,
+          county: formData.county || null,
+          permit_number: formData.permitNumber || null,
+          authorization_numbers: formData.authorizationNumbers || null,
+          wall_height: formData.wallHeight || null,
+          basement_type: formData.basementType || null,
+          google_drive_url: formData.googleDriveUrl || null,
+        })
+        .select("id")
+        .single();
       if (error) throw error;
+      return data.id as string;
     },
-    onSuccess: () => {
+    onSuccess: async (projectId) => {
+      await uploadStagedFiles(projectId);
       queryClient.invalidateQueries({ queryKey: ["projects"] });
+      queryClient.invalidateQueries({ queryKey: ["project-documents-all"] });
       toast.success("Project created");
       setIsOpen(false);
-      setFormData({
-        builderId: "",
-        locationId: "",
-        lotNumber: "",
-        statusId: defaultStatusId,
-        notes: "",
-        fullAddress: "",
-        county: "",
-        permitNumber: "",
-        authorizationNumbers: "",
-        wallHeight: "",
-        basementType: "",
-        googleDriveUrl: "",
-      });
+      resetForm();
     },
     onError: (error: Error) => {
       toast.error(getUserFriendlyError(error));
@@ -107,8 +170,23 @@ export function AddProjectDialog({ builders, locations, statuses }: AddProjectDi
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleStageFile = useCallback((category: string, file: File) => {
+    setStagedFiles((prev) => {
+      // Replace existing file for this category, or add
+      const filtered = prev.filter((f) => f.category !== category);
+      return [...filtered, { category, file }];
+    });
+  }, []);
+
+  const handleRemoveStagedFile = useCallback((category: string) => {
+    setStagedFiles((prev) => prev.filter((f) => f.category !== category));
+  }, []);
+
+  const getStagedFileForCategory = (category: string) =>
+    stagedFiles.find((f) => f.category === category);
+
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={(open) => { setIsOpen(open); if (!open) resetForm(); }}>
       <DialogTrigger asChild>
         <Button className="bg-amber-500 hover:bg-amber-600 text-slate-900">
           <Plus className="w-4 h-4 mr-2" />
@@ -119,6 +197,38 @@ export function AddProjectDialog({ builders, locations, statuses }: AddProjectDi
         <DialogHeader>
           <DialogTitle className="text-white">Add New Project</DialogTitle>
         </DialogHeader>
+
+        {/* Tabs */}
+        <div className="flex border-b border-slate-700 overflow-x-auto whitespace-nowrap">
+          <button
+            type="button"
+            onClick={() => setActiveTab("details")}
+            className={`px-4 py-2 text-sm font-medium transition-colors ${
+              activeTab === "details"
+                ? "text-amber-500 border-b-2 border-amber-500"
+                : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            Details
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("documents")}
+            className={`px-4 py-2 text-sm font-medium transition-colors ${
+              activeTab === "documents"
+                ? "text-amber-500 border-b-2 border-amber-500"
+                : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            Documents
+            {stagedFiles.length > 0 && (
+              <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs rounded-full bg-amber-500 text-slate-900">
+                {stagedFiles.length}
+              </span>
+            )}
+          </button>
+        </div>
+
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -126,13 +236,56 @@ export function AddProjectDialog({ builders, locations, statuses }: AddProjectDi
           }}
           className="space-y-4"
         >
-          <ProjectFormFields
-            formData={formData}
-            onChange={handleChange}
-            builders={builders}
-            locations={locations}
-            statuses={statuses}
-          />
+          {/* Details Tab */}
+          {activeTab === "details" && (
+            <ProjectFormFields
+              formData={formData}
+              onChange={handleChange}
+              builders={builders}
+              locations={locations}
+              statuses={statuses}
+            />
+          )}
+
+          {/* Documents Tab */}
+          {activeTab === "documents" && (
+            <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+              {DOCUMENT_CATEGORIES.map((cat) => {
+                const staged = getStagedFileForCategory(cat.id);
+                return (
+                  <div key={cat.id} className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-300 text-sm font-medium">{cat.label}</span>
+                      {staged && <CheckCircle className="w-4 h-4 text-green-500" />}
+                    </div>
+
+                    {staged && (
+                      <div className="flex items-center gap-2 p-2 bg-slate-700 rounded-md">
+                        <File className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                        <span className="text-white text-sm flex-1 truncate">
+                          {staged.file.name}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveStagedFile(cat.id)}
+                          className="text-slate-400 hover:text-red-400 h-6 w-6 p-0"
+                        >
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    )}
+
+                    <FileDropZone
+                      onFileSelect={(file) => handleStageFile(cat.id, file)}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
           <Button
             type="submit"
             className="w-full bg-amber-500 hover:bg-amber-600 text-slate-900"
