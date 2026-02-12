@@ -1,7 +1,8 @@
-import { useState, Fragment } from "react";
+import { useState, Fragment, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
+import { useUserRole } from "@/hooks/useUserRole";
 import { format } from "date-fns";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -20,7 +21,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, RotateCcw } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import {
+  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  ChevronLeft, ChevronRight, ChevronDown, ChevronUp, RotateCcw,
+  History, AlertTriangle,
+} from "lucide-react";
 import { toast } from "sonner";
 
 const PAGE_SIZE = 25;
@@ -137,9 +145,20 @@ function getVisibleFields(data: Record<string, unknown>) {
   return Object.entries(data).filter(([k]) => !HIDDEN_FIELDS.has(k));
 }
 
+function buildRestorePayload(oldData: Record<string, unknown>) {
+  const payload: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(oldData)) {
+    if (k === "created_at" || k === "updated_at") continue;
+    payload[k] = v;
+  }
+  return payload;
+}
+
+/* ---------- Per-row expanded detail (unchanged logic) ---------- */
+
 function ExpandedDetail({ row, onRestored }: { row: AuditRow; onRestored: () => void }) {
-  const oldData = row.old_data as Record<string, unknown> | null;
-  const newData = row.new_data as Record<string, unknown> | null;
+  const oldData = row.old_data;
+  const newData = row.new_data;
   const canRestore = (row.action === "updated" || row.action === "deleted") && oldData !== null;
   const [restoring, setRestoring] = useState(false);
 
@@ -156,23 +175,13 @@ function ExpandedDetail({ row, onRestored }: { row: AuditRow; onRestored: () => 
     setRestoring(true);
     try {
       const tableName = row.table_name as "projects" | "schedule_entries";
-      // Build restore payload, excluding metadata
-      const payload: Record<string, unknown> = {};
-      for (const [k, v] of Object.entries(oldData)) {
-        if (k === "created_at" || k === "updated_at") continue;
-        payload[k] = v;
-      }
+      const payload = buildRestorePayload(oldData);
 
       if (row.action === "deleted") {
-        // Try insert first, fall back to update on conflict
-        const { error: insertError } = await supabase.from(tableName).upsert(payload as never);
-        if (insertError) throw insertError;
+        const { error } = await supabase.from(tableName).upsert(payload as never);
+        if (error) throw error;
       } else {
-        // Update existing record
-        const { error } = await supabase
-          .from(tableName)
-          .update(payload as never)
-          .eq("id", row.record_id);
+        const { error } = await supabase.from(tableName).update(payload as never).eq("id", row.record_id);
         if (error) throw error;
       }
 
@@ -265,14 +274,50 @@ function ExpandedDetail({ row, onRestored }: { row: AuditRow; onRestored: () => 
   );
 }
 
+/* ---------- Rollback helpers ---------- */
+
+async function undoEntry(entry: AuditRow): Promise<{ success: boolean; error?: string }> {
+  const tableName = entry.table_name as "projects" | "schedule_entries";
+
+  try {
+    if (entry.action === "updated" && entry.old_data) {
+      const payload = buildRestorePayload(entry.old_data);
+      const { error } = await supabase.from(tableName).update(payload as never).eq("id", entry.record_id);
+      if (error) throw error;
+    } else if (entry.action === "deleted" && entry.old_data) {
+      const payload = buildRestorePayload(entry.old_data);
+      const { error } = await supabase.from(tableName).upsert(payload as never);
+      if (error) throw error;
+    } else if (entry.action === "created") {
+      const { error } = await supabase.from(tableName).delete().eq("id", entry.record_id);
+      if (error) throw error;
+    }
+    return { success: true };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return { success: false, error: message };
+  }
+}
+
+/* ---------- Main component ---------- */
+
 export function AuditLogViewer() {
   const { organizationId } = useOrganization();
+  const { role } = useUserRole();
+  const isOwner = role === "owner";
   const queryClient = useQueryClient();
   const [page, setPage] = useState(0);
   const [actionFilter, setActionFilter] = useState<string>("all");
   const [tableFilter, setTableFilter] = useState<string>("all");
   const [restorableOnly, setRestorableOnly] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  // Rollback state
+  const [rollbackTarget, setRollbackTarget] = useState<AuditRow | null>(null);
+  const [rollbackEntries, setRollbackEntries] = useState<AuditRow[]>([]);
+  const [rollbackDialogOpen, setRollbackDialogOpen] = useState(false);
+  const [rollbackRunning, setRollbackRunning] = useState(false);
+  const [rollbackProgress, setRollbackProgress] = useState({ current: 0, total: 0 });
 
   const { data, isLoading } = useQuery({
     queryKey: ["audit-log", organizationId, page, actionFilter, tableFilter, restorableOnly],
@@ -305,8 +350,110 @@ export function AuditLogViewer() {
     queryClient.invalidateQueries({ queryKey: ["schedule-entries"] });
   };
 
+  const handleRollbackClick = useCallback(async (targetRow: AuditRow) => {
+    if (!organizationId || !targetRow.created_at) return;
+
+    // Fetch ALL entries after this timestamp (newest first)
+    const { data: entries, error } = await supabase
+      .from("audit_log")
+      .select("*")
+      .eq("organization_id", organizationId)
+      .gt("created_at", targetRow.created_at)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      toast.error("Failed to load rollback entries");
+      return;
+    }
+
+    const allEntries = (entries ?? []) as unknown as AuditRow[];
+    // Filter to only restorable entries (have old_data for update/delete, or are creates)
+    const restorable = allEntries.filter(
+      (e) => (e.old_data !== null) || e.action === "created"
+    );
+
+    if (!restorable.length) {
+      toast.info("No restorable changes found after this point.");
+      return;
+    }
+
+    setRollbackTarget(targetRow);
+    setRollbackEntries(restorable);
+    setRollbackDialogOpen(true);
+  }, [organizationId]);
+
+  const executeRollback = useCallback(async () => {
+    setRollbackDialogOpen(false);
+    setRollbackRunning(true);
+    setRollbackProgress({ current: 0, total: rollbackEntries.length });
+
+    let succeeded = 0;
+    let failed = 0;
+    const skipped: string[] = [];
+
+    for (let i = 0; i < rollbackEntries.length; i++) {
+      const entry = rollbackEntries[i];
+      setRollbackProgress({ current: i + 1, total: rollbackEntries.length });
+
+      // Skip entries without required data
+      if (entry.action !== "created" && !entry.old_data) {
+        skipped.push(entry.record_label || entry.record_id);
+        continue;
+      }
+
+      const result = await undoEntry(entry);
+      if (result.success) {
+        succeeded++;
+      } else {
+        failed++;
+        console.error(`Rollback failed for entry ${entry.id}:`, result.error);
+      }
+    }
+
+    setRollbackRunning(false);
+    handleRestored();
+
+    const ts = rollbackTarget?.created_at
+      ? format(new Date(rollbackTarget.created_at), "MMM d, yyyy h:mm a")
+      : "the selected point";
+
+    if (failed === 0 && skipped.length === 0) {
+      toast.success(`Successfully rolled back ${succeeded} changes to ${ts}`);
+    } else {
+      const parts: string[] = [`Rolled back ${succeeded} of ${succeeded + failed} changes.`];
+      if (failed > 0) parts.push(`${failed} could not be undone.`);
+      if (skipped.length > 0) parts.push(`${skipped.length} skipped (no snapshot data).`);
+      toast.warning(parts.join(" "));
+    }
+
+    setRollbackTarget(null);
+    setRollbackEntries([]);
+  }, [rollbackEntries, rollbackTarget, handleRestored]);
+
+  const hasSnapshotData = (row: AuditRow) => row.old_data !== null || row.new_data !== null;
+
+  // Count unique records affected
+  const affectedRecordCount = new Set(rollbackEntries.map((e) => e.record_id)).size;
+
   return (
-    <Card>
+    <Card className="relative">
+      {/* Rollback progress overlay */}
+      {rollbackRunning && (
+        <div className="absolute inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center rounded-lg">
+          <div className="text-center space-y-3 max-w-xs">
+            <History className="h-8 w-8 text-primary mx-auto animate-spin" />
+            <p className="text-sm font-medium text-foreground">
+              Undoing change {rollbackProgress.current} of {rollbackProgress.total}…
+            </p>
+            <Progress
+              value={(rollbackProgress.current / rollbackProgress.total) * 100}
+              className="h-2"
+            />
+            <p className="text-xs text-muted-foreground">Please wait, do not navigate away.</p>
+          </div>
+        </div>
+      )}
+
       <CardHeader className="pb-4">
         <CardTitle className="text-lg">Activity Log</CardTitle>
         <div className="flex flex-wrap gap-3 pt-2 items-center">
@@ -367,6 +514,7 @@ export function AuditLogViewer() {
                     <TableHead>Action</TableHead>
                     <TableHead>Table</TableHead>
                     <TableHead>Record</TableHead>
+                    {isOwner && <TableHead className="w-10" />}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -402,10 +550,37 @@ export function AuditLogViewer() {
                           <TableCell className="text-sm max-w-[200px] truncate">
                             {row.record_label || row.record_id}
                           </TableCell>
+                          {isOwner && (
+                            <TableCell className="w-10 px-1">
+                              {hasSnapshotData(row) && (
+                                <TooltipProvider delayDuration={300}>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-7 w-7"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleRollbackClick(row);
+                                        }}
+                                        disabled={rollbackRunning}
+                                      >
+                                        <History className="h-3.5 w-3.5 text-muted-foreground" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="left">
+                                      <p>Roll back to here</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
+                            </TableCell>
+                          )}
                         </TableRow>
                         {isExpanded && (
                           <TableRow>
-                            <TableCell colSpan={6} className="p-0">
+                            <TableCell colSpan={isOwner ? 7 : 6} className="p-0">
                               <ExpandedDetail row={row} onRestored={handleRestored} />
                             </TableCell>
                           </TableRow>
@@ -445,6 +620,51 @@ export function AuditLogViewer() {
           </>
         )}
       </CardContent>
+
+      {/* Rollback confirmation dialog */}
+      <AlertDialog open={rollbackDialogOpen} onOpenChange={setRollbackDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              <AlertDialogTitle>
+                Roll Back to{" "}
+                {rollbackTarget?.created_at
+                  ? format(new Date(rollbackTarget.created_at), "MMM d, yyyy h:mm a")
+                  : "this point"}
+              </AlertDialogTitle>
+            </div>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 pt-1">
+                <p>
+                  This will undo <strong>{rollbackEntries.length}</strong> change
+                  {rollbackEntries.length !== 1 ? "s" : ""} affecting{" "}
+                  <strong>{affectedRecordCount}</strong> record
+                  {affectedRecordCount !== 1 ? "s" : ""}, reverting them to their
+                  state as of{" "}
+                  {rollbackTarget?.created_at
+                    ? format(new Date(rollbackTarget.created_at), "MMM d, yyyy h:mm a")
+                    : "the selected time"}
+                  .
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Changes made during the rollback will be logged in the activity
+                  log. This action can take a moment for large rollbacks.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel autoFocus>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={executeRollback}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Roll Back
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
