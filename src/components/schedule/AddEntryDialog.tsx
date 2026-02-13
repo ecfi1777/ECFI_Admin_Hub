@@ -17,6 +17,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { getUserFriendlyError } from "@/lib/errorHandler";
+import { invalidateScheduleQueries } from "@/lib/queryHelpers";
 import { Search } from "lucide-react";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useProjects } from "@/hooks/useReferenceData";
@@ -84,8 +85,7 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["schedule-entries"] });
-      queryClient.invalidateQueries({ queryKey: ["calendar-entries"] });
+      invalidateScheduleQueries(queryClient);
       toast.success("Entry created");
       handleReset();
       onOpenChange(false);

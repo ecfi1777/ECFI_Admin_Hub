@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { getUserFriendlyError } from "@/lib/errorHandler";
+import { invalidateScheduleQueries } from "@/lib/queryHelpers";
 import { Trash2, CalendarIcon, MoreVertical, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -84,7 +85,7 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["schedule-entries"] });
+      invalidateScheduleQueries(queryClient);
       setEditingCell(null);
     },
     onError: (error: Error) => {
@@ -101,7 +102,7 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["schedule-entries"] });
+      invalidateScheduleQueries(queryClient);
       toast.success("Entry deleted");
       setDeleteEntryId(null);
     },
@@ -119,7 +120,7 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["schedule-entries"] });
+      invalidateScheduleQueries(queryClient);
       toast.success("Entry moved to new date");
       setMoveEntryId(null);
       setMoveDate(undefined);

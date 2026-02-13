@@ -25,6 +25,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { generateProjectPdf } from "@/lib/generateProjectPdf";
 import { toast } from "sonner";
 import { getStatusColor } from "@/lib/statusColors";
+import { invalidateProjectQueries as invalidateAllProjectQueries } from "@/lib/queryHelpers";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useBuilders, useLocations, useProjectStatuses } from "@/hooks/useReferenceData";
@@ -63,8 +64,7 @@ export function ProjectDetailsSheet({
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["kanban-projects", organizationId] });
-      queryClient.invalidateQueries({ queryKey: ["projects", organizationId] });
+      invalidateAllProjectQueries(queryClient);
       queryClient.invalidateQueries({ queryKey: ["project", projectId] });
       toast.success("Status updated");
     },
@@ -83,8 +83,7 @@ export function ProjectDetailsSheet({
       if (error) throw error;
     },
     onSuccess: (_, archive) => {
-      queryClient.invalidateQueries({ queryKey: ["kanban-projects", organizationId] });
-      queryClient.invalidateQueries({ queryKey: ["projects", organizationId] });
+      invalidateAllProjectQueries(queryClient);
       queryClient.invalidateQueries({ queryKey: ["project", projectId] });
       toast.success(archive ? "Project archived" : "Project unarchived");
     },
@@ -94,9 +93,7 @@ export function ProjectDetailsSheet({
   });
 
   const invalidateProjectQueries = () => {
-    queryClient.invalidateQueries({ queryKey: ["projects", organizationId] });
-    queryClient.invalidateQueries({ queryKey: ["deleted-projects", organizationId] });
-    queryClient.invalidateQueries({ queryKey: ["kanban-projects", organizationId] });
+    invalidateAllProjectQueries(queryClient);
     queryClient.invalidateQueries({ queryKey: ["project", projectId] });
   };
 
@@ -488,9 +485,8 @@ export function ProjectDetailsSheet({
           onClose={() => {
             const pid = editProject?.id;
             setEditProject(null);
+            invalidateAllProjectQueries(queryClient);
             queryClient.invalidateQueries({ queryKey: ["project", pid] });
-            queryClient.invalidateQueries({ queryKey: ["projects", organizationId] });
-            queryClient.invalidateQueries({ queryKey: ["kanban-projects", organizationId] });
           }}
           builders={builders}
           locations={locations}

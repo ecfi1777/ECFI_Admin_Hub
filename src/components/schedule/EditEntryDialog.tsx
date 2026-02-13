@@ -15,6 +15,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { getUserFriendlyError } from "@/lib/errorHandler";
+import { invalidateScheduleQueries } from "@/lib/queryHelpers";
 import { useEntryForm } from "./entry-form/useEntryForm";
 import { 
   GeneralTab, 
@@ -56,8 +57,7 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["schedule-entries"] });
-      queryClient.invalidateQueries({ queryKey: ["calendar-entries"] });
+      invalidateScheduleQueries(queryClient);
       toast.success("Entry updated");
       onOpenChange(false);
     },

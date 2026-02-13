@@ -37,6 +37,7 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useBuilders, useLocations, useProjectStatuses } from "@/hooks/useReferenceData";
 import { getStatusColor } from "@/lib/statusColors";
+import { invalidateProjectQueries } from "@/lib/queryHelpers";
 
 interface Project {
   id: string;
@@ -185,8 +186,7 @@ export default function Projects() {
       if (error) throw error;
     },
     onSuccess: (_, { archive }) => {
-      queryClient.invalidateQueries({ queryKey: ["projects", organizationId] });
-      queryClient.invalidateQueries({ queryKey: ["kanban-projects", organizationId] });
+      invalidateProjectQueries(queryClient);
       toast.success(archive ? "Project archived" : "Project unarchived");
     },
     onError: () => {
