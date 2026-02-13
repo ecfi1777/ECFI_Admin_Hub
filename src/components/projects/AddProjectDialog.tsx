@@ -14,7 +14,9 @@ import { getUserFriendlyError } from "@/lib/errorHandler";
 import { Plus, File, X, CheckCircle } from "lucide-react";
 import { invalidateProjectQueries } from "@/lib/queryHelpers";
 import { ProjectFormFields } from "./ProjectFormFields";
+import { DuplicateProjectWarning } from "./DuplicateProjectWarning";
 import { useOrganization } from "@/hooks/useOrganization";
+import { useDuplicateProjectCheck } from "@/hooks/useDuplicateProjectCheck";
 import { FileDropZone } from "@/components/ui/file-drop-zone";
 
 const DOCUMENT_CATEGORIES = [
@@ -76,6 +78,11 @@ export function AddProjectDialog({ builders, locations, statuses }: AddProjectDi
 
   const queryClient = useQueryClient();
   const { organizationId } = useOrganization();
+  const duplicate = useDuplicateProjectCheck({
+    builderId: formData.builderId,
+    locationId: formData.locationId,
+    lotNumber: formData.lotNumber,
+  });
 
   const resetForm = () => {
     setFormData({
@@ -284,6 +291,15 @@ export function AddProjectDialog({ builders, locations, statuses }: AddProjectDi
                 );
               })}
             </div>
+          )}
+
+          {duplicate && (
+            <DuplicateProjectWarning
+              builderName={builders.find((b) => b.id === formData.builderId)?.name || "Unknown"}
+              locationName={locations.find((l) => l.id === formData.locationId)?.name || "Unknown"}
+              lotNumber={formData.lotNumber}
+              isDeleted={!!duplicate.deleted_at}
+            />
           )}
 
           <Button
