@@ -137,9 +137,9 @@ export function EditProjectDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="bg-slate-800 border-slate-700 w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] md:max-w-lg max-h-[100dvh] md:max-h-[90dvh] overflow-y-auto rounded-none md:rounded-lg">
+      <DialogContent className="bg-card border-border w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] md:max-w-lg max-h-[100dvh] md:max-h-[90dvh] overflow-y-auto rounded-none md:rounded-lg">
         <DialogHeader>
-          <DialogTitle className="text-white">Edit Project</DialogTitle>
+          <DialogTitle className="text-foreground">Edit Project</DialogTitle>
         </DialogHeader>
         <form
           onSubmit={(e) => {
@@ -157,7 +157,7 @@ export function EditProjectDialog({
           />
           <Button
             type="submit"
-            className="w-full bg-amber-500 hover:bg-amber-600 text-slate-900"
+            className="w-full"
             disabled={!formData.lotNumber || updateMutation.isPending}
           >
             {updateMutation.isPending ? "Saving..." : "Save Changes"}

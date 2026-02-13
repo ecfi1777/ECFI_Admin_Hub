@@ -127,31 +127,31 @@ export function ProjectFormFields({
       {/* Builder Selection */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <Label className="text-slate-300">Builder</Label>
+          <Label className="text-muted-foreground">Builder</Label>
           <Button
             type="button"
             variant="ghost"
             size="sm"
             onClick={() => setShowNewBuilder(!showNewBuilder)}
-            className="text-amber-500 hover:text-amber-400 h-6 px-2"
+            className="text-primary hover:text-primary/80 h-6 px-2"
           >
             <Plus className="w-3 h-3 mr-1" />
             New
           </Button>
         </div>
         {showNewBuilder ? (
-          <div className="space-y-2 p-3 bg-slate-900 rounded-md">
+          <div className="space-y-2 p-3 bg-muted rounded-md">
             <Input
               placeholder="Builder name"
               value={newBuilderName}
               onChange={(e) => setNewBuilderName(e.target.value)}
-              className="bg-slate-700 border-slate-600 text-white"
+              className="bg-background border-border text-foreground"
             />
             <Input
               placeholder="Code (optional)"
               value={newBuilderCode}
               onChange={(e) => setNewBuilderCode(e.target.value)}
-              className="bg-slate-700 border-slate-600 text-white"
+              className="bg-background border-border text-foreground"
             />
             <div className="flex gap-2">
               <Button
@@ -159,7 +159,6 @@ export function ProjectFormFields({
                 size="sm"
                 onClick={() => createBuilderMutation.mutate()}
                 disabled={!newBuilderName || createBuilderMutation.isPending}
-                className="bg-amber-500 hover:bg-amber-600 text-slate-900"
               >
                 {createBuilderMutation.isPending ? "Creating..." : "Add Builder"}
               </Button>
@@ -168,7 +167,7 @@ export function ProjectFormFields({
                 size="sm"
                 variant="ghost"
                 onClick={() => setShowNewBuilder(false)}
-                className="text-slate-400"
+                className="text-muted-foreground"
               >
                 Cancel
               </Button>
@@ -176,12 +175,12 @@ export function ProjectFormFields({
           </div>
         ) : (
           <Select value={formData.builderId} onValueChange={(v) => onChange("builderId", v)}>
-            <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+            <SelectTrigger className="bg-background border-border text-foreground">
               <SelectValue placeholder="Select builder" />
             </SelectTrigger>
-            <SelectContent className="bg-slate-700 border-slate-600">
+            <SelectContent>
               {builders.map((b) => (
-                <SelectItem key={b.id} value={b.id} className="text-white">
+                <SelectItem key={b.id} value={b.id}>
                   {b.code ? `${b.code} - ${b.name}` : b.name}
                 </SelectItem>
               ))}
@@ -193,25 +192,25 @@ export function ProjectFormFields({
       {/* Location Selection */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <Label className="text-slate-300">Location</Label>
+          <Label className="text-muted-foreground">Location</Label>
           <Button
             type="button"
             variant="ghost"
             size="sm"
             onClick={() => setShowNewLocation(!showNewLocation)}
-            className="text-amber-500 hover:text-amber-400 h-6 px-2"
+            className="text-primary hover:text-primary/80 h-6 px-2"
           >
             <Plus className="w-3 h-3 mr-1" />
             New
           </Button>
         </div>
         {showNewLocation ? (
-          <div className="space-y-2 p-3 bg-slate-900 rounded-md">
+          <div className="space-y-2 p-3 bg-muted rounded-md">
             <Input
               placeholder="Location name"
               value={newLocationName}
               onChange={(e) => setNewLocationName(e.target.value)}
-              className="bg-slate-700 border-slate-600 text-white"
+              className="bg-background border-border text-foreground"
             />
             <div className="flex gap-2">
               <Button
@@ -219,7 +218,6 @@ export function ProjectFormFields({
                 size="sm"
                 onClick={() => createLocationMutation.mutate()}
                 disabled={!newLocationName || createLocationMutation.isPending}
-                className="bg-amber-500 hover:bg-amber-600 text-slate-900"
               >
                 {createLocationMutation.isPending ? "Creating..." : "Add Location"}
               </Button>
@@ -228,7 +226,7 @@ export function ProjectFormFields({
                 size="sm"
                 variant="ghost"
                 onClick={() => setShowNewLocation(false)}
-                className="text-slate-400"
+                className="text-muted-foreground"
               >
                 Cancel
               </Button>
@@ -236,12 +234,12 @@ export function ProjectFormFields({
           </div>
         ) : (
           <Select value={formData.locationId} onValueChange={(v) => onChange("locationId", v)}>
-            <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+            <SelectTrigger className="bg-background border-border text-foreground">
               <SelectValue placeholder="Select location" />
             </SelectTrigger>
-            <SelectContent className="bg-slate-700 border-slate-600">
+            <SelectContent>
               {locations.map((l) => (
-                <SelectItem key={l.id} value={l.id} className="text-white">
+                <SelectItem key={l.id} value={l.id}>
                   {l.name}
                 </SelectItem>
               ))}
@@ -252,37 +250,37 @@ export function ProjectFormFields({
 
       {/* Lot Number */}
       <div className="space-y-2">
-        <Label className="text-slate-300">Lot Number *</Label>
+        <Label className="text-muted-foreground">Lot Number *</Label>
         <Input
           value={formData.lotNumber}
           onChange={(e) => onChange("lotNumber", e.target.value)}
           required
           placeholder="e.g., 12-18V"
-          className="bg-slate-700 border-slate-600 text-white"
+          className="bg-background border-border text-foreground"
         />
       </div>
 
       {/* Full Address */}
       <div className="space-y-2">
-        <Label className="text-slate-300">Full Address</Label>
+        <Label className="text-muted-foreground">Full Address</Label>
         <Input
           value={formData.fullAddress}
           onChange={(e) => onChange("fullAddress", e.target.value)}
           placeholder="Enter full address"
-          className="bg-slate-700 border-slate-600 text-white"
+          className="bg-background border-border text-foreground"
         />
       </div>
 
       {/* County */}
       <div className="space-y-2">
-        <Label className="text-slate-300">County</Label>
+        <Label className="text-muted-foreground">County</Label>
         <Select value={formData.county} onValueChange={(v) => onChange("county", v)}>
-          <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+          <SelectTrigger className="bg-background border-border text-foreground">
             <SelectValue placeholder="Select county" />
           </SelectTrigger>
-          <SelectContent className="bg-slate-700 border-slate-600">
+          <SelectContent>
             {COUNTIES.map((c) => (
-              <SelectItem key={c} value={c} className="text-white">
+              <SelectItem key={c} value={c}>
                 {c}
               </SelectItem>
             ))}
@@ -292,36 +290,36 @@ export function ProjectFormFields({
 
       {/* Permit Number */}
       <div className="space-y-2">
-        <Label className="text-slate-300">Permit Number</Label>
+        <Label className="text-muted-foreground">Permit Number</Label>
         <Input
           value={formData.permitNumber}
           onChange={(e) => onChange("permitNumber", e.target.value)}
           placeholder="Enter permit number"
-          className="bg-slate-700 border-slate-600 text-white"
+          className="bg-background border-border text-foreground"
         />
       </div>
 
       {/* Authorization Numbers */}
       <div className="space-y-2">
-        <Label className="text-slate-300">Authorization Numbers</Label>
+        <Label className="text-muted-foreground">Authorization Numbers</Label>
         <Input
           value={formData.authorizationNumbers}
           onChange={(e) => onChange("authorizationNumbers", e.target.value)}
           placeholder="Enter authorization numbers"
-          className="bg-slate-700 border-slate-600 text-white"
+          className="bg-background border-border text-foreground"
         />
       </div>
 
       {/* Wall Height */}
       <div className="space-y-2">
-        <Label className="text-slate-300">Wall Height</Label>
+        <Label className="text-muted-foreground">Wall Height</Label>
         <Select value={formData.wallHeight} onValueChange={(v) => onChange("wallHeight", v)}>
-          <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+          <SelectTrigger className="bg-background border-border text-foreground">
             <SelectValue placeholder="Select wall height" />
           </SelectTrigger>
-          <SelectContent className="bg-slate-700 border-slate-600">
+          <SelectContent>
             {WALL_HEIGHTS.map((h) => (
-              <SelectItem key={h} value={h} className="text-white">
+              <SelectItem key={h} value={h}>
                 {h}
               </SelectItem>
             ))}
@@ -331,14 +329,14 @@ export function ProjectFormFields({
 
       {/* Basement Type */}
       <div className="space-y-2">
-        <Label className="text-slate-300">Basement Type</Label>
+        <Label className="text-muted-foreground">Basement Type</Label>
         <Select value={formData.basementType} onValueChange={(v) => onChange("basementType", v)}>
-          <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+          <SelectTrigger className="bg-background border-border text-foreground">
             <SelectValue placeholder="Select basement type" />
           </SelectTrigger>
-          <SelectContent className="bg-slate-700 border-slate-600">
+          <SelectContent>
             {BASEMENT_TYPES.map((t) => (
-              <SelectItem key={t} value={t} className="text-white">
+              <SelectItem key={t} value={t}>
                 {t}
               </SelectItem>
             ))}
@@ -348,14 +346,14 @@ export function ProjectFormFields({
 
       {/* Status */}
       <div className="space-y-2">
-        <Label className="text-slate-300">Status *</Label>
+        <Label className="text-muted-foreground">Status *</Label>
         <Select value={formData.statusId} onValueChange={(v) => onChange("statusId", v)}>
-          <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+          <SelectTrigger className="bg-background border-border text-foreground">
             <SelectValue placeholder="Select status" />
           </SelectTrigger>
-          <SelectContent className="bg-slate-700 border-slate-600">
+          <SelectContent>
             {statuses.map((s) => (
-              <SelectItem key={s.id} value={s.id} className="text-white">
+              <SelectItem key={s.id} value={s.id}>
                 {s.name}
               </SelectItem>
             ))}
@@ -365,23 +363,23 @@ export function ProjectFormFields({
 
       {/* Google Drive URL */}
       <div className="space-y-2">
-        <Label className="text-slate-300">Google Drive Folder URL</Label>
+        <Label className="text-muted-foreground">Google Drive Folder URL</Label>
         <Input
           value={formData.googleDriveUrl}
           onChange={(e) => onChange("googleDriveUrl", e.target.value)}
           placeholder="https://drive.google.com/..."
-          className="bg-slate-700 border-slate-600 text-white"
+          className="bg-background border-border text-foreground"
         />
       </div>
 
       {/* Notes */}
       <div className="space-y-2">
-        <Label className="text-slate-300">Notes</Label>
+        <Label className="text-muted-foreground">Notes</Label>
         <Textarea
           value={formData.notes}
           onChange={(e) => onChange("notes", e.target.value)}
           placeholder="Additional notes..."
-          className="bg-slate-700 border-slate-600 text-white min-h-[80px]"
+          className="bg-background border-border text-foreground min-h-[80px]"
         />
       </div>
     </div>
