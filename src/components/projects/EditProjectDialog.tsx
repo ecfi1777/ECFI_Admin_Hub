@@ -11,7 +11,9 @@ import {
 import { toast } from "sonner";
 import { getUserFriendlyError } from "@/lib/errorHandler";
 import { ProjectFormFields } from "./ProjectFormFields";
+import { DuplicateProjectWarning } from "./DuplicateProjectWarning";
 import { invalidateProjectQueries } from "@/lib/queryHelpers";
+import { useDuplicateProjectCheck } from "@/hooks/useDuplicateProjectCheck";
 
 interface Builder {
   id: string;
@@ -78,6 +80,12 @@ export function EditProjectDialog({
   });
 
   const queryClient = useQueryClient();
+  const duplicate = useDuplicateProjectCheck({
+    builderId: formData.builderId,
+    locationId: formData.locationId,
+    lotNumber: formData.lotNumber,
+    excludeProjectId: project?.id,
+  });
 
   useEffect(() => {
     if (project) {
@@ -155,6 +163,14 @@ export function EditProjectDialog({
             locations={locations}
             statuses={statuses}
           />
+          {duplicate && (
+            <DuplicateProjectWarning
+              builderName={builders.find((b) => b.id === formData.builderId)?.name || "Unknown"}
+              locationName={locations.find((l) => l.id === formData.locationId)?.name || "Unknown"}
+              lotNumber={formData.lotNumber}
+              isDeleted={!!duplicate.deleted_at}
+            />
+          )}
           <Button
             type="submit"
             className="w-full"
