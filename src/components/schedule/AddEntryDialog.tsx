@@ -43,6 +43,7 @@ interface AddEntryDialogProps {
 export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate, prefilledProject, onSuccess }: AddEntryDialogProps) {
   const [projectId, setProjectId] = useState("");
   const [projectSearch, setProjectSearch] = useState("");
+  const [scheduledDate, setScheduledDate] = useState(defaultDate);
   
   const queryClient = useQueryClient();
   const { organizationId } = useOrganization();
@@ -53,12 +54,15 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate,
     initialValues: { crew_id: defaultCrewId || "" }
   });
 
-  // Sync prefilled project when dialog opens
+  // Sync prefilled project and date when dialog opens
   useEffect(() => {
-    if (open && prefilledProject) {
-      setProjectId(prefilledProject.id);
+    if (open) {
+      setScheduledDate(defaultDate);
+      if (prefilledProject) {
+        setProjectId(prefilledProject.id);
+      }
     }
-  }, [open, prefilledProject]);
+  }, [open, prefilledProject, defaultDate]);
 
   // Update crew when defaultCrewId changes
   useEffect(() => {
@@ -94,7 +98,7 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate,
       const payload = getInsertPayload();
       const { error } = await supabase.from("schedule_entries").insert({
         organization_id: organizationId,
-        scheduled_date: defaultDate,
+        scheduled_date: scheduledDate,
         project_id: projectId || null,
         ...payload,
       });
@@ -115,6 +119,7 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate,
   const handleReset = () => {
     setProjectId("");
     setProjectSearch("");
+    setScheduledDate(defaultDate);
     resetForm();
   };
 
@@ -202,6 +207,17 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate,
                 )}
               </div>
             )}
+          </div>
+
+          {/* Scheduled Date */}
+          <div className="space-y-2">
+            <Label>Scheduled Date <span className="text-destructive">*</span></Label>
+            <Input
+              type="date"
+              value={scheduledDate}
+              onChange={(e) => setScheduledDate(e.target.value)}
+              required
+            />
           </div>
 
           {/* Tabs using shared components */}
