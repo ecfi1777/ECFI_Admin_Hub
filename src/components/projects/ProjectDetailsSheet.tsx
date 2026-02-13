@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Pencil, ExternalLink, MapPin, FileText, Building, Home, Download, Archive, ArchiveRestore, Trash2, RotateCcw } from "lucide-react";
+import { Pencil, ExternalLink, MapPin, FileText, Building, Home, Download, Archive, ArchiveRestore, Trash2, RotateCcw, CalendarPlus } from "lucide-react";
+import { AddEntryDialog, type PrefilledProject } from "@/components/schedule/AddEntryDialog";
 import { ProjectScheduleHistory } from "./ProjectScheduleHistory";
 import { ProjectDocuments } from "./ProjectDocuments";
 import { EditProjectDialog } from "./EditProjectDialog";
@@ -46,6 +47,7 @@ export function ProjectDetailsSheet({
   const [editProject, setEditProject] = useState<any>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
+  const [showAddEntry, setShowAddEntry] = useState(false);
 
   const { organizationId } = useOrganization();
   const { canManage, isOwner } = useUserRole();
@@ -271,6 +273,15 @@ export function ProjectDetailsSheet({
                               <Archive className="w-4 h-4" />
                             )}
                           </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setShowAddEntry(true)}
+                            className="text-slate-400 hover:text-white h-8 w-8 p-0"
+                            title="Add schedule entry"
+                          >
+                            <CalendarPlus className="w-4 h-4" />
+                          </Button>
                           {isOwner && (
                             <Button
                               variant="ghost"
@@ -491,6 +502,23 @@ export function ProjectDetailsSheet({
           builders={builders}
           locations={locations}
           statuses={statuses}
+        />
+      )}
+
+      {project && (
+        <AddEntryDialog
+          open={showAddEntry}
+          onOpenChange={setShowAddEntry}
+          defaultDate={new Date().toISOString().split("T")[0]}
+          prefilledProject={{
+            id: project.id,
+            builder: project.builders?.code || project.builders?.name || undefined,
+            location: project.locations?.name || undefined,
+            lot_number: project.lot_number,
+          }}
+          onSuccess={() => {
+            invalidateProjectQueries();
+          }}
         />
       )}
     </>

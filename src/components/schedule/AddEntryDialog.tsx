@@ -24,14 +24,23 @@ import { useProjects } from "@/hooks/useReferenceData";
 import { useEntryForm } from "./entry-form/useEntryForm";
 import { GeneralTab, ConcreteTab, PumpTab, InspectionTab } from "./entry-form/tabs";
 
+export interface PrefilledProject {
+  id: string;
+  builder?: string;
+  location?: string;
+  lot_number: string;
+}
+
 interface AddEntryDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   defaultCrewId?: string | null;
   defaultDate: string;
+  prefilledProject?: PrefilledProject | null;
+  onSuccess?: () => void;
 }
 
-export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate }: AddEntryDialogProps) {
+export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate, prefilledProject, onSuccess }: AddEntryDialogProps) {
   const [projectId, setProjectId] = useState("");
   const [projectSearch, setProjectSearch] = useState("");
   
@@ -43,6 +52,13 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate 
   const { formData, updateField, resetForm, getInsertPayload } = useEntryForm({
     initialValues: { crew_id: defaultCrewId || "" }
   });
+
+  // Sync prefilled project when dialog opens
+  useEffect(() => {
+    if (open && prefilledProject) {
+      setProjectId(prefilledProject.id);
+    }
+  }, [open, prefilledProject]);
 
   // Update crew when defaultCrewId changes
   useEffect(() => {
@@ -86,9 +102,10 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate 
     },
     onSuccess: () => {
       invalidateScheduleQueries(queryClient);
-      toast.success("Entry created");
+      toast.success("Schedule entry added");
       handleReset();
       onOpenChange(false);
+      onSuccess?.();
     },
     onError: (error: Error) => {
       toast.error(getUserFriendlyError(error));
@@ -128,57 +145,63 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate 
           {/* Project Search - AddEntryDialog-specific */}
           <div className="space-y-2">
             <Label>Project <span className="text-destructive">*</span></Label>
-            <div className="space-y-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  value={projectSearch}
-                  onChange={(e) => {
-                    setProjectSearch(e.target.value);
-                    if (projectId) setProjectId("");
-                  }}
-                  placeholder="Search by builder, location, or lot..."
-                  className="pl-9"
-                />
+            {prefilledProject ? (
+              <div className="bg-muted border border-border rounded-md px-3 py-2 text-sm text-muted-foreground">
+                {prefilledProject.builder || "No Builder"} - {prefilledProject.location || "No Location"} - {prefilledProject.lot_number}
               </div>
-              
-              {/* Search results */}
-              {projectSearch.trim() && filteredProjects.length > 0 && !projectId && (
-                <div className="bg-muted border border-border rounded-md max-h-48 overflow-y-auto">
-                  {filteredProjects.slice(0, 10).map((project) => (
-                    <div
-                      key={project.id}
-                      onClick={() => handleProjectSelect(project.id)}
-                      className="px-3 py-2 hover:bg-accent cursor-pointer text-sm border-b border-border last:border-b-0"
+            ) : (
+              <div className="space-y-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    value={projectSearch}
+                    onChange={(e) => {
+                      setProjectSearch(e.target.value);
+                      if (projectId) setProjectId("");
+                    }}
+                    placeholder="Search by builder, location, or lot..."
+                    className="pl-9"
+                  />
+                </div>
+                
+                {/* Search results */}
+                {projectSearch.trim() && filteredProjects.length > 0 && !projectId && (
+                  <div className="bg-muted border border-border rounded-md max-h-48 overflow-y-auto">
+                    {filteredProjects.slice(0, 10).map((project) => (
+                      <div
+                        key={project.id}
+                        onClick={() => handleProjectSelect(project.id)}
+                        className="px-3 py-2 hover:bg-accent cursor-pointer text-sm border-b border-border last:border-b-0"
+                      >
+                        {project.builders?.code || project.builders?.name || "No Builder"} - {project.locations?.name || "No Location"} - {project.lot_number}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {projectSearch.trim() && filteredProjects.length === 0 && !projectId && (
+                  <div className="text-muted-foreground text-sm py-2">
+                    No projects found matching "{projectSearch}"
+                  </div>
+                )}
+                
+                {/* Selected project */}
+                {selectedProject && (
+                  <div className="bg-primary/10 border border-primary/30 rounded-md px-3 py-2 text-sm flex justify-between items-center">
+                    <span>
+                      {selectedProject.builders?.code || selectedProject.builders?.name} - {selectedProject.locations?.name} - {selectedProject.lot_number}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setProjectId("")}
+                      className="text-muted-foreground hover:text-foreground ml-2"
                     >
-                      {project.builders?.code || project.builders?.name || "No Builder"} - {project.locations?.name || "No Location"} - {project.lot_number}
-                    </div>
-                  ))}
-                </div>
-              )}
-              
-              {projectSearch.trim() && filteredProjects.length === 0 && !projectId && (
-                <div className="text-muted-foreground text-sm py-2">
-                  No projects found matching "{projectSearch}"
-                </div>
-              )}
-              
-              {/* Selected project */}
-              {selectedProject && (
-                <div className="bg-primary/10 border border-primary/30 rounded-md px-3 py-2 text-sm flex justify-between items-center">
-                  <span>
-                    {selectedProject.builders?.code || selectedProject.builders?.name} - {selectedProject.locations?.name} - {selectedProject.lot_number}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setProjectId("")}
-                    className="text-muted-foreground hover:text-foreground ml-2"
-                  >
-                    ✕
-                  </button>
-                </div>
-              )}
-            </div>
+                      ✕
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Tabs using shared components */}
