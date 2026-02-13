@@ -1,5 +1,3 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -22,12 +20,14 @@ Deno.serve(async (req) => {
       );
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-    const supabase = createClient(supabaseUrl, serviceRoleKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    if (!resendApiKey) {
+      console.warn("RESEND_API_KEY not configured — skipping email.");
+      return new Response(
+        JSON.stringify({ success: false, reason: "No RESEND_API_KEY" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     const appUrl = "https://ecfiadmin.lovable.app/settings";
     const formattedDate = joined_at
@@ -56,59 +56,33 @@ Deno.serve(async (req) => {
       </div>
     `;
 
-    // Use Supabase Auth Admin API to send email via invite-like mechanism
-    // Since custom email sending isn't directly available, we use the REST API
-    const response = await fetch(`${supabaseUrl}/auth/v1/admin/generate_link`, {
+    const emailResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${serviceRoleKey}`,
-        apikey: serviceRoleKey,
+        Authorization: `Bearer ${resendApiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        type: "magiclink",
-        email: owner_email,
-        options: { data: { notification_type: "new_member" } },
+        from: "ECFI Hub <onboarding@resend.dev>",
+        to: [owner_email],
+        subject: `New member joined ${org_name}`,
+        html: emailHtml,
       }),
     });
 
-    // We don't actually want to send a magic link - we just need the owner's email
-    // Instead, use Resend via the built-in Supabase hook or direct SMTP
-    // For now, log and use the pg_net approach from the trigger directly
-    const responseBody = await response.text();
+    const emailResult = await emailResponse.json();
 
-    // Since Supabase doesn't have a direct "send arbitrary email" API,
-    // we'll use the Resend API if available, otherwise log
-    const resendApiKey = Deno.env.get("RESEND_API_KEY");
-
-    if (resendApiKey) {
-      const emailResponse = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${resendApiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: "ECFI Hub <notifications@ecfiadmin.lovable.app>",
-          to: [owner_email],
-          subject: `New member joined ${org_name}`,
-          html: emailHtml,
-        }),
-      });
-      const emailResult = await emailResponse.json();
-      console.log("Email sent via Resend:", emailResult);
-    } else {
-      // Fallback: log the notification (no email provider configured)
-      console.log("No RESEND_API_KEY configured. Notification logged:", {
-        to: owner_email,
-        subject: `New member joined ${org_name}`,
-        new_member: new_member_email,
-        role: member_role,
-      });
+    if (!emailResponse.ok) {
+      console.error("Resend API error:", emailResult);
+      return new Response(
+        JSON.stringify({ success: false, error: emailResult }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
+    console.log("Email sent successfully:", emailResult);
     return new Response(
-      JSON.stringify({ success: true }),
+      JSON.stringify({ success: true, id: emailResult.id }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
