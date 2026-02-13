@@ -1,23 +1,69 @@
 
 
-## Fix: Add "restored" to audit_log action check constraint
+## Storage Usage Indicator for Settings Page
 
-### Problem
-The `audit_log` table has a check constraint (`audit_log_action_check`) that only permits the values `created`, `updated`, and `deleted`. When a project is restored (soft-delete reversed), the updated trigger function tries to log a `restored` action, which violates this constraint and causes the "Restore failed" error.
+### Overview
+Add an owner-only "Storage Usage" card to the Organization Settings tab showing current database and file storage usage as progress bars with percentages.
 
-### Solution
-A single database migration to drop the existing constraint and recreate it with `restored` included:
-
-```sql
-ALTER TABLE public.audit_log DROP CONSTRAINT audit_log_action_check;
-ALTER TABLE public.audit_log ADD CONSTRAINT audit_log_action_check
-  CHECK (action = ANY (ARRAY['created', 'updated', 'deleted', 'restored']));
-```
-
-No frontend code changes are needed -- the `AuditLogViewer` already has styling for the `restored` action badge.
+### What You'll See
+A new card (visible only to organization owners) on the Organization tab of Settings, positioned between "Team Members" and "Danger Zone". It will show:
+- Database storage usage bar (e.g., "13 MB / 500 MB - 2.6%")
+- File storage usage bar (e.g., "27 MB / 1 GB - 2.7%")
+- Color-coded progress bars: green (under 70%), yellow (70-90%), red (over 90%)
 
 ### Technical Details
-- **File changed**: One new SQL migration only
-- **Risk**: None -- this is purely additive (no existing data is affected)
-- **Result**: Restoring a deleted project will correctly log a `restored` action in the Activity Log, and the restore operation will succeed without constraint violations
+
+#### 1. Create a new component: `src/components/settings/StorageUsageCard.tsx`
+- Owner-only card with two progress bars
+- Uses two queries:
+  - **Database size**: SQL RPC call using `pg_database_size(current_database())`
+  - **File storage size**: Query `storage.objects` to sum file sizes
+- Since we can't query `pg_database_size` from the client SDK directly, we'll create a database function to expose this safely
+
+#### 2. Database migration: Create a `get_storage_usage()` function
+```sql
+CREATE OR REPLACE FUNCTION public.get_storage_usage()
+RETURNS jsonb
+LANGUAGE plpgsql
+STABLE SECURITY DEFINER
+SET search_path TO 'public'
+AS $$
+DECLARE
+  v_db_bytes bigint;
+  v_file_bytes bigint;
+BEGIN
+  -- Only owners can call this
+  IF NOT EXISTS (
+    SELECT 1 FROM organization_memberships
+    WHERE user_id = auth.uid() AND role = 'owner'
+  ) THEN
+    RETURN jsonb_build_object('error', 'unauthorized');
+  END IF;
+
+  SELECT pg_database_size(current_database()) INTO v_db_bytes;
+
+  SELECT coalesce(sum((metadata->>'size')::bigint), 0)
+  INTO v_file_bytes
+  FROM storage.objects;
+
+  RETURN jsonb_build_object(
+    'db_bytes', v_db_bytes,
+    'file_bytes', v_file_bytes
+  );
+END;
+$$;
+```
+
+#### 3. Add `StorageUsageCard` to `OrganizationSettings.tsx`
+- Import and render the new component inside the owner-only section, between "Team Members" and "Danger Zone"
+- Uses `useQuery` to call the RPC function with a 5-minute stale time
+- Displays two `Progress` bars from the existing UI components
+- Plan limits hardcoded as constants (500 MB database, 1 GB file storage) with a comment to update if the plan changes
+
+#### 4. Files changed
+| File | Action |
+|------|--------|
+| `src/components/settings/StorageUsageCard.tsx` | Create |
+| `src/components/settings/OrganizationSettings.tsx` | Add import and render StorageUsageCard |
+| New migration SQL | Create `get_storage_usage()` function |
 
