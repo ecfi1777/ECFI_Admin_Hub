@@ -10,6 +10,7 @@ import { getUserFriendlyError } from "@/lib/errorHandler";
 import { Building2, Copy, Check, Users, RefreshCw, Pencil, X, Trash2, AlertTriangle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { TeamMembersTable } from "./TeamMembersTable";
+import { StorageUsageCard } from "./StorageUsageCard";
 import { MyOrganizations } from "./MyOrganizations";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -319,6 +320,9 @@ export function OrganizationSettings() {
           </CardContent>
         </Card>
       )}
+
+      {/* Storage Usage — owner only */}
+      {isOwner && <StorageUsageCard />}
 
       {/* Danger Zone — owner only */}
       {isOwner && (

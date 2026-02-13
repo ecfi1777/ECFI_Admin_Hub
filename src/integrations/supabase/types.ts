@@ -1057,6 +1057,7 @@ export type Database = {
       generate_invite_code: { Args: never; Returns: string }
       get_invite_code: { Args: { p_organization_id: string }; Returns: string }
       get_my_role: { Args: { p_organization_id: string }; Returns: string }
+      get_storage_usage: { Args: never; Returns: Json }
       get_user_organization_id: { Args: { p_user_id: string }; Returns: string }
       join_organization_by_invite_code: {
         Args: { p_invite_code: string }
