@@ -12,6 +12,7 @@ import {
 import { toast } from "sonner";
 import { getUserFriendlyError } from "@/lib/errorHandler";
 import { Plus, File, X, CheckCircle } from "lucide-react";
+import { invalidateProjectQueries } from "@/lib/queryHelpers";
 import { ProjectFormFields } from "./ProjectFormFields";
 import { useOrganization } from "@/hooks/useOrganization";
 import { FileDropZone } from "@/components/ui/file-drop-zone";
@@ -155,8 +156,7 @@ export function AddProjectDialog({ builders, locations, statuses }: AddProjectDi
     },
     onSuccess: async (projectId) => {
       await uploadStagedFiles(projectId);
-      queryClient.invalidateQueries({ queryKey: ["projects"] });
-      queryClient.invalidateQueries({ queryKey: ["project-documents-all"] });
+      invalidateProjectQueries(queryClient);
       toast.success("Project created");
       setIsOpen(false);
       resetForm();

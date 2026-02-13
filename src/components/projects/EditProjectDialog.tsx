@@ -11,6 +11,7 @@ import {
 import { toast } from "sonner";
 import { getUserFriendlyError } from "@/lib/errorHandler";
 import { ProjectFormFields } from "./ProjectFormFields";
+import { invalidateProjectQueries } from "@/lib/queryHelpers";
 
 interface Builder {
   id: string;
@@ -120,7 +121,7 @@ export function EditProjectDialog({
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      invalidateProjectQueries(queryClient);
       queryClient.invalidateQueries({ queryKey: ["project", project?.id] });
       toast.success("Project updated");
       onClose();

@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { Search } from "lucide-react";
 import { toast } from "sonner";
+import { invalidateProjectQueries } from "@/lib/queryHelpers";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useBuilders, useLocations, useProjectStatuses } from "@/hooks/useReferenceData";
@@ -93,8 +94,7 @@ export default function Kanban() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["kanban-projects", organizationId] });
-      queryClient.invalidateQueries({ queryKey: ["projects", organizationId] });
+      invalidateProjectQueries(queryClient);
       toast.success("Project archived. You can restore it from the Projects page.");
     },
     onError: () => {
@@ -181,10 +181,10 @@ export default function Kanban() {
 
     if (error) {
       toast.error("Failed to update project status");
-      queryClient.invalidateQueries({ queryKey: ["kanban-projects", organizationId] });
+      invalidateProjectQueries(queryClient);
     } else {
       toast.success(`Moved to ${targetColumn}`);
-      queryClient.invalidateQueries({ queryKey: ["projects", organizationId] });
+      invalidateProjectQueries(queryClient);
     }
   };
 

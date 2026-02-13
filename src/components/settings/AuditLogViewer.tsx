@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useUserRole } from "@/hooks/useUserRole";
 import { format } from "date-fns";
+import { invalidateProjectQueries, invalidateScheduleQueries } from "@/lib/queryHelpers";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -352,8 +353,8 @@ export function AuditLogViewer() {
 
   const handleRestored = () => {
     queryClient.invalidateQueries({ queryKey: ["audit-log"] });
-    queryClient.invalidateQueries({ queryKey: ["projects"] });
-    queryClient.invalidateQueries({ queryKey: ["schedule-entries"] });
+    invalidateProjectQueries(queryClient);
+    invalidateScheduleQueries(queryClient);
   };
 
   const handleRollbackClick = useCallback(async (targetRow: AuditRow) => {
