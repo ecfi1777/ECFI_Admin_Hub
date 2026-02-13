@@ -1,1 +1,4 @@
 project_id = "mouzljbaiiwatoxakped"
+
+[functions.notify-owner-new-member]
+verify_jwt = false
