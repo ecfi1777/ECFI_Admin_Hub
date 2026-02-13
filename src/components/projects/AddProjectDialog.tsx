@@ -188,25 +188,25 @@ export function AddProjectDialog({ builders, locations, statuses }: AddProjectDi
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { setIsOpen(open); if (!open) resetForm(); }}>
       <DialogTrigger asChild>
-        <Button className="bg-amber-500 hover:bg-amber-600 text-slate-900">
+        <Button>
           <Plus className="w-4 h-4 mr-2" />
           Add Project
         </Button>
       </DialogTrigger>
-      <DialogContent className="bg-slate-800 border-slate-700 w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] md:max-w-lg max-h-[100dvh] md:max-h-[90dvh] overflow-y-auto rounded-none md:rounded-lg">
+      <DialogContent className="bg-card border-border w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] md:max-w-lg max-h-[100dvh] md:max-h-[90dvh] overflow-y-auto rounded-none md:rounded-lg">
         <DialogHeader>
-          <DialogTitle className="text-white">Add New Project</DialogTitle>
+          <DialogTitle className="text-foreground">Add New Project</DialogTitle>
         </DialogHeader>
 
         {/* Tabs */}
-        <div className="flex border-b border-slate-700 overflow-x-auto whitespace-nowrap">
+        <div className="flex border-b border-border overflow-x-auto whitespace-nowrap">
           <button
             type="button"
             onClick={() => setActiveTab("details")}
             className={`px-4 py-2 text-sm font-medium transition-colors ${
               activeTab === "details"
-                ? "text-amber-500 border-b-2 border-amber-500"
-                : "text-slate-400 hover:text-slate-200"
+                ? "text-primary border-b-2 border-primary"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
             Details
@@ -216,13 +216,13 @@ export function AddProjectDialog({ builders, locations, statuses }: AddProjectDi
             onClick={() => setActiveTab("documents")}
             className={`px-4 py-2 text-sm font-medium transition-colors ${
               activeTab === "documents"
-                ? "text-amber-500 border-b-2 border-amber-500"
-                : "text-slate-400 hover:text-slate-200"
+                ? "text-primary border-b-2 border-primary"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
             Documents
             {stagedFiles.length > 0 && (
-              <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs rounded-full bg-amber-500 text-slate-900">
+              <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs rounded-full bg-primary text-primary-foreground">
                 {stagedFiles.length}
               </span>
             )}
@@ -255,14 +255,14 @@ export function AddProjectDialog({ builders, locations, statuses }: AddProjectDi
                 return (
                   <div key={cat.id} className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-300 text-sm font-medium">{cat.label}</span>
+                      <span className="text-muted-foreground text-sm font-medium">{cat.label}</span>
                       {staged && <CheckCircle className="w-4 h-4 text-green-500" />}
                     </div>
 
                     {staged && (
-                      <div className="flex items-center gap-2 p-2 bg-slate-700 rounded-md">
-                        <File className="w-4 h-4 text-amber-500 flex-shrink-0" />
-                        <span className="text-white text-sm flex-1 truncate">
+                      <div className="flex items-center gap-2 p-2 bg-muted rounded-md">
+                        <File className="w-4 h-4 text-primary flex-shrink-0" />
+                        <span className="text-foreground text-sm flex-1 truncate">
                           {staged.file.name}
                         </span>
                         <Button
@@ -270,7 +270,7 @@ export function AddProjectDialog({ builders, locations, statuses }: AddProjectDi
                           variant="ghost"
                           size="sm"
                           onClick={() => handleRemoveStagedFile(cat.id)}
-                          className="text-slate-400 hover:text-red-400 h-6 w-6 p-0"
+                          className="text-muted-foreground hover:text-destructive h-6 w-6 p-0"
                         >
                           <X className="w-3 h-3" />
                         </Button>
@@ -288,7 +288,7 @@ export function AddProjectDialog({ builders, locations, statuses }: AddProjectDi
 
           <Button
             type="submit"
-            className="w-full bg-amber-500 hover:bg-amber-600 text-slate-900"
+            className="w-full"
             disabled={!formData.lotNumber || createMutation.isPending}
           >
             {createMutation.isPending ? "Creating..." : "Create Project"}
