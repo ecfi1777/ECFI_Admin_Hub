@@ -9,6 +9,13 @@ interface ThemeContextType {
   toggleTheme: () => void;
 }
 
+interface ThemeContextType {
+  theme: Theme;
+  setTheme: (theme: Theme) => void;
+  toggleTheme: () => void;
+  profileLoaded: boolean;
+}
+
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
@@ -32,7 +39,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
     const loadTheme = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user || cancelled) return;
+      if (!session?.user || cancelled) {
+        // No session — mark loaded immediately (use localStorage default)
+        if (!cancelled) setProfileLoaded(true);
+        return;
+      }
 
       const { data } = await supabase
         .from("profiles")
@@ -41,6 +52,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         .single();
 
       if (!cancelled && data?.theme && (data.theme === "dark" || data.theme === "light")) {
+        console.log("[ThemeProvider] DB theme:", data.theme);
         setThemeState(data.theme as Theme);
       }
       if (!cancelled) setProfileLoaded(true);
@@ -67,8 +79,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setTheme(theme === "dark" ? "light" : "dark");
   }, [theme, setTheme]);
 
+  if (!profileLoaded) {
+    return (
+      <div className="min-h-screen bg-neutral-950" />
+    );
+  }
+
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme, profileLoaded }}>
       {children}
     </ThemeContext.Provider>
   );
