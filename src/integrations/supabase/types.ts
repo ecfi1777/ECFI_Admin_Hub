@@ -1066,6 +1066,17 @@ export type Database = {
           name: string
         }[]
       }
+      log_restore_action: {
+        Args: {
+          p_new_data: Json
+          p_old_data: Json
+          p_organization_id: string
+          p_record_id: string
+          p_record_label: string
+          p_table_name: string
+        }
+        Returns: undefined
+      }
       lookup_organization_by_invite_code: {
         Args: { p_invite_code: string }
         Returns: string
