@@ -16,6 +16,7 @@ import ResetPassword from "./pages/ResetPassword";
 import Onboarding from "./pages/Onboarding";
 import Logout from "./pages/Logout";
 import Dashboard from "./pages/Dashboard";
+import Schedule from "./pages/Schedule";
 import Projects from "./pages/Projects";
 import CalendarView from "./pages/CalendarView";
 import Invoices from "./pages/Invoices";
@@ -105,6 +106,7 @@ const App = () => (
                 <Route path="/onboarding" element={<OnboardingRoute><Onboarding /></OnboardingRoute>} />
                 {/* Viewer-accessible routes */}
                 <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                <Route path="/schedule" element={<ProtectedRoute><Schedule /></ProtectedRoute>} />
                 <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
                 <Route path="/kanban" element={<ProtectedRoute><ManagerRoute><Kanban /></ManagerRoute></ProtectedRoute>} />
                 <Route path="/calendar" element={<ProtectedRoute><CalendarView /></ProtectedRoute>} />
