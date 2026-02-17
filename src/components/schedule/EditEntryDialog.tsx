@@ -51,21 +51,21 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
         .eq("id", entry.id)
         .single();
       if (error) throw error;
-      // Cast as partial ScheduleEntry - relation fields (crews, phases, etc.)
-      // won't be present but loadFromEntry only reads scalar fields
       return data as unknown as ScheduleEntry;
     },
     enabled: !!entry?.id && open,
+    staleTime: 0, // Always refetch when dialog opens
   });
 
-  // Load form data from full entry when available, fall back to passed entry
+  // Load form data when dialog opens or fetched data arrives
   useEffect(() => {
+    if (!open) return;
     if (fullEntry) {
       loadFromEntry(fullEntry);
     } else if (entry) {
       loadFromEntry(entry);
     }
-  }, [fullEntry, entry, loadFromEntry]);
+  }, [fullEntry, entry, open, loadFromEntry]);
 
   const updateMutation = useMutation({
     mutationFn: async () => {
