@@ -7,12 +7,6 @@ interface ThemeContextType {
   theme: Theme;
   setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
-}
-
-interface ThemeContextType {
-  theme: Theme;
-  setTheme: (theme: Theme) => void;
-  toggleTheme: () => void;
   profileLoaded: boolean;
 }
 
@@ -110,11 +104,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setTheme(theme === "dark" ? "light" : "dark");
   }, [theme, setTheme]);
 
-  if (!profileLoaded) {
-    return (
-      <div className="min-h-screen bg-neutral-950" />
-    );
-  }
+  // We no longer gate rendering on profileLoaded to prevent "black screen" issues.
+  // The theme will apply as soon as it's resolved.
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme, toggleTheme, profileLoaded }}>
