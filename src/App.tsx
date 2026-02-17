@@ -42,15 +42,22 @@ const ProtectedRoute = memo(function ProtectedRoute({ children }: { children: Re
   const { hasOrganization, isLoading: orgLoading } = useOrganization();
 
   const renderState = useMemo(() => {
+    // If auth is completely stalled, but we have some indication of user, move forward
     if (!authInitialized) return "loading-auth";
     if (!user) return "redirect-auth";
+    
+    // Once auth is ready, wait for organization
     if (orgLoading) return "loading-org";
     if (!hasOrganization) return "redirect-onboarding";
+    
     return "render";
   }, [authInitialized, user, orgLoading, hasOrganization]);
 
-  if (renderState === "loading-auth") return <LoadingScreen message="Initializing..." />;
-  if (renderState === "loading-org") return <LoadingScreen message="Loading workspace..." />;
+  if (renderState === "loading-auth" || renderState === "loading-org") {
+    const message = renderState === "loading-auth" ? "Initializing..." : "Loading workspace...";
+    return <LoadingScreen message={message} />;
+  }
+  
   if (renderState === "redirect-auth") return <Navigate to="/auth" replace />;
   if (renderState === "redirect-onboarding") return <Navigate to="/onboarding" replace />;
   return <>{children}</>;
