@@ -35,15 +35,33 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   // Load theme from profile on auth state changes
   useEffect(() => {
-    // Fallback: if no auth event fires within 2s, unblock rendering
-    const fallbackTimer = setTimeout(() => {
-      setProfileLoaded(true);
-    }, 2000);
+    let mounted = true;
+
+    // Immediately check session so we never block rendering
+    const initTheme = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!mounted) return;
+        if (session?.user) {
+          const { data } = await supabase
+            .from("profiles")
+            .select("theme")
+            .eq("user_id", session.user.id)
+            .single();
+          if (mounted && (data?.theme === "dark" || data?.theme === "light")) {
+            setThemeState(data.theme as Theme);
+          }
+        }
+      } catch {
+        // ignore
+      } finally {
+        if (mounted) setProfileLoaded(true);
+      }
+    };
+    initTheme();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        clearTimeout(fallbackTimer);
-
         if (event === "SIGNED_OUT") {
           setThemeState("dark");
           localStorage.removeItem("theme");
@@ -65,29 +83,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
             setThemeState(data.theme as Theme);
           }
           setProfileLoaded(true);
-          return;
-        }
-
-        // INITIAL_SESSION with no user, or other events
-        if (event === "INITIAL_SESSION") {
-          if (session?.user) {
-            const { data } = await supabase
-              .from("profiles")
-              .select("theme")
-              .eq("user_id", session.user.id)
-              .single();
-
-            if (data?.theme === "dark" || data?.theme === "light") {
-              setThemeState(data.theme as Theme);
-            }
-          }
-          setProfileLoaded(true);
         }
       }
     );
 
     return () => {
-      clearTimeout(fallbackTimer);
+      mounted = false;
       subscription.unsubscribe();
     };
   }, []);
