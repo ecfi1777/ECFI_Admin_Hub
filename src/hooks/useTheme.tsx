@@ -27,40 +27,49 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("theme", theme);
   }, [theme]);
 
-  // Load theme from profile on auth state changes
+  // Load theme from profile on auth state changes — NEVER block rendering
   useEffect(() => {
     let mounted = true;
 
-    // Immediately check session so we never block rendering
-    const initTheme = async () => {
-      try {
-        const sessionPromise = supabase.auth.getSession();
-        const timeoutPromise = new Promise<{ data: { session: null } }>((resolve) => 
-          setTimeout(() => resolve({ data: { session: null } }), 800)
-        );
-        const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]) as any;
+    // Failsafe: force profileLoaded after 3s no matter what
+    const failsafe = setTimeout(() => {
+      if (mounted) setProfileLoaded(true);
+    }, 3000);
 
-        if (!mounted) return;
-        if (session?.user) {
-          const { data } = await supabase
-            .from("profiles")
-            .select("theme")
-            .eq("user_id", session.user.id)
-            .single();
-          if (mounted && (data?.theme === "dark" || data?.theme === "light")) {
-            setThemeState(data.theme as Theme);
-          }
+    const loadThemeFromProfile = async (userId: string) => {
+      try {
+        const { data } = await supabase
+          .from("profiles")
+          .select("theme")
+          .eq("user_id", userId)
+          .single();
+        if (mounted && (data?.theme === "dark" || data?.theme === "light")) {
+          setThemeState(data.theme as Theme);
         }
       } catch {
-        // ignore
+        // Theme fetch failed — not critical, continue
       } finally {
         if (mounted) setProfileLoaded(true);
       }
     };
-    initTheme();
+
+    // Initial session check
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!mounted) return;
+      if (session?.user) {
+        loadThemeFromProfile(session.user.id);
+      } else {
+        setProfileLoaded(true);
+      }
+    }).catch(() => {
+      if (mounted) setProfileLoaded(true);
+    });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (!mounted) return;
+
+        // Always set profileLoaded for ALL events
         if (event === "SIGNED_OUT") {
           setThemeState("dark");
           localStorage.removeItem("theme");
@@ -68,19 +77,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        if (
-          (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") &&
-          session?.user
-        ) {
-          const { data } = await supabase
-            .from("profiles")
-            .select("theme")
-            .eq("user_id", session.user.id)
-            .single();
-
-          if (data?.theme === "dark" || data?.theme === "light") {
-            setThemeState(data.theme as Theme);
-          }
+        if (session?.user) {
+          loadThemeFromProfile(session.user.id);
+        } else {
           setProfileLoaded(true);
         }
       }
@@ -88,6 +87,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
     return () => {
       mounted = false;
+      clearTimeout(failsafe);
       subscription.unsubscribe();
     };
   }, []);
