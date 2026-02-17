@@ -19,6 +19,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   });
   const [profileLoaded, setProfileLoaded] = useState(true);
 
+  // Absolute failsafe: always render after 2s no matter what
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setProfileLoaded(true);
+    }, 2000);
+    return () => clearTimeout(timeout);
+  }, []);
+
   // Apply theme class + persist to localStorage
   useEffect(() => {
     const root = window.document.documentElement;
