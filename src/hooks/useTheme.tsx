@@ -33,33 +33,53 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("theme", theme);
   }, [theme]);
 
-  // Load theme from profile on auth
+  // Load theme from profile on auth state changes
   useEffect(() => {
-    let cancelled = false;
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === "SIGNED_OUT") {
+          setThemeState("dark");
+          localStorage.removeItem("theme");
+          setProfileLoaded(true);
+          return;
+        }
 
-    const loadTheme = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user || cancelled) {
-        // No session — mark loaded immediately (use localStorage default)
-        if (!cancelled) setProfileLoaded(true);
-        return;
+        if (
+          (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") &&
+          session?.user
+        ) {
+          const { data } = await supabase
+            .from("profiles")
+            .select("theme")
+            .eq("user_id", session.user.id)
+            .single();
+
+          if (data?.theme === "dark" || data?.theme === "light") {
+            setThemeState(data.theme as Theme);
+          }
+          setProfileLoaded(true);
+          return;
+        }
+
+        // INITIAL_SESSION with no user, or other events
+        if (event === "INITIAL_SESSION") {
+          if (session?.user) {
+            const { data } = await supabase
+              .from("profiles")
+              .select("theme")
+              .eq("user_id", session.user.id)
+              .single();
+
+            if (data?.theme === "dark" || data?.theme === "light") {
+              setThemeState(data.theme as Theme);
+            }
+          }
+          setProfileLoaded(true);
+        }
       }
+    );
 
-      const { data } = await supabase
-        .from("profiles")
-        .select("theme")
-        .eq("user_id", session.user.id)
-        .single();
-
-      if (!cancelled && data?.theme && (data.theme === "dark" || data.theme === "light")) {
-        console.log("[ThemeProvider] DB theme:", data.theme);
-        setThemeState(data.theme as Theme);
-      }
-      if (!cancelled) setProfileLoaded(true);
-    };
-
-    loadTheme();
-    return () => { cancelled = true; };
+    return () => { subscription.unsubscribe(); };
   }, []);
 
   // Save to database when theme changes (after profile loaded)
