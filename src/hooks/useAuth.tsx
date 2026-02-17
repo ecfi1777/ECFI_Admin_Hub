@@ -35,8 +35,10 @@ export function useAuth() {
     };
 
     // Set up auth state listener FIRST — it may fire before getSession resolves
+    console.log("[useAuth] Setting up auth listeners...");
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event: AuthChangeEvent, session: Session | null) => {
+        console.log("[useAuth] onAuthStateChange:", event, !!session);
         if (!mountedRef.current) return;
         
         if (event === "SIGNED_OUT") {
@@ -67,11 +69,12 @@ export function useAuth() {
 
     // Also try getSession for cases where onAuthStateChange doesn't fire quickly
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log("[useAuth] getSession resolved:", !!session, "initComplete:", initializationComplete.current);
       if (mountedRef.current && !initializationComplete.current) {
         markInitialized(session);
       }
     }).catch((error) => {
-      console.error("Auth initialization error:", error);
+      console.error("[useAuth] getSession error:", error);
       if (mountedRef.current && !initializationComplete.current) {
         markInitialized(null);
       }
