@@ -23,7 +23,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const stored = localStorage.getItem("theme");
     return (stored as Theme) || "dark";
   });
-  const [profileLoaded, setProfileLoaded] = useState(false);
+  const [profileLoaded, setProfileLoaded] = useState(true);
 
   // Apply theme class + persist to localStorage
   useEffect(() => {
