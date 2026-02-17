@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useRef, useCallback, useMemo, ReactNode } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { User, Session, AuthChangeEvent } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -9,44 +9,62 @@ interface AuthState {
   initialized: boolean;
 }
 
-interface AuthContextValue extends AuthState {
-  signOut: () => Promise<void>;
-}
-
-const AuthContext = createContext<AuthContextValue | null>(null);
-
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function useAuth() {
   const [state, setState] = useState<AuthState>({
     user: null,
     session: null,
     loading: true,
     initialized: false,
   });
-
+  
   const mountedRef = useRef(true);
   const initializationComplete = useRef(false);
 
   useEffect(() => {
     mountedRef.current = true;
+    
+    // Unified initialization function
+    const initializeAuth = async () => {
+      if (initializationComplete.current) return;
+      
+      try {
+        // Use a 2-second timeout for the session fetch itself
+        const sessionPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise<{ data: { session: null } }>((resolve) => 
+          setTimeout(() => resolve({ data: { session: null } }), 800)
+        );
 
-    const markInitialized = (session: Session | null) => {
-      if (!mountedRef.current || initializationComplete.current) return;
-      console.log("[useAuth] markInitialized, hasSession:", !!session);
-      setState({
-        session,
-        user: session?.user ?? null,
-        loading: false,
-        initialized: true,
-      });
-      initializationComplete.current = true;
+        const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]) as any;
+        
+        if (!mountedRef.current || initializationComplete.current) return;
+        
+        setState({
+          session,
+          user: session?.user ?? null,
+          loading: false,
+          initialized: true,
+        });
+        initializationComplete.current = true;
+      } catch (error) {
+        console.error("Auth initialization error:", error);
+        if (mountedRef.current && !initializationComplete.current) {
+          setState({
+            session: null,
+            user: null,
+            loading: false,
+            initialized: true,
+          });
+          initializationComplete.current = true;
+        }
+      }
     };
 
-    // Set up auth state listener FIRST
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event: AuthChangeEvent, session: Session | null) => {
         if (!mountedRef.current) return;
-        console.log("[useAuth] onAuthStateChange:", event, !!session);
-
+        
+        // Always handle sign-out immediately to ensure state is cleared
         if (event === "SIGNED_OUT") {
           setState({
             session: null,
@@ -58,10 +76,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
 
+        // For other events, if not initialized, this might be our initial session
         if (!initializationComplete.current) {
-          markInitialized(session);
+          setState({
+            session,
+            user: session?.user ?? null,
+            loading: false,
+            initialized: true,
+          });
+          initializationComplete.current = true;
         } else {
-          // Subsequent updates (token refresh, sign-in, etc.)
+          // Subsequent updates
           setState(prev => ({
             ...prev,
             session,
@@ -72,26 +97,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    // Also try getSession as backup
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log("[useAuth] getSession resolved:", !!session, "initComplete:", initializationComplete.current);
-      if (mountedRef.current && !initializationComplete.current) {
-        markInitialized(session);
-      }
-    }).catch((error) => {
-      console.error("[useAuth] getSession error:", error);
-      if (mountedRef.current && !initializationComplete.current) {
-        markInitialized(null);
-      }
-    });
+    // Initial check
+    initializeAuth();
 
-    // Absolute fallback
+    // Absolute fallback: if everything above fails to set initialized=true, do it after 4s
     const absoluteFallback = setTimeout(() => {
       if (mountedRef.current && !initializationComplete.current) {
-        console.warn("[useAuth] Fallback triggered");
-        markInitialized(null);
+        console.warn("Auth initialization timed out (absolute fallback)");
+        setState(prev => ({
+          ...prev,
+          loading: false,
+          initialized: true,
+        }));
+        initializationComplete.current = true;
       }
-    }, 3000);
+    }, 2000);
 
     return () => {
       mountedRef.current = false;
@@ -103,27 +123,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     setState(prev => ({ ...prev, loading: true }));
     await supabase.auth.signOut();
+    // State will be updated by onAuthStateChange
   }, []);
 
-  const value = useMemo(() => ({
+  // Memoize return value to prevent unnecessary re-renders in consumers
+  return useMemo(() => ({
     user: state.user,
     session: state.session,
     loading: state.loading,
     initialized: state.initialized,
     signOut,
   }), [state.user, state.session, state.loading, state.initialized, signOut]);
-
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
 }
