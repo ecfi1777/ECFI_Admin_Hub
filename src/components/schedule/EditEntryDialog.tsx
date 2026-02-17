@@ -3,7 +3,7 @@
  */
 
 import { useEffect } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,12 +39,33 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
   
   const { formData, updateField, loadFromEntry, getUpdatePayload } = useEntryForm();
 
-  // Load form data when entry changes
+  // Fetch full entry data by ID to ensure all fields are available
+  // (the passed entry may only contain display-level fields from calendar queries)
+  const { data: fullEntry } = useQuery({
+    queryKey: ["schedule-entry-full", entry?.id],
+    queryFn: async () => {
+      if (!entry?.id) return null;
+      const { data, error } = await supabase
+        .from("schedule_entries")
+        .select("*")
+        .eq("id", entry.id)
+        .single();
+      if (error) throw error;
+      // Cast as partial ScheduleEntry - relation fields (crews, phases, etc.)
+      // won't be present but loadFromEntry only reads scalar fields
+      return data as unknown as ScheduleEntry;
+    },
+    enabled: !!entry?.id && open,
+  });
+
+  // Load form data from full entry when available, fall back to passed entry
   useEffect(() => {
-    if (entry) {
+    if (fullEntry) {
+      loadFromEntry(fullEntry);
+    } else if (entry) {
       loadFromEntry(entry);
     }
-  }, [entry, loadFromEntry]);
+  }, [fullEntry, entry, loadFromEntry]);
 
   const updateMutation = useMutation({
     mutationFn: async () => {
