@@ -35,8 +35,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   // Load theme from profile on auth state changes
   useEffect(() => {
+    // Fallback: if no auth event fires within 2s, unblock rendering
+    const fallbackTimer = setTimeout(() => {
+      setProfileLoaded(true);
+    }, 2000);
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        clearTimeout(fallbackTimer);
+
         if (event === "SIGNED_OUT") {
           setThemeState("dark");
           localStorage.removeItem("theme");
@@ -79,7 +86,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    return () => { subscription.unsubscribe(); };
+    return () => {
+      clearTimeout(fallbackTimer);
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Save to database when theme changes (after profile loaded)
