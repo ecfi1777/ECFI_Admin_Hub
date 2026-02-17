@@ -26,9 +26,23 @@ export function useAuth() {
     // Get initial session first, then set up listener
     // This prevents race conditions and ensures we have the session before any events fire
     const initializeAuth = async () => {
+      // Fallback: if getSession hangs (e.g. in iframe), unblock after 3s
+      const fallback = setTimeout(() => {
+        if (mountedRef.current && !initializationComplete.current) {
+          setState({
+            session: null,
+            user: null,
+            loading: false,
+            initialized: true,
+          });
+          initializationComplete.current = true;
+        }
+      }, 3000);
+
       try {
         const { data: { session } } = await supabase.auth.getSession();
         
+        clearTimeout(fallback);
         if (!mountedRef.current) return;
         
         // Mark as initialized with the initial session
@@ -40,6 +54,7 @@ export function useAuth() {
         });
         initializationComplete.current = true;
       } catch (error) {
+        clearTimeout(fallback);
         console.error("Auth initialization error:", error);
         if (mountedRef.current) {
           setState({
