@@ -16,15 +16,14 @@ export interface UserRole {
 }
 
 export function useUserRole(): UserRole {
-  const { organizationId, tentativeOrganizationId } = useOrganization();
-  const effectiveOrgId = organizationId || tentativeOrganizationId;
+  const { organizationId } = useOrganization();
 
   const { data: role = null, isLoading } = useQuery({
-    queryKey: ["user-role", effectiveOrgId],
+    queryKey: ["user-role", organizationId],
     queryFn: async () => {
-      if (!effectiveOrgId) return null;
+      if (!organizationId) return null;
       const { data, error } = await supabase.rpc("get_my_role" as any, {
-        p_organization_id: effectiveOrgId,
+        p_organization_id: organizationId,
       });
       if (error) {
         console.error("Failed to fetch role:", error);
@@ -32,7 +31,7 @@ export function useUserRole(): UserRole {
       }
       return data as string | null;
     },
-    enabled: !!effectiveOrgId,
+    enabled: !!organizationId,
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
   });

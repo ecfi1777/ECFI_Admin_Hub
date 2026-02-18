@@ -34,12 +34,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     // Immediately check session so we never block rendering
     const initTheme = async () => {
       try {
-        const sessionPromise = supabase.auth.getSession();
-        const timeoutPromise = new Promise<{ data: { session: null } }>((resolve) => 
-          setTimeout(() => resolve({ data: { session: null } }), 800)
-        );
-        const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]) as any;
-
+        const { data: { session } } = await supabase.auth.getSession();
         if (!mounted) return;
         if (session?.user) {
           const { data } = await supabase
@@ -96,7 +91,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const setTheme = useCallback(async (newTheme: Theme) => {
     setThemeState(newTheme);
 
-    // We use a non-blocking session check here
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
       await supabase

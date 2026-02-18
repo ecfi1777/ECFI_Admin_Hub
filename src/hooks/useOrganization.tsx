@@ -19,7 +19,6 @@ interface OrganizationMembership {
 
 interface OrganizationContextValue {
   organizationId: string | null;
-  tentativeOrganizationId: string | null;
   organization: Organization | null;
   role: string | null;
   isOwner: boolean;
@@ -50,7 +49,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
     return null;
   });
 
-  const shouldFetchOrgs = !!user?.id;
+  const shouldFetchOrgs = authInitialized && !!user?.id;
 
   // Fetch ALL organizations the user belongs to, sorted by display_order
   const { data: allMemberships, isLoading: queryLoading, error, refetch, isFetched } = useQuery({
@@ -96,7 +95,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
           console.warn("Organization fetch timing out, unblocking UI");
           setLoadingTimeout(true);
         }
-      }, 2000);
+      }, 5000);
       return () => clearTimeout(timer);
     }
   }, [shouldFetchOrgs, isFetched]);
@@ -155,7 +154,6 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<OrganizationContextValue>(() => ({
     organizationId: currentMembership?.organization_id ?? null,
-    tentativeOrganizationId: activeOrgId,
     organization: currentMembership?.organizations ?? null,
     role: currentMembership?.role ?? null,
     isOwner: currentMembership?.role === "owner",
@@ -164,9 +162,9 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
     isLoading,
     error: error as Error | null,
     refetch,
-    hasOrganization: (allMemberships?.length ?? 0) > 0 || !!activeOrgId,
+    hasOrganization: (allMemberships?.length ?? 0) > 0,
     saveOrganizationOrder,
-  }), [currentMembership, activeOrgId, allMemberships, switchOrganization, isLoading, error, refetch, saveOrganizationOrder]);
+  }), [currentMembership, allMemberships, switchOrganization, isLoading, error, refetch, saveOrganizationOrder]);
 
   return (
     <OrganizationContext.Provider value={value}>

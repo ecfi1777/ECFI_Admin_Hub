@@ -31,7 +31,7 @@ export function useAuth() {
         // Use a 2-second timeout for the session fetch itself
         const sessionPromise = supabase.auth.getSession();
         const timeoutPromise = new Promise<{ data: { session: null } }>((resolve) => 
-          setTimeout(() => resolve({ data: { session: null } }), 800)
+          setTimeout(() => resolve({ data: { session: null } }), 2000)
         );
 
         const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]) as any;
@@ -111,7 +111,7 @@ export function useAuth() {
         }));
         initializationComplete.current = true;
       }
-    }, 2000);
+    }, 4000);
 
     return () => {
       mountedRef.current = false;
