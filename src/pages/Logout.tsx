@@ -7,9 +7,11 @@ export default function Logout() {
   useEffect(() => {
     const performLogout = async () => {
       try {
-        // Clear all local storage
+        // Clear local storage but preserve auth version flag
+        const authVersion = localStorage.getItem("auth_version");
         localStorage.clear();
         sessionStorage.clear();
+        if (authVersion) localStorage.setItem("auth_version", authVersion);
         
         // Sign out from Supabase
         await supabase.auth.signOut();
