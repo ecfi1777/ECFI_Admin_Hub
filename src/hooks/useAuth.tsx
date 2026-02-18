@@ -34,51 +34,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     mountedRef.current = true;
 
-    // Fallback: unblock UI if getSession stalls (Firefox, slow networks)
-    const forceInitialized = () => {
+    // Fallback: unblock UI if auth stalls (Firefox, slow networks)
+    const timeoutId = setTimeout(() => {
       if (!mountedRef.current || initializationComplete.current) return;
       console.warn("Auth initialization timeout – unblocking UI");
       setState(prev => ({ ...prev, loading: false, initialized: true }));
       initializationComplete.current = true;
-    };
-    const timeoutId = setTimeout(forceInitialized, 5000);
+    }, 5000);
 
-    const initializeAuth = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!mountedRef.current) return;
-        clearTimeout(timeoutId);
-        
-        setState({
-          session,
-          user: session?.user ?? null,
-          loading: false,
-          initialized: true,
-        });
-        initializationComplete.current = true;
-      } catch (error) {
-        console.error("Auth initialization error:", error);
-        clearTimeout(timeoutId);
-        if (mountedRef.current) {
-          setState({
-            session: null,
-            user: null,
-            loading: false,
-            initialized: true,
-          });
-          initializationComplete.current = true;
-        }
-      }
-    };
-
+    // Use onAuthStateChange as the SOLE source of truth.
+    // INITIAL_SESSION fires synchronously after subscribe and is the most
+    // reliable way to pick up an existing session on page load.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event: AuthChangeEvent, session: Session | null) => {
         if (!mountedRef.current) return;
-        if (event === "INITIAL_SESSION") return;
         
-        // Always update state for real auth events (SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED)
-        // even if initializeAuth hasn't finished yet
+        clearTimeout(timeoutId);
         setState({
           session,
           user: session?.user ?? null,
@@ -88,8 +59,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         initializationComplete.current = true;
       }
     );
-
-    initializeAuth();
 
     return () => {
       mountedRef.current = false;
