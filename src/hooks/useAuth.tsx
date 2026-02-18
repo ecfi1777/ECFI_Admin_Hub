@@ -34,17 +34,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     mountedRef.current = true;
 
     // Fallback: unblock UI if getSession stalls (Firefox, slow networks)
-    const forceInitialized = async () => {
+    const forceInitialized = () => {
       if (!mountedRef.current || initializationComplete.current) return;
-      console.warn("Auth initialization timeout – clearing corrupted session data");
-
-      // Wipe all local auth data to break out of corrupted token loops
-      try { await supabase.auth.signOut({ scope: "local" }); } catch {}
-      try { localStorage.clear(); } catch {}
-      try { sessionStorage.clear(); } catch {}
-
-      if (!mountedRef.current) return;
-      setState({ session: null, user: null, loading: false, initialized: true });
+      console.warn("Auth initialization timeout – unblocking UI");
+      setState(prev => ({ ...prev, loading: false, initialized: true }));
       initializationComplete.current = true;
     };
     const timeoutId = setTimeout(forceInitialized, 3000);
