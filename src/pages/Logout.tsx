@@ -9,13 +9,15 @@ export default function Logout() {
   useEffect(() => {
     const performLogout = async () => {
       try {
-        // Clear all cached query data first
         queryClient.clear();
-        
-        // Remove stale org key
         localStorage.removeItem("ecfi_active_organization_id");
+        localStorage.removeItem("app_cache_version");
         
-        await supabase.auth.signOut();
+        try {
+          await supabase.auth.signOut();
+        } catch (e) {
+          console.error("Sign-out error (forcing redirect):", e);
+        }
         
         setStatus("Signed out successfully. Redirecting...");
         
