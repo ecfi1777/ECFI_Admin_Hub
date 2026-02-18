@@ -19,7 +19,25 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+// One-time storage reset for browsers with corrupted auth data
+const AUTH_VERSION = "2";
+function checkAuthVersion() {
+  try {
+    const storedVersion = localStorage.getItem("auth_version");
+    if (storedVersion !== AUTH_VERSION) {
+      localStorage.clear();
+      sessionStorage.clear();
+      localStorage.setItem("auth_version", AUTH_VERSION);
+      window.location.reload();
+      return false;
+    }
+  } catch {}
+  return true;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const [ready] = useState(() => checkAuthVersion());
+
   const [state, setState] = useState<AuthState>({
     user: null,
     session: null,
@@ -107,6 +125,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     initialized: state.initialized,
     signOut,
   }), [state.user, state.session, state.loading, state.initialized, signOut]);
+
+  if (!ready) return null;
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
