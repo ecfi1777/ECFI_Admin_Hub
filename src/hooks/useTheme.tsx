@@ -7,6 +7,12 @@ interface ThemeContextType {
   theme: Theme;
   setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
+}
+
+interface ThemeContextType {
+  theme: Theme;
+  setTheme: (theme: Theme) => void;
+  toggleTheme: () => void;
   profileLoaded: boolean;
 }
 
@@ -17,7 +23,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const stored = localStorage.getItem("theme");
     return (stored as Theme) || "dark";
   });
-  const [profileLoaded, setProfileLoaded] = useState(true);
+  const [profileLoaded, setProfileLoaded] = useState(false);
 
   // Apply theme class + persist to localStorage
   useEffect(() => {
@@ -29,31 +35,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   // Load theme from profile on auth state changes
   useEffect(() => {
-    let mounted = true;
-
-    // Immediately check session so we never block rendering
-    const initTheme = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!mounted) return;
-        if (session?.user) {
-          const { data } = await supabase
-            .from("profiles")
-            .select("theme")
-            .eq("user_id", session.user.id)
-            .single();
-          if (mounted && (data?.theme === "dark" || data?.theme === "light")) {
-            setThemeState(data.theme as Theme);
-          }
-        }
-      } catch {
-        // ignore
-      } finally {
-        if (mounted) setProfileLoaded(true);
-      }
-    };
-    initTheme();
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (event === "SIGNED_OUT") {
@@ -77,14 +58,28 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
             setThemeState(data.theme as Theme);
           }
           setProfileLoaded(true);
+          return;
+        }
+
+        // INITIAL_SESSION with no user, or other events
+        if (event === "INITIAL_SESSION") {
+          if (session?.user) {
+            const { data } = await supabase
+              .from("profiles")
+              .select("theme")
+              .eq("user_id", session.user.id)
+              .single();
+
+            if (data?.theme === "dark" || data?.theme === "light") {
+              setThemeState(data.theme as Theme);
+            }
+          }
+          setProfileLoaded(true);
         }
       }
     );
 
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
+    return () => { subscription.unsubscribe(); };
   }, []);
 
   // Save to database when theme changes (after profile loaded)
@@ -104,8 +99,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setTheme(theme === "dark" ? "light" : "dark");
   }, [theme, setTheme]);
 
-  // We no longer gate rendering on profileLoaded to prevent "black screen" issues.
-  // The theme will apply as soon as it's resolved.
+  if (!profileLoaded) {
+    return (
+      <div className="min-h-screen bg-neutral-950" />
+    );
+  }
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme, toggleTheme, profileLoaded }}>

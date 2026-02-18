@@ -40,7 +40,6 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const hasInitializedActiveOrg = useRef(false);
   const previousUserId = useRef<string | null>(null);
-  const [loadingTimeout, setLoadingTimeout] = useState(false);
   
   const [activeOrgId, setActiveOrgIdState] = useState<string | null>(() => {
     if (typeof window !== "undefined") {
@@ -84,21 +83,8 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
     enabled: shouldFetchOrgs,
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
-    retry: 1,
+    retry: false,
   });
-
-  // Add a safety timeout for organization loading
-  useEffect(() => {
-    if (shouldFetchOrgs && !isFetched) {
-      const timer = setTimeout(() => {
-        if (!isFetched) {
-          console.warn("Organization fetch timing out, unblocking UI");
-          setLoadingTimeout(true);
-        }
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [shouldFetchOrgs, isFetched]);
 
   const currentMembership = useMemo(() => {
     if (!allMemberships || allMemberships.length === 0) return null;
@@ -123,7 +109,6 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (user?.id !== previousUserId.current) {
       hasInitializedActiveOrg.current = false;
-      setLoadingTimeout(false);
     }
   }, [user?.id]);
 
@@ -148,9 +133,9 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
 
   const isLoading = useMemo(() => {
     if (!authInitialized) return true;
-    if (user && !isFetched && !loadingTimeout) return true;
+    if (user && !isFetched) return true;
     return false;
-  }, [authInitialized, user, isFetched, loadingTimeout]);
+  }, [authInitialized, user, isFetched]);
 
   const value = useMemo<OrganizationContextValue>(() => ({
     organizationId: currentMembership?.organization_id ?? null,

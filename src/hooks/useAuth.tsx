@@ -23,21 +23,15 @@ export function useAuth() {
   useEffect(() => {
     mountedRef.current = true;
     
-    // Unified initialization function
+    // Get initial session first, then set up listener
+    // This prevents race conditions and ensures we have the session before any events fire
     const initializeAuth = async () => {
-      if (initializationComplete.current) return;
-      
       try {
-        // Use a 2-second timeout for the session fetch itself
-        const sessionPromise = supabase.auth.getSession();
-        const timeoutPromise = new Promise<{ data: { session: null } }>((resolve) => 
-          setTimeout(() => resolve({ data: { session: null } }), 2000)
-        );
-
-        const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]) as any;
+        const { data: { session } } = await supabase.auth.getSession();
         
-        if (!mountedRef.current || initializationComplete.current) return;
+        if (!mountedRef.current) return;
         
+        // Mark as initialized with the initial session
         setState({
           session,
           user: session?.user ?? null,
@@ -47,7 +41,7 @@ export function useAuth() {
         initializationComplete.current = true;
       } catch (error) {
         console.error("Auth initialization error:", error);
-        if (mountedRef.current && !initializationComplete.current) {
+        if (mountedRef.current) {
           setState({
             session: null,
             user: null,
@@ -59,64 +53,32 @@ export function useAuth() {
       }
     };
 
-    // Set up auth state listener
+    // Set up auth state listener for subsequent changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event: AuthChangeEvent, session: Session | null) => {
         if (!mountedRef.current) return;
         
-        // Always handle sign-out immediately to ensure state is cleared
-        if (event === "SIGNED_OUT") {
-          setState({
-            session: null,
-            user: null,
-            loading: false,
-            initialized: true,
-          });
-          initializationComplete.current = true;
-          return;
-        }
-
-        // For other events, if not initialized, this might be our initial session
-        if (!initializationComplete.current) {
-          setState({
-            session,
-            user: session?.user ?? null,
-            loading: false,
-            initialized: true,
-          });
-          initializationComplete.current = true;
-        } else {
-          // Subsequent updates
-          setState(prev => ({
-            ...prev,
-            session,
-            user: session?.user ?? null,
-            loading: false,
-          }));
-        }
+        // Skip INITIAL_SESSION events - we handle that with getSession
+        if (event === "INITIAL_SESSION") return;
+        
+        // Only process events after initialization is complete
+        // This prevents double-updates during startup
+        if (!initializationComplete.current) return;
+        
+        setState({
+          session,
+          user: session?.user ?? null,
+          loading: false,
+          initialized: true,
+        });
       }
     );
 
-    // Initial check
     initializeAuth();
-
-    // Absolute fallback: if everything above fails to set initialized=true, do it after 4s
-    const absoluteFallback = setTimeout(() => {
-      if (mountedRef.current && !initializationComplete.current) {
-        console.warn("Auth initialization timed out (absolute fallback)");
-        setState(prev => ({
-          ...prev,
-          loading: false,
-          initialized: true,
-        }));
-        initializationComplete.current = true;
-      }
-    }, 4000);
 
     return () => {
       mountedRef.current = false;
       subscription.unsubscribe();
-      clearTimeout(absoluteFallback);
     };
   }, []);
 
