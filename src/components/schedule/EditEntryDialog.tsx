@@ -1,3 +1,4 @@
+// force rebuild 2026-02-18
 /**
  * Edit Entry Dialog - Uses shared entry-form architecture
  * Fetches the complete entry by ID on open to ensure all tabs are populated,
