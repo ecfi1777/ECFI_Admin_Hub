@@ -78,14 +78,14 @@ const OnboardingRoute = memo(function OnboardingRoute({ children }: { children: 
 
   if (renderState === "loading") return <LoadingScreen message="Checking your account..." />;
   if (renderState === "redirect-auth") return <Navigate to="/auth" replace />;
-  if (renderState === "redirect-dashboard") return <Navigate to="/" replace />;
+  if (renderState === "redirect-dashboard") return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
 });
 
 const AuthRoute = memo(function AuthRoute({ children }: { children: React.ReactNode }) {
   const { user, initialized } = useAuth();
   if (!initialized) return <LoadingScreen message="Initializing..." />;
-  if (user) return <Navigate to="/" replace />;
+  if (user) return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
 });
 
@@ -104,6 +104,7 @@ const App = () => (
                 <Route path="/logout" element={<Logout />} />
                 <Route path="/onboarding" element={<OnboardingRoute><Onboarding /></OnboardingRoute>} />
                 {/* Viewer-accessible routes */}
+                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                 <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                 <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
                 <Route path="/kanban" element={<ProtectedRoute><ManagerRoute><Kanban /></ManagerRoute></ProtectedRoute>} />
