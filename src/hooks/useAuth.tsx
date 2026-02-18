@@ -19,23 +19,6 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-// One-time storage reset for browsers with corrupted auth data
-const AUTH_VERSION = "2";
-let needsAuthReset = false;
-try {
-  const storedVersion = localStorage.getItem("auth_version");
-  console.log("[Auth] Version check:", { storedVersion, expected: AUTH_VERSION });
-  if (storedVersion !== AUTH_VERSION) {
-    console.log("[Auth] Version mismatch — clearing storage");
-    localStorage.clear();
-    sessionStorage.clear();
-    localStorage.setItem("auth_version", AUTH_VERSION);
-    needsAuthReset = true;
-  }
-} catch (e) {
-  console.error("[Auth] Version check error:", e);
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
 
   const [state, setState] = useState<AuthState>({
@@ -54,7 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Fallback: unblock UI if getSession stalls (Firefox, slow networks)
     const forceInitialized = () => {
       if (!mountedRef.current || initializationComplete.current) return;
-      console.warn("[Auth] Initialization timeout – unblocking UI");
+      console.warn("Auth initialization timeout – unblocking UI");
       setState(prev => ({ ...prev, loading: false, initialized: true }));
       initializationComplete.current = true;
     };
@@ -62,16 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const initializeAuth = async () => {
       try {
-        console.log("[Auth] initializeAuth start, needsAuthReset:", needsAuthReset);
-        // If storage was reset due to version mismatch, clear in-memory client state too
-        if (needsAuthReset) {
-          needsAuthReset = false;
-          console.log("[Auth] Performing local signOut for reset");
-          await supabase.auth.signOut({ scope: 'local' });
-        }
-        console.log("[Auth] Calling getSession...");
         const { data: { session } } = await supabase.auth.getSession();
-        console.log("[Auth] getSession result:", session ? "has session" : "no session");
         
         if (!mountedRef.current) return;
         clearTimeout(timeoutId);
