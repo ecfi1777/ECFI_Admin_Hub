@@ -3,7 +3,7 @@ import App from "./App.tsx";
 import "./index.css";
 
 // One-time cache buster: clears stale data from previous broken versions
-const CACHE_VERSION = "3";
+const CACHE_VERSION = "4";
 if (localStorage.getItem("app_cache_version") !== CACHE_VERSION) {
   const keysToKeep = ["app_cache_version"];
   const saved: Record<string, string> = {};

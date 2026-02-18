@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback, useMemo, createContext, useContext, ReactNode } from "react";
 import { User, Session, AuthChangeEvent } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface AuthState {
   user: User | null;
@@ -20,6 +21,7 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient();
 
   const [state, setState] = useState<AuthState>({
     user: null,
@@ -42,14 +44,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       initializationComplete.current = true;
     }, 5000);
 
-    // Use onAuthStateChange as the SOLE source of truth.
-    // INITIAL_SESSION fires synchronously after subscribe and is the most
-    // reliable way to pick up an existing session on page load.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event: AuthChangeEvent, session: Session | null) => {
         if (!mountedRef.current) return;
         
         clearTimeout(timeoutId);
+
+        // When user signs out or token refresh fails, clear ALL cached data
+        // This is the root fix for "works after clearing cookies" — stale
+        // React Query cache was persisting across auth boundaries.
+        if (event === "SIGNED_OUT" || event === "TOKEN_REFRESHED" && !session) {
+          queryClient.clear();
+          localStorage.removeItem("ecfi_active_organization_id");
+        }
+
         setState({
           session,
           user: session?.user ?? null,
@@ -65,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearTimeout(timeoutId);
       subscription.unsubscribe();
     };
-  }, []);
+  }, [queryClient]);
 
   const signOut = useCallback(async () => {
     setState(prev => ({ ...prev, loading: true }));
