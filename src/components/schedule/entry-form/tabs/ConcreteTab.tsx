@@ -124,7 +124,7 @@ export function ConcreteTab({ formData, updateField, showInlineAdd = true }: Con
       <hr className="border-border my-4" />
       <h4 className="text-sm font-medium text-muted-foreground">Ready Mix Invoice</h4>
       
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         <div className="space-y-2">
           <Label>Invoice #</Label>
           <Input
