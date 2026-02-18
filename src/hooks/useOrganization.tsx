@@ -40,6 +40,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const hasInitializedActiveOrg = useRef(false);
   const previousUserId = useRef<string | null>(null);
+  const [timedOut, setTimedOut] = useState(false);
   
   const [activeOrgId, setActiveOrgIdState] = useState<string | null>(() => {
     if (typeof window !== "undefined") {
@@ -83,7 +84,8 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
     enabled: shouldFetchOrgs,
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
-    retry: false,
+    refetchOnMount: "always",
+    retry: 1,
   });
 
   const currentMembership = useMemo(() => {
@@ -131,11 +133,27 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
     queryClient.invalidateQueries({ queryKey: ["organizations"] });
   }, [queryClient]);
 
+  // Safety timeout: if org loading takes more than 8 seconds, unblock
+  useEffect(() => {
+    if (!authInitialized || !user) return;
+    const timer = setTimeout(() => {
+      setTimedOut(true);
+      console.warn("Organization loading timeout – unblocking UI");
+    }, 8000);
+    return () => clearTimeout(timer);
+  }, [authInitialized, user]);
+
+  // Reset timeout when data arrives
+  useEffect(() => {
+    if (isFetched || error) setTimedOut(false);
+  }, [isFetched, error]);
+
   const isLoading = useMemo(() => {
+    if (timedOut) return false;
     if (!authInitialized) return true;
     if (user && !isFetched && !error) return true;
     return false;
-  }, [authInitialized, user, isFetched, error]);
+  }, [authInitialized, user, isFetched, error, timedOut]);
 
   const value = useMemo<OrganizationContextValue>(() => ({
     organizationId: currentMembership?.organization_id ?? null,
