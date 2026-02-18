@@ -114,7 +114,7 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] md:max-w-2xl max-h-[100dvh] md:max-h-[90dvh] overflow-y-auto rounded-none md:rounded-lg px-3 sm:px-6">
+      <DialogContent className="w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] md:max-w-2xl max-h-[100dvh] md:max-h-[90dvh] overflow-y-auto rounded-none md:rounded-lg">
         <DialogHeader className="pr-8">
           <DialogTitle className="truncate text-base sm:text-lg">Edit Entry: {projectLabel}</DialogTitle>
         </DialogHeader>
@@ -126,13 +126,13 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
         ) : (
           <>
             <Tabs defaultValue={defaultTab} key={defaultTab} className="w-full">
-              <TabsList className="w-full overflow-x-auto flex flex-nowrap gap-1 pb-1">
-                <TabsTrigger value="general">General</TabsTrigger>
-                <TabsTrigger value="concrete">Concrete</TabsTrigger>
-                <TabsTrigger value="pump">Pump</TabsTrigger>
-                <TabsTrigger value="inspection">Inspection</TabsTrigger>
-                <TabsTrigger value="invoicing">Invoicing</TabsTrigger>
-                <TabsTrigger value="crew">Crew</TabsTrigger>
+              <TabsList className="w-full overflow-x-auto flex flex-nowrap justify-start gap-1 pb-1">
+                <TabsTrigger value="general" className="flex-shrink-0">General</TabsTrigger>
+                <TabsTrigger value="concrete" className="flex-shrink-0">Concrete</TabsTrigger>
+                <TabsTrigger value="pump" className="flex-shrink-0">Pump</TabsTrigger>
+                <TabsTrigger value="inspection" className="flex-shrink-0">Inspection</TabsTrigger>
+                <TabsTrigger value="invoicing" className="flex-shrink-0">Invoicing</TabsTrigger>
+                <TabsTrigger value="crew" className="flex-shrink-0">Crew</TabsTrigger>
               </TabsList>
               
               <TabsContent value="general" className="mt-4">
