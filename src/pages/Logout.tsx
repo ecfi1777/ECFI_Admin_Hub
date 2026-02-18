@@ -1,21 +1,24 @@
 import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function Logout() {
   const [status, setStatus] = useState("Signing out...");
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     const performLogout = async () => {
       try {
-        // Sign out from Supabase
-        await supabase.auth.signOut();
+        // Clear all cached query data first
+        queryClient.clear();
         
-        // Sign out from Supabase
+        // Remove stale org key
+        localStorage.removeItem("ecfi_active_organization_id");
+        
         await supabase.auth.signOut();
         
         setStatus("Signed out successfully. Redirecting...");
         
-        // Force redirect to auth page
         setTimeout(() => {
           window.location.href = "/auth";
         }, 500);
@@ -23,7 +26,6 @@ export default function Logout() {
         console.error("Logout error:", error);
         setStatus("Error during logout. Forcing redirect...");
         
-        // Force redirect anyway
         setTimeout(() => {
           window.location.href = "/auth";
         }, 1000);
@@ -31,7 +33,7 @@ export default function Logout() {
     };
 
     performLogout();
-  }, []);
+  }, [queryClient]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-900">
