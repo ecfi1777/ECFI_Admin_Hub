@@ -99,12 +99,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setTheme(theme === "dark" ? "light" : "dark");
   }, [theme, setTheme]);
 
-  if (!profileLoaded) {
-    return (
-      <div className="min-h-screen bg-neutral-950" />
-    );
-  }
-
+  
   return (
     <ThemeContext.Provider value={{ theme, setTheme, toggleTheme, profileLoaded }}>
       {children}
