@@ -21,19 +21,18 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 // One-time storage reset for browsers with corrupted auth data
 const AUTH_VERSION = "2";
-function checkAuthVersion() {
-  try {
-    const storedVersion = localStorage.getItem("auth_version");
-    if (storedVersion !== AUTH_VERSION) {
-      localStorage.clear();
-      sessionStorage.clear();
-      localStorage.setItem("auth_version", AUTH_VERSION);
-    }
-  } catch {}
-}
+let needsAuthReset = false;
+try {
+  const storedVersion = localStorage.getItem("auth_version");
+  if (storedVersion !== AUTH_VERSION) {
+    localStorage.clear();
+    sessionStorage.clear();
+    localStorage.setItem("auth_version", AUTH_VERSION);
+    needsAuthReset = true;
+  }
+} catch {}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  useState(() => checkAuthVersion());
 
   const [state, setState] = useState<AuthState>({
     user: null,
@@ -59,6 +58,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const initializeAuth = async () => {
       try {
+        // If storage was reset due to version mismatch, clear in-memory client state too
+        if (needsAuthReset) {
+          needsAuthReset = false;
+          await supabase.auth.signOut({ scope: 'local' });
+        }
         const { data: { session } } = await supabase.auth.getSession();
         
         if (!mountedRef.current) return;
