@@ -52,11 +52,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         // Clear stale cached data on auth boundary transitions.
         // SIGNED_OUT / failed refresh → full wipe.
-        // Successful TOKEN_REFRESHED → invalidate so queries re-run with new token
-        //   (prevents stale "no orgs" cache from routing to onboarding).
+        // SIGNED_IN → full wipe so stale "no orgs" cache from a previous
+        //   failed session doesn't route the user to onboarding.
+        // Successful TOKEN_REFRESHED → invalidate so queries re-run with new token.
         if (event === "SIGNED_OUT" || (event === "TOKEN_REFRESHED" && !session)) {
           queryClient.clear();
           localStorage.removeItem("ecfi_active_organization_id");
+        } else if (event === "SIGNED_IN") {
+          queryClient.clear();
         } else if (event === "TOKEN_REFRESHED" && session) {
           queryClient.invalidateQueries();
         }

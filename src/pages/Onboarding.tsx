@@ -280,7 +280,14 @@ export default function Onboarding() {
           <button
             type="button"
             onClick={async () => {
-              await supabase.auth.signOut();
+              try {
+                await supabase.auth.signOut();
+              } catch (e) {
+                console.error("Sign-out failed, forcing redirect:", e);
+              }
+              // Always clear storage and redirect, even if signOut throws
+              localStorage.removeItem("ecfi_active_organization_id");
+              localStorage.removeItem("app_cache_version");
               window.location.href = "/auth";
             }}
             className="text-sm text-slate-400 hover:text-white transition-colors inline-flex items-center gap-1.5"
