@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { OrganizationSwitcher } from "./OrganizationSwitcher";
 import {
   HardHat,
+  LayoutDashboard,
   Calendar,
   FolderKanban,
   CalendarDays,
@@ -31,6 +32,7 @@ interface AppLayoutProps {
 }
 
 const allNavItems = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, minRole: "viewer" as const },
   { href: "/projects", label: "Projects", icon: FolderKanban, minRole: "viewer" as const },
   { href: "/", label: "Schedule", icon: Calendar, minRole: "viewer" as const },
   { href: "/calendar", label: "Calendar", icon: CalendarDays, minRole: "viewer" as const },
