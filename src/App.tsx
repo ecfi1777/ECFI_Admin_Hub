@@ -3,7 +3,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@/hooks/useTheme";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, AuthProvider } from "@/hooks/useAuth";
 import { useOrganization, OrganizationProvider } from "@/hooks/useOrganization";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useMemo, memo } from "react";
@@ -93,35 +93,37 @@ const AuthRoute = memo(function AuthRoute({ children }: { children: React.ReactN
 const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <OrganizationProvider>
-          <TooltipProvider>
-            <Sonner />
-            <BrowserRouter>
-              <Routes>
-                <Route path="/auth" element={<AuthRoute><Auth /></AuthRoute>} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/reset-password" element={<ResetPassword />} />
-                <Route path="/logout" element={<Logout />} />
-                <Route path="/onboarding" element={<OnboardingRoute><Onboarding /></OnboardingRoute>} />
-                {/* Viewer-accessible routes */}
-                <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                <Route path="/schedule" element={<ProtectedRoute><Schedule /></ProtectedRoute>} />
-                <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
-                <Route path="/kanban" element={<ProtectedRoute><ManagerRoute><Kanban /></ManagerRoute></ProtectedRoute>} />
-                <Route path="/calendar" element={<ProtectedRoute><CalendarView /></ProtectedRoute>} />
-                <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-                {/* Manager+ only routes */}
-                <Route path="/invoices" element={<ProtectedRoute><ManagerRoute><Invoices /></ManagerRoute></ProtectedRoute>} />
-                <Route path="/vendor-invoices" element={<ProtectedRoute><ManagerRoute><VendorInvoices /></ManagerRoute></ProtectedRoute>} />
-                <Route path="/discrepancies" element={<ProtectedRoute><ManagerRoute><Discrepancies /></ManagerRoute></ProtectedRoute>} />
-                <Route path="/reports" element={<ProtectedRoute><ManagerRoute><Reports /></ManagerRoute></ProtectedRoute>} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
-          </TooltipProvider>
-        </OrganizationProvider>
-      </ThemeProvider>
+      <AuthProvider>
+        <ThemeProvider>
+          <OrganizationProvider>
+            <TooltipProvider>
+              <Sonner />
+              <BrowserRouter>
+                <Routes>
+                  <Route path="/auth" element={<AuthRoute><Auth /></AuthRoute>} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
+                  <Route path="/logout" element={<Logout />} />
+                  <Route path="/onboarding" element={<OnboardingRoute><Onboarding /></OnboardingRoute>} />
+                  {/* Viewer-accessible routes */}
+                  <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                  <Route path="/schedule" element={<ProtectedRoute><Schedule /></ProtectedRoute>} />
+                  <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
+                  <Route path="/kanban" element={<ProtectedRoute><ManagerRoute><Kanban /></ManagerRoute></ProtectedRoute>} />
+                  <Route path="/calendar" element={<ProtectedRoute><CalendarView /></ProtectedRoute>} />
+                  <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+                  {/* Manager+ only routes */}
+                  <Route path="/invoices" element={<ProtectedRoute><ManagerRoute><Invoices /></ManagerRoute></ProtectedRoute>} />
+                  <Route path="/vendor-invoices" element={<ProtectedRoute><ManagerRoute><VendorInvoices /></ManagerRoute></ProtectedRoute>} />
+                  <Route path="/discrepancies" element={<ProtectedRoute><ManagerRoute><Discrepancies /></ManagerRoute></ProtectedRoute>} />
+                  <Route path="/reports" element={<ProtectedRoute><ManagerRoute><Reports /></ManagerRoute></ProtectedRoute>} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </BrowserRouter>
+            </TooltipProvider>
+          </OrganizationProvider>
+        </ThemeProvider>
+      </AuthProvider>
     </QueryClientProvider>
   </ErrorBoundary>
 );
