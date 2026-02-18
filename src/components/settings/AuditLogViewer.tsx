@@ -156,33 +156,9 @@ function buildRestorePayload(oldData: Record<string, unknown>) {
   return payload;
 }
 
-/* ---------- Restore audit logging helper ---------- */
+/* ---------- Per-row expanded detail (unchanged logic) ---------- */
 
-async function logRestoreAction(
-  tableName: string,
-  recordId: string,
-  recordLabel: string | null,
-  organizationId: string,
-  oldData: Record<string, unknown> | null,
-  newData: Record<string, unknown> | null
-) {
-  try {
-    await supabase.rpc("log_restore_action", {
-      p_table_name: tableName,
-      p_record_id: recordId,
-      p_record_label: recordLabel ?? "",
-      p_organization_id: organizationId,
-      p_old_data: oldData ? JSON.parse(JSON.stringify(oldData)) : null,
-      p_new_data: newData ? JSON.parse(JSON.stringify(newData)) : null,
-    });
-  } catch (err) {
-    console.error("Failed to log restore action:", err);
-  }
-}
-
-/* ---------- Per-row expanded detail ---------- */
-
-function ExpandedDetail({ row, organizationId, onRestored }: { row: AuditRow; organizationId: string; onRestored: () => void }) {
+function ExpandedDetail({ row, onRestored }: { row: AuditRow; onRestored: () => void }) {
   const oldData = row.old_data;
   const newData = row.new_data;
   const canRestore = (row.action === "updated" || row.action === "deleted" || row.action === "restored") && oldData !== null;
@@ -214,9 +190,6 @@ function ExpandedDetail({ row, organizationId, onRestored }: { row: AuditRow; or
         const { error } = await supabase.from(tableName).update(payload as never).eq("id", row.record_id);
         if (error) throw error;
       }
-
-      // Log the restore action in the audit trail
-      await logRestoreAction(tableName, row.record_id, row.record_label, organizationId, oldData, row.new_data);
 
       toast.success("Record restored successfully");
       onRestored();
@@ -310,7 +283,7 @@ function ExpandedDetail({ row, organizationId, onRestored }: { row: AuditRow; or
 
 /* ---------- Rollback helpers ---------- */
 
-async function undoEntry(entry: AuditRow, organizationId: string): Promise<{ success: boolean; error?: string }> {
+async function undoEntry(entry: AuditRow): Promise<{ success: boolean; error?: string }> {
   const tableName = entry.table_name as "projects" | "schedule_entries";
 
   try {
@@ -326,10 +299,6 @@ async function undoEntry(entry: AuditRow, organizationId: string): Promise<{ suc
       const { error } = await supabase.from(tableName).delete().eq("id", entry.record_id);
       if (error) throw error;
     }
-
-    // Log the undo/restore action in the audit trail
-    await logRestoreAction(tableName, entry.record_id, entry.record_label, organizationId, entry.old_data, entry.new_data);
-
     return { success: true };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error";
@@ -439,7 +408,7 @@ export function AuditLogViewer() {
         continue;
       }
 
-      const result = await undoEntry(entry, organizationId!);
+      const result = await undoEntry(entry);
       if (result.success) {
         succeeded++;
       } else {
@@ -619,7 +588,7 @@ export function AuditLogViewer() {
                         {isExpanded && (
                           <TableRow>
                             <TableCell colSpan={isOwner ? 7 : 6} className="p-0">
-                              <ExpandedDetail row={row} organizationId={organizationId!} onRestored={handleRestored} />
+                              <ExpandedDetail row={row} onRestored={handleRestored} />
                             </TableCell>
                           </TableRow>
                         )}

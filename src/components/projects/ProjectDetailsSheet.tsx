@@ -282,7 +282,7 @@ export function ProjectDetailsSheet({
                               <Archive className="w-4 h-4" />
                             )}
                           </Button>
-                          {canManage && (
+                          {isOwner && (
                             <Button
                               variant="ghost"
                               size="sm"

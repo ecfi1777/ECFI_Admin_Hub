@@ -9,13 +9,6 @@ interface ThemeContextType {
   toggleTheme: () => void;
 }
 
-interface ThemeContextType {
-  theme: Theme;
-  setTheme: (theme: Theme) => void;
-  toggleTheme: () => void;
-  profileLoaded: boolean;
-}
-
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
@@ -33,53 +26,28 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("theme", theme);
   }, [theme]);
 
-  // Load theme from profile on auth state changes
+  // Load theme from profile on auth
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === "SIGNED_OUT") {
-          setThemeState("dark");
-          localStorage.removeItem("theme");
-          setProfileLoaded(true);
-          return;
-        }
+    let cancelled = false;
 
-        if (
-          (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") &&
-          session?.user
-        ) {
-          const { data } = await supabase
-            .from("profiles")
-            .select("theme")
-            .eq("user_id", session.user.id)
-            .single();
+    const loadTheme = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user || cancelled) return;
 
-          if (data?.theme === "dark" || data?.theme === "light") {
-            setThemeState(data.theme as Theme);
-          }
-          setProfileLoaded(true);
-          return;
-        }
+      const { data } = await supabase
+        .from("profiles")
+        .select("theme")
+        .eq("user_id", session.user.id)
+        .single();
 
-        // INITIAL_SESSION with no user, or other events
-        if (event === "INITIAL_SESSION") {
-          if (session?.user) {
-            const { data } = await supabase
-              .from("profiles")
-              .select("theme")
-              .eq("user_id", session.user.id)
-              .single();
-
-            if (data?.theme === "dark" || data?.theme === "light") {
-              setThemeState(data.theme as Theme);
-            }
-          }
-          setProfileLoaded(true);
-        }
+      if (!cancelled && data?.theme && (data.theme === "dark" || data.theme === "light")) {
+        setThemeState(data.theme as Theme);
       }
-    );
+      if (!cancelled) setProfileLoaded(true);
+    };
 
-    return () => { subscription.unsubscribe(); };
+    loadTheme();
+    return () => { cancelled = true; };
   }, []);
 
   // Save to database when theme changes (after profile loaded)
@@ -99,9 +67,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setTheme(theme === "dark" ? "light" : "dark");
   }, [theme, setTheme]);
 
-  
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme, profileLoaded }}>
+    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   );

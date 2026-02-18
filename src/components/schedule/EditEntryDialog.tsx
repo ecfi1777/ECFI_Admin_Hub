@@ -3,7 +3,7 @@
  */
 
 import { useEffect } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,33 +39,12 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
   
   const { formData, updateField, loadFromEntry, getUpdatePayload } = useEntryForm();
 
-  // Fetch full entry data by ID to ensure all fields are available
-  // (the passed entry may only contain display-level fields from calendar queries)
-  const { data: fullEntry } = useQuery({
-    queryKey: ["schedule-entry-full", entry?.id],
-    queryFn: async () => {
-      if (!entry?.id) return null;
-      const { data, error } = await supabase
-        .from("schedule_entries")
-        .select("*")
-        .eq("id", entry.id)
-        .single();
-      if (error) throw error;
-      return data as unknown as ScheduleEntry;
-    },
-    enabled: !!entry?.id && open,
-    staleTime: 0, // Always refetch when dialog opens
-  });
-
-  // Load form data when dialog opens or fetched data arrives
+  // Load form data when entry changes
   useEffect(() => {
-    if (!open) return;
-    if (fullEntry) {
-      loadFromEntry(fullEntry);
-    } else if (entry) {
+    if (entry) {
       loadFromEntry(entry);
     }
-  }, [fullEntry, entry, open, loadFromEntry]);
+  }, [entry, loadFromEntry]);
 
   const updateMutation = useMutation({
     mutationFn: async () => {

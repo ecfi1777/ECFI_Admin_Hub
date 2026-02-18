@@ -24,7 +24,6 @@ import {
   Columns3,
   Menu,
   Receipt,
-  LayoutGrid,
 } from "lucide-react";
 
 interface AppLayoutProps {
@@ -32,9 +31,8 @@ interface AppLayoutProps {
 }
 
 const allNavItems = [
-  { href: "/", label: "Dashboard", icon: LayoutGrid, minRole: "viewer" as const },
   { href: "/projects", label: "Projects", icon: FolderKanban, minRole: "viewer" as const },
-  { href: "/schedule", label: "Schedule", icon: Calendar, minRole: "viewer" as const },
+  { href: "/", label: "Schedule", icon: Calendar, minRole: "viewer" as const },
   { href: "/calendar", label: "Calendar", icon: CalendarDays, minRole: "viewer" as const },
   { href: "/kanban", label: "Kanban", icon: Columns3, minRole: "manager" as const },
   { href: "/invoices", label: "Jobs to Invoice", icon: FileText, minRole: "manager" as const },

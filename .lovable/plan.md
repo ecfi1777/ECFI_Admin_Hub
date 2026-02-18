@@ -1,29 +1,23 @@
 
 
-## Revert Aggressive Timeout Cleanup
+## Fix: Add "restored" to audit_log action check constraint
 
 ### Problem
-The 3-second timeout currently runs `signOut()`, `localStorage.clear()`, and `sessionStorage.clear()`, which logs out real users on slow connections.
+The `audit_log` table has a check constraint (`audit_log_action_check`) that only permits the values `created`, `updated`, and `deleted`. When a project is restored (soft-delete reversed), the updated trigger function tries to log a `restored` action, which violates this constraint and causes the "Restore failed" error.
 
-### Change
-**`src/hooks/useAuth.tsx`** -- Replace the `forceInitialized` function (lines 37-49) with a simple state update:
+### Solution
+A single database migration to drop the existing constraint and recreate it with `restored` included:
 
-```typescript
-const forceInitialized = () => {
-  if (!mountedRef.current || initializationComplete.current) return;
-  console.warn("Auth initialization timeout – unblocking UI");
-  setState(prev => ({ ...prev, loading: false, initialized: true }));
-  initializationComplete.current = true;
-};
+```sql
+ALTER TABLE public.audit_log DROP CONSTRAINT audit_log_action_check;
+ALTER TABLE public.audit_log ADD CONSTRAINT audit_log_action_check
+  CHECK (action = ANY (ARRAY['created', 'updated', 'deleted', 'restored']));
 ```
 
-This removes:
-- `supabase.auth.signOut({ scope: "local" })`
-- `localStorage.clear()`
-- `sessionStorage.clear()`
-- The `async` keyword on the function
-- The second `mountedRef.current` guard (no longer needed without async gap)
+No frontend code changes are needed -- the `AuditLogViewer` already has styling for the `restored` action badge.
 
-The timeout simply unblocks the UI. If a valid session arrives later via `onAuthStateChange`, it will update state normally. Expired/corrupted sessions are handled by the auth library itself.
+### Technical Details
+- **File changed**: One new SQL migration only
+- **Risk**: None -- this is purely additive (no existing data is affected)
+- **Result**: Restoring a deleted project will correctly log a `restored` action in the Activity Log, and the restore operation will succeed without constraint violations
 
-No other files change.

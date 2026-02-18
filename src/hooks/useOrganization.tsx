@@ -40,7 +40,6 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const hasInitializedActiveOrg = useRef(false);
   const previousUserId = useRef<string | null>(null);
-  const [timedOut, setTimedOut] = useState(false);
   
   const [activeOrgId, setActiveOrgIdState] = useState<string | null>(() => {
     if (typeof window !== "undefined") {
@@ -82,11 +81,9 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
       return (data || []) as unknown as OrganizationMembership[];
     },
     enabled: shouldFetchOrgs,
-    staleTime: 30 * 1000,
-    refetchOnWindowFocus: true,
-    refetchOnMount: "always",
-    retry: 2,
-    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 5000),
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    retry: false,
   });
 
   const currentMembership = useMemo(() => {
@@ -134,27 +131,11 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
     queryClient.invalidateQueries({ queryKey: ["organizations"] });
   }, [queryClient]);
 
-  // Safety timeout: if org loading takes more than 8 seconds, unblock
-  useEffect(() => {
-    if (!authInitialized || !user) return;
-    const timer = setTimeout(() => {
-      setTimedOut(true);
-      console.warn("Organization loading timeout – unblocking UI");
-    }, 8000);
-    return () => clearTimeout(timer);
-  }, [authInitialized, user]);
-
-  // Reset timeout when data arrives
-  useEffect(() => {
-    if (isFetched || error) setTimedOut(false);
-  }, [isFetched, error]);
-
   const isLoading = useMemo(() => {
-    if (timedOut) return false;
     if (!authInitialized) return true;
-    if (user && !isFetched && !error) return true;
+    if (user && !isFetched) return true;
     return false;
-  }, [authInitialized, user, isFetched, error, timedOut]);
+  }, [authInitialized, user, isFetched]);
 
   const value = useMemo<OrganizationContextValue>(() => ({
     organizationId: currentMembership?.organization_id ?? null,

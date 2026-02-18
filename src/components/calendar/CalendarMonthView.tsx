@@ -152,7 +152,7 @@ export const CalendarMonthView = memo(function CalendarMonthView({
 
       {/* Calendar Grid */}
       {weeks.map((week, weekIdx) => (
-        <div key={weekIdx} className="grid grid-cols-7 border-b border-border [&>div]:border-r [&>div]:border-border [&>div:last-child]:border-r-0">
+        <div key={weekIdx} className="grid grid-cols-7 gap-px bg-border">
           {week.map((day) => {
             const dateStr = format(day, "yyyy-MM-dd");
             const dayEntries = entriesByDate[dateStr] || [];

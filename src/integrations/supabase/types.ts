@@ -1057,7 +1057,6 @@ export type Database = {
       generate_invite_code: { Args: never; Returns: string }
       get_invite_code: { Args: { p_organization_id: string }; Returns: string }
       get_my_role: { Args: { p_organization_id: string }; Returns: string }
-      get_storage_usage: { Args: never; Returns: Json }
       get_user_organization_id: { Args: { p_user_id: string }; Returns: string }
       join_organization_by_invite_code: {
         Args: { p_invite_code: string }
@@ -1065,17 +1064,6 @@ export type Database = {
           id: string
           name: string
         }[]
-      }
-      log_restore_action: {
-        Args: {
-          p_new_data: Json
-          p_old_data: Json
-          p_organization_id: string
-          p_record_id: string
-          p_record_label: string
-          p_table_name: string
-        }
-        Returns: undefined
       }
       lookup_organization_by_invite_code: {
         Args: { p_invite_code: string }
