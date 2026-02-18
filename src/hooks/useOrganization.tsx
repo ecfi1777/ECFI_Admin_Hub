@@ -82,10 +82,11 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
       return (data || []) as unknown as OrganizationMembership[];
     },
     enabled: shouldFetchOrgs,
-    staleTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: false,
+    staleTime: 30 * 1000,
+    refetchOnWindowFocus: true,
     refetchOnMount: "always",
-    retry: 1,
+    retry: 2,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 5000),
   });
 
   const currentMembership = useMemo(() => {

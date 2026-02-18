@@ -50,12 +50,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         clearTimeout(timeoutId);
 
-        // When user signs out or token refresh fails, clear ALL cached data
-        // This is the root fix for "works after clearing cookies" — stale
-        // React Query cache was persisting across auth boundaries.
-        if (event === "SIGNED_OUT" || event === "TOKEN_REFRESHED" && !session) {
+        // Clear stale cached data on auth boundary transitions.
+        // SIGNED_OUT / failed refresh → full wipe.
+        // Successful TOKEN_REFRESHED → invalidate so queries re-run with new token
+        //   (prevents stale "no orgs" cache from routing to onboarding).
+        if (event === "SIGNED_OUT" || (event === "TOKEN_REFRESHED" && !session)) {
           queryClient.clear();
           localStorage.removeItem("ecfi_active_organization_id");
+        } else if (event === "TOKEN_REFRESHED" && session) {
+          queryClient.invalidateQueries();
         }
 
         setState({
