@@ -1,9 +1,11 @@
 /**
  * Edit Entry Dialog - Uses shared entry-form architecture
+ * Fetches the complete entry by ID on open to ensure all tabs are populated,
+ * regardless of which view (Calendar, Schedule, etc.) opens it.
  */
 
 import { useEffect } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 import { getUserFriendlyError } from "@/lib/errorHandler";
 import { invalidateScheduleQueries } from "@/lib/queryHelpers";
 import { useEntryForm } from "./entry-form/useEntryForm";
@@ -39,12 +42,42 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
   
   const { formData, updateField, loadFromEntry, getUpdatePayload } = useEntryForm();
 
-  // Load form data when entry changes
+  // Fetch the complete entry record by ID whenever the dialog opens
+  const { data: fullEntry, isLoading: isLoadingEntry } = useQuery({
+    queryKey: ["schedule-entry-full", entry?.id, open],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("schedule_entries")
+        .select(`
+          *,
+          projects:project_id (
+            id, lot_number, builder_id, location_id, organization_id,
+            builders:builder_id ( id, name, code ),
+            locations:location_id ( id, name )
+          ),
+          crews:crew_id ( id, name ),
+          phases:phase_id ( id, name ),
+          suppliers:supplier_id ( id, name, code ),
+          pump_vendors:pump_vendor_id ( id, name, code ),
+          inspection_types:inspection_type_id ( id, name ),
+          inspectors:inspector_id ( id, name ),
+          concrete_mixes:concrete_mix_id ( id, name )
+        `)
+        .eq("id", entry!.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: open && !!entry?.id,
+    staleTime: 0,
+  });
+
+  // Load form data from the freshly fetched full record
   useEffect(() => {
-    if (entry) {
-      loadFromEntry(entry);
+    if (fullEntry) {
+      loadFromEntry(fullEntry as unknown as ScheduleEntry);
     }
-  }, [entry, loadFromEntry]);
+  }, [fullEntry, loadFromEntry]);
 
   const updateMutation = useMutation({
     mutationFn: async () => {
@@ -72,6 +105,7 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
 
   if (!entry) return null;
 
+  // Use prop for the label (always has enough data for display)
   const projectLabel = [
     entry.projects?.builders?.code || entry.projects?.builders?.name,
     entry.projects?.locations?.name,
@@ -85,72 +119,80 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
           <DialogTitle>Edit Entry: {projectLabel}</DialogTitle>
         </DialogHeader>
         
-        <Tabs defaultValue={defaultTab} key={defaultTab} className="w-full">
-          <TabsList className="w-full overflow-x-auto flex flex-nowrap gap-1 pb-1">
-            <TabsTrigger value="general">General</TabsTrigger>
-            <TabsTrigger value="concrete">Concrete</TabsTrigger>
-            <TabsTrigger value="pump">Pump</TabsTrigger>
-            <TabsTrigger value="inspection">Inspection</TabsTrigger>
-            <TabsTrigger value="invoicing">Invoicing</TabsTrigger>
-            <TabsTrigger value="crew">Crew</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="general" className="mt-4">
-            <GeneralTab 
-              formData={formData} 
-              updateField={updateField}
-              showCrew={false}
-            />
-          </TabsContent>
-          
-          <TabsContent value="concrete" className="mt-4">
-            <ConcreteTab 
-              formData={formData} 
-              updateField={updateField}
-              showInlineAdd={true}
-            />
-          </TabsContent>
-          
-          <TabsContent value="pump" className="mt-4">
-            <PumpTab 
-              formData={formData} 
-              updateField={updateField}
-              showInlineAdd={true}
-            />
-          </TabsContent>
-          
-          <TabsContent value="inspection" className="mt-4">
-            <InspectionTab 
-              formData={formData} 
-              updateField={updateField}
-              showInlineAdd={true}
-            />
-          </TabsContent>
-          
-          <TabsContent value="invoicing" className="mt-4">
-            <InvoicingTab 
-              formData={formData} 
-              updateField={updateField}
-            />
-          </TabsContent>
-          
-          <TabsContent value="crew" className="mt-4">
-            <CrewTab 
-              formData={formData} 
-              updateField={updateField}
-              currentCrewId={entry.crew_id || undefined}
-            />
-          </TabsContent>
-        </Tabs>
-        
-        <div className="flex justify-end gap-2 mt-6">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave} disabled={updateMutation.isPending}>
-            {updateMutation.isPending ? "Saving..." : "Save Changes"}
-          </Button>
-        </div>
+        {isLoadingEntry ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <>
+            <Tabs defaultValue={defaultTab} key={defaultTab} className="w-full">
+              <TabsList className="w-full overflow-x-auto flex flex-nowrap gap-1 pb-1">
+                <TabsTrigger value="general">General</TabsTrigger>
+                <TabsTrigger value="concrete">Concrete</TabsTrigger>
+                <TabsTrigger value="pump">Pump</TabsTrigger>
+                <TabsTrigger value="inspection">Inspection</TabsTrigger>
+                <TabsTrigger value="invoicing">Invoicing</TabsTrigger>
+                <TabsTrigger value="crew">Crew</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="general" className="mt-4">
+                <GeneralTab 
+                  formData={formData} 
+                  updateField={updateField}
+                  showCrew={false}
+                />
+              </TabsContent>
+              
+              <TabsContent value="concrete" className="mt-4">
+                <ConcreteTab 
+                  formData={formData} 
+                  updateField={updateField}
+                  showInlineAdd={true}
+                />
+              </TabsContent>
+              
+              <TabsContent value="pump" className="mt-4">
+                <PumpTab 
+                  formData={formData} 
+                  updateField={updateField}
+                  showInlineAdd={true}
+                />
+              </TabsContent>
+              
+              <TabsContent value="inspection" className="mt-4">
+                <InspectionTab 
+                  formData={formData} 
+                  updateField={updateField}
+                  showInlineAdd={true}
+                />
+              </TabsContent>
+              
+              <TabsContent value="invoicing" className="mt-4">
+                <InvoicingTab 
+                  formData={formData} 
+                  updateField={updateField}
+                />
+              </TabsContent>
+              
+              <TabsContent value="crew" className="mt-4">
+                <CrewTab 
+                  formData={formData} 
+                  updateField={updateField}
+                  currentCrewId={(fullEntry as any)?.crew_id || entry.crew_id || undefined}
+                />
+              </TabsContent>
+            </Tabs>
+            
+            <div className="flex justify-end gap-2 mt-6">
+              <Button variant="outline" onClick={() => onOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSave} disabled={updateMutation.isPending}>
+                {updateMutation.isPending ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );
