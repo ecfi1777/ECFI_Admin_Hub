@@ -28,15 +28,12 @@ function checkAuthVersion() {
       localStorage.clear();
       sessionStorage.clear();
       localStorage.setItem("auth_version", AUTH_VERSION);
-      window.location.reload();
-      return false;
     }
   } catch {}
-  return true;
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [ready] = useState(() => checkAuthVersion());
+  useState(() => checkAuthVersion());
 
   const [state, setState] = useState<AuthState>({
     user: null,
@@ -125,8 +122,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     initialized: state.initialized,
     signOut,
   }), [state.user, state.session, state.loading, state.initialized, signOut]);
-
-  if (!ready) return null;
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
