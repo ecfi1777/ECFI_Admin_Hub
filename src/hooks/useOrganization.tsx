@@ -133,9 +133,9 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
 
   const isLoading = useMemo(() => {
     if (!authInitialized) return true;
-    if (user && !isFetched) return true;
+    if (user && !isFetched && !error) return true;
     return false;
-  }, [authInitialized, user, isFetched]);
+  }, [authInitialized, user, isFetched, error]);
 
   const value = useMemo<OrganizationContextValue>(() => ({
     organizationId: currentMembership?.organization_id ?? null,

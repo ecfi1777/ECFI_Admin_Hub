@@ -76,14 +76,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       (event: AuthChangeEvent, session: Session | null) => {
         if (!mountedRef.current) return;
         if (event === "INITIAL_SESSION") return;
-        if (!initializationComplete.current) return;
         
+        // Always update state for real auth events (SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED)
+        // even if initializeAuth hasn't finished yet
         setState({
           session,
           user: session?.user ?? null,
           loading: false,
           initialized: true,
         });
+        initializationComplete.current = true;
       }
     );
 
