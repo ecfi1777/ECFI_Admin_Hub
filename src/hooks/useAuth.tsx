@@ -32,12 +32,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     mountedRef.current = true;
-    
+
+    // Fallback: unblock UI if getSession stalls (Firefox, slow networks)
+    const forceInitialized = () => {
+      if (!mountedRef.current || initializationComplete.current) return;
+      console.warn("Auth initialization timeout – forcing initialized state");
+      setState(prev => ({ ...prev, loading: false, initialized: true }));
+      initializationComplete.current = true;
+    };
+    const timeoutId = setTimeout(forceInitialized, 3000);
+
     const initializeAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         
         if (!mountedRef.current) return;
+        clearTimeout(timeoutId);
         
         setState({
           session,
@@ -48,6 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         initializationComplete.current = true;
       } catch (error) {
         console.error("Auth initialization error:", error);
+        clearTimeout(timeoutId);
         if (mountedRef.current) {
           setState({
             session: null,
@@ -79,6 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       mountedRef.current = false;
+      clearTimeout(timeoutId);
       subscription.unsubscribe();
     };
   }, []);
