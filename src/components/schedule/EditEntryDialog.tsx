@@ -114,9 +114,9 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] md:max-w-2xl max-h-[100dvh] md:max-h-[90dvh] overflow-y-auto rounded-none md:rounded-lg">
-        <DialogHeader>
-          <DialogTitle>Edit Entry: {projectLabel}</DialogTitle>
+      <DialogContent className="w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] md:max-w-2xl max-h-[100dvh] md:max-h-[90dvh] overflow-y-auto rounded-none md:rounded-lg px-3 sm:px-6">
+        <DialogHeader className="pr-8">
+          <DialogTitle className="truncate text-base sm:text-lg">Edit Entry: {projectLabel}</DialogTitle>
         </DialogHeader>
         
         {isLoadingEntry ? (
