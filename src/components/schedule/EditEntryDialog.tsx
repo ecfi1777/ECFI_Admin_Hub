@@ -127,7 +127,7 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
         ) : (
           <>
             <Tabs defaultValue={defaultTab} key={defaultTab} className="w-full overflow-hidden">
-              <TabsList className="w-full overflow-x-auto flex flex-nowrap justify-start gap-1 pb-1">
+              <TabsList className="w-full overflow-x-auto flex flex-nowrap justify-start gap-1 pb-1 pr-8">
                 <TabsTrigger value="general" className="flex-shrink-0">General</TabsTrigger>
                 <TabsTrigger value="concrete" className="flex-shrink-0">Concrete</TabsTrigger>
                 <TabsTrigger value="pump" className="flex-shrink-0">Pump</TabsTrigger>
