@@ -26,28 +26,39 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("theme", theme);
   }, [theme]);
 
-  // Load theme from profile on auth
+  // Load theme from profile on auth state change
   useEffect(() => {
-    let cancelled = false;
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (
+          (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "INITIAL_SESSION") &&
+          session?.user
+        ) {
+          try {
+            const { data } = await supabase
+              .from("profiles")
+              .select("theme")
+              .eq("user_id", session.user.id)
+              .single();
 
-    const loadTheme = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user || cancelled) return;
+            if (data?.theme === "dark" || data?.theme === "light") {
+              setThemeState(data.theme as Theme);
+            }
+          } catch (error) {
+            console.error("Failed to load theme from profile:", error);
+          }
+        }
 
-      const { data } = await supabase
-        .from("profiles")
-        .select("theme")
-        .eq("user_id", session.user.id)
-        .single();
+        if (event === "SIGNED_OUT") {
+          setThemeState("dark");
+          localStorage.setItem("theme", "dark");
+        }
 
-      if (!cancelled && data?.theme && (data.theme === "dark" || data.theme === "light")) {
-        setThemeState(data.theme as Theme);
+        setProfileLoaded(true);
       }
-      if (!cancelled) setProfileLoaded(true);
-    };
+    );
 
-    loadTheme();
-    return () => { cancelled = true; };
+    return () => { subscription.unsubscribe(); };
   }, []);
 
   // Save to database when theme changes (after profile loaded)
