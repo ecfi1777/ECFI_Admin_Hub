@@ -16,7 +16,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const stored = localStorage.getItem("theme");
     return (stored as Theme) || "dark";
   });
-  const [profileLoaded, setProfileLoaded] = useState(false);
 
   // Apply theme class + persist to localStorage
   useEffect(() => {
@@ -26,42 +25,30 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("theme", theme);
   }, [theme]);
 
-  // Load theme from profile on auth state change
+  // Load theme from profile ONCE on mount — no recurring subscription
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (
-          (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "INITIAL_SESSION") &&
-          session?.user
-        ) {
-          try {
-            const { data } = await supabase
-              .from("profiles")
-              .select("theme")
-              .eq("user_id", session.user.id)
-              .single();
+    let cancelled = false;
 
-            if (data?.theme === "dark" || data?.theme === "light") {
-              setThemeState(data.theme as Theme);
-            }
-          } catch (error) {
-            console.error("Failed to load theme from profile:", error);
-          }
-        }
+    const loadTheme = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user || cancelled) return;
 
-        if (event === "SIGNED_OUT") {
-          setThemeState("dark");
-          localStorage.setItem("theme", "dark");
-        }
+      const { data } = await supabase
+        .from("profiles")
+        .select("theme")
+        .eq("user_id", session.user.id)
+        .single();
 
-        setProfileLoaded(true);
+      if (!cancelled && data?.theme && (data.theme === "dark" || data.theme === "light")) {
+        setThemeState(data.theme as Theme);
       }
-    );
+    };
 
-    return () => { subscription.unsubscribe(); };
+    loadTheme();
+    return () => { cancelled = true; };
   }, []);
 
-  // Save to database when theme changes (after profile loaded)
+  // Save to database when theme changes
   const setTheme = useCallback(async (newTheme: Theme) => {
     setThemeState(newTheme);
 
