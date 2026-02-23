@@ -1,27 +1,46 @@
 
-## Force Redeploy: EditEntryDialog CSS Fix
+
+## Fix: Pages Not Loading (Connection Pool Exhaustion)
 
 ### Problem
-The code changes to `EditEntryDialog.tsx` are correct in the repository, but the live/published site does not reflect them. The publish button shows "up to date," indicating the deployment system believes the current version is already live -- but it isn't.
+Two issues combine to exhaust the database connection pool after ~55 minutes:
 
-### Solution
-Make a harmless, no-op change to `EditEntryDialog.tsx` to force a new build hash, which will allow a fresh publish/deploy.
+1. **useTheme.tsx** has an `onAuthStateChange` listener that queries the `profiles` table on every token refresh (~55 min cycle), triggering expensive RLS joins on `organization_memberships`.
 
-### Steps
+2. **useAuth.tsx** is a standalone hook (not a shared context), so every component calling it creates its own independent auth subscription. A typical page has 3-4 parallel subscriptions (ProtectedRoute, OrganizationProvider, AppLayout, ThemeProvider). When `TOKEN_REFRESHED` fires, all 4 react simultaneously, cascading DB queries.
 
-1. **Add a trivial comment** to `EditEntryDialog.tsx` (e.g., a comment on a blank line) to create a new file hash and trigger a rebuild.
+Data-fetching pages (Projects, Schedule, Calendar, Kanban, Invoices, Discrepancies) hang on "Loading" because their queries cannot get connections from the pool.
 
-2. **Verify** the publish button now shows "Update" instead of "Up to date."
+### Solution -- 3 File Replacements
 
-3. **You will then need to click Publish/Update** to deploy the new build to the live site.
+**File 1: `src/hooks/useTheme.tsx`** -- Replace entirely
 
-### Technical Details
-- File: `src/components/schedule/EditEntryDialog.tsx`
-- Change: Add a single comment line (e.g., `// force rebuild`) that has zero functional impact
-- This will produce a new build artifact, allowing a fresh deployment
+- Reverts to a one-shot `getSession()` call on mount
+- No more `onAuthStateChange` subscription -- eliminates recurring DB hits on token refresh
+- Theme write (setTheme) and CSS class logic remain unchanged
 
-### What to verify after publishing
-- Open the live URL on mobile
-- Open the Edit Entry dialog from the Calendar page
-- Confirm the dialog width matches the Add Entry dialog (full width minus small margin)
-- Confirm the tabs are horizontally scrollable without wrapping
+**File 2: `src/hooks/useAuth.tsx`** -- Replace entirely
+
+- Converts from a standalone hook to a Context Provider pattern
+- Single `onAuthStateChange` subscription shared across the entire app
+- Exports both `AuthProvider` (new) and `useAuth()` (same interface -- all existing call sites work unchanged)
+- Uses `getSession()` for initial load, then `onAuthStateChange` for subsequent events (ignoring `INITIAL_SESSION` to avoid double-processing)
+
+**File 3: `src/App.tsx`** -- Replace entirely
+
+- Adds `AuthProvider` import from `useAuth`
+- Wraps the provider tree: `AuthProvider` sits outside `ThemeProvider` and `OrganizationProvider`
+- No other changes to routes or components
+
+### What stays the same
+- All existing `useAuth()` call sites throughout the app -- zero changes needed
+- All routes, components, and page structure
+- Theme toggle and persistence behavior
+- Organization provider logic
+
+### Verification after deploying
+- Pages that were hanging (Projects, Schedule, Calendar, Kanban, Invoices, Discrepancies) should load immediately
+- Theme preference still persists when toggled
+- Auth flow (login, logout, token refresh) works normally
+- No duplicate auth subscriptions in browser DevTools
+
