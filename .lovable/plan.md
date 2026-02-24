@@ -1,46 +1,99 @@
 
 
-## Fix: Pages Not Loading (Connection Pool Exhaustion)
+## Improve Audit Log Labels for Schedule Entries
 
-### Problem
-Two issues combine to exhaust the database connection pool after ~55 minutes:
+### Current behavior
+When a schedule entry is created/updated/deleted, the audit trigger builds a `record_label` like:
+```
+2025-01-15 - Crew 1
+```
+This makes it hard to identify which job the entry refers to without expanding the row.
 
-1. **useTheme.tsx** has an `onAuthStateChange` listener that queries the `profiles` table on every token refresh (~55 min cycle), triggering expensive RLS joins on `organization_memberships`.
+### Proposed change
+Update the `audit_schedule_entries()` database trigger function to look up the project's lot number (from `projects`) and phase name (from `phases`), and build a richer label like:
+```
+59-K — Footings — Jan 15, 2025
+```
 
-2. **useAuth.tsx** is a standalone hook (not a shared context), so every component calling it creates its own independent auth subscription. A typical page has 3-4 parallel subscriptions (ProtectedRoute, OrganizationProvider, AppLayout, ThemeProvider). When `TOKEN_REFRESHED` fires, all 4 react simultaneously, cascading DB queries.
+**Format:** `lot_number — phase_name — scheduled_date`
+- Falls back gracefully if any part is NULL (e.g., no phase assigned shows `59-K — Jan 15, 2025`)
 
-Data-fetching pages (Projects, Schedule, Calendar, Kanban, Invoices, Discrepancies) hang on "Loading" because their queries cannot get connections from the pool.
+### What changes
 
-### Solution -- 3 File Replacements
+**1 database migration** -- no frontend changes needed
 
-**File 1: `src/hooks/useTheme.tsx`** -- Replace entirely
+The migration replaces the `audit_schedule_entries()` function body. The only change is how `v_label` is built:
+- Adds two new variables: `v_lot_number` and `v_phase_name`
+- Looks up `projects.lot_number` via `v_record.project_id`
+- Looks up `phases.name` via `v_record.phase_id`
+- Builds label as `concat_ws(' — ', lot_number, phase_name, scheduled_date)`
+- Keeps crew_name lookup for the JSONB snapshot but removes it from the label
 
-- Reverts to a one-shot `getSession()` call on mount
-- No more `onAuthStateChange` subscription -- eliminates recurring DB hits on token refresh
-- Theme write (setTheme) and CSS class logic remain unchanged
+Everything else in the trigger (action detection, old/new data capture, user email lookup) stays identical.
 
-**File 2: `src/hooks/useAuth.tsx`** -- Replace entirely
+### No frontend changes
+The `AuditLogViewer.tsx` already displays `record_label` as-is in the table rows, so the improved labels will appear automatically.
 
-- Converts from a standalone hook to a Context Provider pattern
-- Single `onAuthStateChange` subscription shared across the entire app
-- Exports both `AuthProvider` (new) and `useAuth()` (same interface -- all existing call sites work unchanged)
-- Uses `getSession()` for initial load, then `onAuthStateChange` for subsequent events (ignoring `INITIAL_SESSION` to avoid double-processing)
+### Technical detail
 
-**File 3: `src/App.tsx`** -- Replace entirely
+```sql
+CREATE OR REPLACE FUNCTION public.audit_schedule_entries()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $$
+DECLARE
+  v_action text;
+  v_record schedule_entries;
+  v_label text;
+  v_email text;
+  v_lot_number text;
+  v_phase_name text;
+  v_old_data jsonb := NULL;
+  v_new_data jsonb := NULL;
+BEGIN
+  -- action + record selection (unchanged)
+  IF TG_OP = 'DELETE' THEN
+    v_action := 'deleted'; v_record := OLD; v_old_data := to_jsonb(OLD);
+  ELSIF TG_OP = 'INSERT' THEN
+    v_action := 'created'; v_record := NEW; v_new_data := to_jsonb(NEW);
+  ELSE
+    v_action := 'updated'; v_record := NEW;
+    v_old_data := to_jsonb(OLD); v_new_data := to_jsonb(NEW);
+  END IF;
 
-- Adds `AuthProvider` import from `useAuth`
-- Wraps the provider tree: `AuthProvider` sits outside `ThemeProvider` and `OrganizationProvider`
-- No other changes to routes or components
+  SELECT email INTO v_email FROM auth.users WHERE id = auth.uid();
 
-### What stays the same
-- All existing `useAuth()` call sites throughout the app -- zero changes needed
-- All routes, components, and page structure
-- Theme toggle and persistence behavior
-- Organization provider logic
+  -- Look up lot number and phase name for a readable label
+  SELECT lot_number INTO v_lot_number
+    FROM projects WHERE id = v_record.project_id;
+  SELECT name INTO v_phase_name
+    FROM phases WHERE id = v_record.phase_id;
 
-### Verification after deploying
-- Pages that were hanging (Projects, Schedule, Calendar, Kanban, Invoices, Discrepancies) should load immediately
-- Theme preference still persists when toggled
-- Auth flow (login, logout, token refresh) works normally
-- No duplicate auth subscriptions in browser DevTools
+  v_label := concat_ws(' — ',
+    nullif(v_lot_number, ''),
+    nullif(v_phase_name, ''),
+    nullif(v_record.scheduled_date::text, '')
+  );
 
+  INSERT INTO audit_log (
+    organization_id, user_id, user_email,
+    table_name, record_id, action, record_label,
+    old_data, new_data
+  ) VALUES (
+    v_record.organization_id, auth.uid(),
+    coalesce(v_email, 'unknown'),
+    'schedule_entries', v_record.id, v_action, v_label,
+    v_old_data, v_new_data
+  );
+
+  IF TG_OP = 'DELETE' THEN RETURN OLD; ELSE RETURN NEW; END IF;
+END;
+$$;
+```
+
+### Impact
+- Only affects **new** audit log entries going forward (existing entries keep their old labels)
+- No performance concern -- two simple PK lookups added to a trigger that already does lookups
+- No frontend file changes required
