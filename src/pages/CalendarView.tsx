@@ -33,7 +33,7 @@ export default function CalendarView() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { canManage } = useUserRole();
-  const [viewMode, setViewMode] = useState<ViewMode>("week");
+  const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [currentDate, setCurrentDate] = useState(new Date());
   
   // Edit dialog state
