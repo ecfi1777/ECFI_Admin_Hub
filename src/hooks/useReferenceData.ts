@@ -298,7 +298,7 @@ export function useProjectStatuses() {
 
 /**
  * Fetches all projects for the organization.
- * Used by AddEntryDialog and EditEntryDialog for project selection.
+ * Used by EditEntryDialog for project selection (includes archived/deleted).
  */
 export function useProjects() {
   const { organizationId } = useOrganization();
@@ -311,6 +311,31 @@ export function useProjects() {
         .from("projects")
         .select("id, lot_number, builders(name, code), locations(name)")
         .eq("organization_id", organizationId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as Project[];
+    },
+    enabled: !!organizationId,
+  });
+}
+
+/**
+ * Fetches only active, non-archived, non-deleted projects.
+ * Used by AddEntryDialog so new entries can only target active projects.
+ */
+export function useActiveProjects() {
+  const { organizationId } = useOrganization();
+
+  return useQuery({
+    queryKey: ["projects-active", organizationId],
+    queryFn: async () => {
+      if (!organizationId) return [];
+      const { data, error } = await supabase
+        .from("projects")
+        .select("id, lot_number, builders(name, code), locations(name)")
+        .eq("organization_id", organizationId)
+        .eq("is_archived", false)
+        .is("deleted_at", null)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as Project[];
