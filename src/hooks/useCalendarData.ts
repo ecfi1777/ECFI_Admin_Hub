@@ -32,6 +32,13 @@ export function useCalendarEntries(startDate: string, endDate: string) {
           phase_id,
           project_id,
           start_time,
+          did_not_work,
+          not_working_reason,
+          is_cancelled,
+          cancellation_reason,
+          rescheduled_from_date,
+          rescheduled_to_date,
+          rescheduled_from_entry_id,
           crews(name),
           phases(name),
           projects(
