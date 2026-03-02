@@ -12,6 +12,7 @@ export interface ScheduleEntryProject {
 
 export interface ScheduleEntry {
   id: string;
+  organization_id: string;
   scheduled_date: string;
   project_id: string | null;
   crew_id: string | null;
