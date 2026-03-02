@@ -71,21 +71,20 @@ export function VendorInvoiceTable({
 
   /* ─── Desktop: table ─── */
   const showTypeCol = typeFilter === "all";
-  const showInvoiceCol = typeFilter === "all" || typeFilter !== "crew";
+  const showInvoiceCol = true;
   const showYardsCol =
-    typeFilter === "all" || typeFilter === "concrete" || typeFilter === "stone" || typeFilter === "crew";
-  const showAmountCol = typeFilter === "all" || typeFilter !== "crew";
+    typeFilter === "all" || typeFilter === "concrete" || typeFilter === "stone";
+  const showAmountCol = true;
 
   const vendorLabel: Record<VendorTypeFilter, string> = {
-    all: "Vendor/Crew",
+    all: "Vendor",
     concrete: "Supplier",
     stone: "Stone Supplier",
     pump: "Pump Vendor",
     inspection: "Inspector",
-    crew: "Crew",
   };
 
-  const yardsLabel = typeFilter === "crew" ? "Crew Yards" : typeFilter === "stone" ? "Tons Billed" : "Yards Billed";
+  const yardsLabel = typeFilter === "stone" ? "Tons Billed" : "Yards Billed";
 
   return (
     <Card>

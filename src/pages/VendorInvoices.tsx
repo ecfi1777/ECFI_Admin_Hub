@@ -8,7 +8,7 @@ import {
   useSuppliers,
   usePumpVendors,
   useInspectors,
-  useCrews,
+  
   useStoneSuppliers,
 } from "@/hooks/useReferenceData";
 import { VendorInvoiceFilters } from "@/components/vendor-invoices/VendorInvoiceFilters";
@@ -52,7 +52,7 @@ export default function VendorInvoices() {
   const { data: suppliers = [] } = useSuppliers();
   const { data: pumpVendors = [] } = usePumpVendors();
   const { data: inspectors = [] } = useInspectors();
-  const { data: crews = [] } = useCrews();
+  
   const { data: stoneSuppliers = [] } = useStoneSuppliers();
 
   // Fetch entries that have at least one vendor/crew assigned
@@ -194,19 +194,6 @@ export default function VendorInvoices() {
         });
       }
 
-      // Crew: only show if entry also has a concrete supplier or stone supplier (pour day)
-      if (
-        entry.crew_id &&
-        (entry.supplier_id || entry.stone_supplier_id) &&
-        entry.crew_yards_poured == null &&
-        (typeFilter === "all" || typeFilter === "crew")
-      ) {
-        result.push({
-          entry,
-          type: "crew",
-          vendorName: entry.crews?.name || "-",
-        });
-      }
     }
 
     // Specific vendor filter
@@ -216,7 +203,7 @@ export default function VendorInvoices() {
         if (row.type === "stone") return row.entry.stone_supplier_id === specificVendor;
         if (row.type === "pump") return row.entry.pump_vendor_id === specificVendor;
         if (row.type === "inspection") return row.entry.inspector_id === specificVendor;
-        if (row.type === "crew") return row.entry.crew_id === specificVendor;
+        
         return true;
       });
     }
@@ -285,7 +272,7 @@ export default function VendorInvoices() {
           suppliers={suppliers}
           pumpVendors={pumpVendors}
           inspectors={inspectors}
-          crews={crews}
+          
           stoneSuppliers={stoneSuppliers}
         />
 

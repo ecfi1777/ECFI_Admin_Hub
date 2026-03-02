@@ -26,7 +26,7 @@ const TYPE_BADGE_STYLES: Record<string, string> = {
   stone: "bg-amber-500/10 text-amber-500 border-amber-500/20",
   pump: "bg-purple-500/10 text-purple-500 border-purple-500/20",
   inspection: "bg-orange-500/10 text-orange-500 border-orange-500/20",
-  crew: "bg-green-500/10 text-green-500 border-green-500/20",
+  
 };
 
 export function VendorInvoiceRow({
@@ -56,9 +56,7 @@ export function VendorInvoiceRow({
       ? (entry.ready_mix_yards_billed?.toString() ?? "")
       : type === "stone"
         ? (entry.stone_tons_billed?.toString() ?? "")
-        : type === "crew"
-          ? (entry.crew_yards_poured?.toString() ?? "")
-          : ""
+        : ""
   );
   const [amount, setAmount] = useState(
     type === "concrete"
@@ -89,8 +87,6 @@ export function VendorInvoiceRow({
       } else if (type === "inspection") {
         updates.inspection_invoice_number = invoiceNumber || null;
         updates.inspection_amount = amount ? parseFloat(amount) : null;
-      } else if (type === "crew") {
-        updates.crew_yards_poured = yards ? parseFloat(yards) : null;
       }
       const { error } = await supabase
         .from("schedule_entries")
@@ -107,15 +103,15 @@ export function VendorInvoiceRow({
 
   // Column visibility (mirrors VendorInvoiceTable headers)
   const showTypeCol = typeFilter === "all";
-  const showInvoiceCol = typeFilter === "all" || typeFilter !== "crew";
+  const showInvoiceCol = true;
   const showYardsCol =
-    typeFilter === "all" || typeFilter === "concrete" || typeFilter === "crew";
-  const showAmountCol = typeFilter === "all" || typeFilter !== "crew";
+    typeFilter === "all" || typeFilter === "concrete" || typeFilter === "stone";
+  const showAmountCol = true;
 
   // Editability — in "all" mode, cells not applicable to this type show "-"
-  const canEditInvoice = type !== "crew";
-  const canEditYards = type === "concrete" || type === "stone" || type === "crew";
-  const canEditAmount = type !== "crew";
+  const canEditInvoice = true;
+  const canEditYards = type === "concrete" || type === "stone";
+  const canEditAmount = true;
 
   const isInspection = type === "inspection";
   const showRowCheckbox = showCheckboxCol && isInspection;
@@ -175,7 +171,7 @@ export function VendorInvoiceRow({
                   type="number"
                   value={yards}
                   onChange={(e) => setYards(e.target.value)}
-                  placeholder={type === "crew" ? "Crew Yards" : "Yards"}
+                  placeholder="Yards"
                   className="h-9 w-28"
                   step="0.01"
                 />
