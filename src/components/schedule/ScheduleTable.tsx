@@ -6,7 +6,20 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { getUserFriendlyError } from "@/lib/errorHandler";
 import { invalidateScheduleQueries } from "@/lib/queryHelpers";
-import { Trash2, CalendarIcon, MoreVertical, Pencil, CalendarX2, Undo2 } from "lucide-react";
+import { Trash2, CalendarIcon, MoreVertical, Pencil, CalendarX2, Undo2, ArrowRight, Copy } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,11 +47,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { EditEntryDialog } from "./EditEntryDialog";
@@ -70,6 +78,8 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [isProjectSheetOpen, setIsProjectSheetOpen] = useState(false);
   const [undoEntryId, setUndoEntryId] = useState<string | null>(null);
+  const [copyEntry, setCopyEntry] = useState<ScheduleEntry | null>(null);
+  const [copyDate, setCopyDate] = useState<Date | undefined>(undefined);
   
   const queryClient = useQueryClient();
 
@@ -160,6 +170,45 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
       invalidateScheduleQueries(queryClient);
       toast.success("Reschedule undone — original entry restored");
       setUndoEntryId(null);
+    },
+    onError: (error: Error) => {
+      toast.error(getUserFriendlyError(error));
+    },
+  });
+
+  const copyMutation = useMutation({
+    mutationFn: async ({ entry, newDate }: { entry: ScheduleEntry; newDate: string }) => {
+      const { error } = await supabase
+        .from("schedule_entries")
+        .insert({
+          scheduled_date: newDate,
+          organization_id: entry.organization_id,
+          crew_id: entry.crew_id,
+          project_id: entry.project_id,
+          phase_id: entry.phase_id,
+          start_time: entry.start_time,
+          order_status: entry.order_status,
+          notes: entry.notes,
+          supplier_id: entry.supplier_id,
+          concrete_mix_id: entry.concrete_mix_id,
+          qty_ordered: entry.qty_ordered,
+          pump_vendor_id: entry.pump_vendor_id,
+          inspection_type_id: entry.inspection_type_id,
+          inspector_id: entry.inspector_id,
+          additive_hot_water: entry.additive_hot_water,
+          additive_1_percent_he: entry.additive_1_percent_he,
+          additive_2_percent_he: entry.additive_2_percent_he,
+          stone_supplier_id: entry.stone_supplier_id,
+          stone_type_id: entry.stone_type_id,
+        });
+      if (error) throw error;
+      return newDate;
+    },
+    onSuccess: (newDate) => {
+      invalidateScheduleQueries(queryClient);
+      toast.success(`Entry copied to ${format(new Date(newDate + "T00:00:00"), "MMM d, yyyy")}`);
+      setCopyEntry(null);
+      setCopyDate(undefined);
     },
     onError: (error: Error) => {
       toast.error(getUserFriendlyError(error));
@@ -575,8 +624,8 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
                         >
                           <Pencil className="w-3 h-3" />
                         </Button>
-                        <Popover>
-                          <PopoverTrigger asChild>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
                             <Button
                               type="button"
                               size="icon"
@@ -584,56 +633,46 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
                               onPointerDown={(e) => e.stopPropagation()}
                               onClick={(e) => e.stopPropagation()}
                               className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                              title="Move to another date"
+                              title="Schedule actions"
                             >
                               <CalendarIcon className="w-3 h-3" />
                             </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0 bg-popover border-border" align="end">
-                            <Calendar
-                              mode="single"
-                              selected={moveDate}
-                              onSelect={(date) => {
-                                if (date) {
-                                  setMoveDate(date);
-                                  setMoveEntryId(entry.id);
-                                }
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="bg-popover border-border">
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setMoveEntryId(entry.id);
+                                setMoveDate(undefined);
                               }}
-                              initialFocus
-                            />
-                            {moveDate && moveEntryId === entry.id && (
-                              <div className="p-2 border-t border-border flex justify-end gap-2">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => { setMoveDate(undefined); setMoveEntryId(null); }}
-                                >
-                                  Cancel
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  onClick={confirmMove}
-                                >
-                                  Move
-                                </Button>
-                              </div>
-                            )}
-                          </PopoverContent>
-                        </Popover>
-                        <Button
-                          type="button"
-                          size="icon"
-                          variant="ghost"
-                          onPointerDown={(e) => e.stopPropagation()}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setCancelRescheduleEntry(entry);
-                          }}
-                          className="h-7 w-7 text-muted-foreground hover:text-amber-500"
-                          title="Cancel & Reschedule"
-                        >
-                          <CalendarX2 className="w-3 h-3" />
-                        </Button>
+                              className="text-foreground"
+                            >
+                              <ArrowRight className="w-4 h-4 mr-2" />
+                              Move to Another Day
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setCancelRescheduleEntry(entry);
+                              }}
+                              className="text-foreground"
+                            >
+                              <CalendarX2 className="w-4 h-4 mr-2" />
+                              Cancel &amp; Reschedule
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setCopyEntry(entry);
+                                setCopyDate(undefined);
+                              }}
+                              className="text-foreground"
+                            >
+                              <Copy className="w-4 h-4 mr-2" />
+                              Copy to Another Day
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                         {isRescheduledCopy && (
                           <Button
                             type="button"
@@ -733,6 +772,65 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
         open={!!cancelRescheduleEntry}
         onOpenChange={(open) => !open && setCancelRescheduleEntry(null)}
       />
+
+      {/* Move to Another Day Dialog */}
+      <Dialog open={!!moveEntryId} onOpenChange={(open) => { if (!open) { setMoveEntryId(null); setMoveDate(undefined); } }}>
+        <DialogContent className="bg-card border-border sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-foreground">Move to Another Day</DialogTitle>
+          </DialogHeader>
+          <div className="flex justify-center">
+            <Calendar
+              mode="single"
+              selected={moveDate}
+              onSelect={setMoveDate}
+              initialFocus
+              className="pointer-events-auto"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setMoveEntryId(null); setMoveDate(undefined); }}>
+              Cancel
+            </Button>
+            <Button onClick={confirmMove} disabled={!moveDate}>
+              Move
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Copy to Another Day Dialog */}
+      <Dialog open={!!copyEntry} onOpenChange={(open) => { if (!open) { setCopyEntry(null); setCopyDate(undefined); } }}>
+        <DialogContent className="bg-card border-border sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-foreground">Copy to Another Day</DialogTitle>
+          </DialogHeader>
+          <div className="flex justify-center">
+            <Calendar
+              mode="single"
+              selected={copyDate}
+              onSelect={setCopyDate}
+              initialFocus
+              className="pointer-events-auto"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setCopyEntry(null); setCopyDate(undefined); }}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (copyEntry && copyDate) {
+                  copyMutation.mutate({ entry: copyEntry, newDate: format(copyDate, "yyyy-MM-dd") });
+                }
+              }}
+              disabled={!copyDate || copyMutation.isPending}
+            >
+              {copyMutation.isPending ? "Copying..." : "Confirm"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Project Details Sheet */}
       <ProjectDetailsSheet
