@@ -52,6 +52,34 @@ export function useCalendarEntries(startDate: string, endDate: string) {
   });
 }
 
+export interface DailyNote {
+  id: string;
+  note_date: string;
+  notes: string | null;
+}
+
+export function useDailyNotesForRange(startDate: string, endDate: string) {
+  const { organizationId } = useOrganization();
+
+  return useQuery({
+    queryKey: ["daily-notes-range", startDate, endDate, organizationId],
+    queryFn: async () => {
+      if (!organizationId) return [];
+      const { data, error } = await supabase
+        .from("daily_notes")
+        .select("id, note_date, notes")
+        .eq("organization_id", organizationId)
+        .gte("note_date", startDate)
+        .lte("note_date", endDate)
+        .not("notes", "is", null);
+      if (error) throw error;
+      // Filter out empty strings
+      return (data as DailyNote[]).filter((n) => n.notes && n.notes.trim().length > 0);
+    },
+    enabled: !!organizationId && !!startDate && !!endDate,
+  });
+}
+
 export function useCrewsWithColors() {
   const { organizationId } = useOrganization();
 

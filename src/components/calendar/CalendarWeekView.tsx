@@ -1,7 +1,8 @@
 import { memo, useMemo, useState, useRef, useCallback, useEffect } from "react";
 import { format, addDays, isToday } from "date-fns";
-import { Plus } from "lucide-react";
+import { Plus, StickyNote } from "lucide-react";
 import { CalendarEntry } from "./CalendarEntry";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { ScheduleEntry } from "@/types/schedule";
 import type { CrewWithColor } from "@/hooks/useCalendarData";
 
@@ -9,6 +10,7 @@ interface CalendarWeekViewProps {
   weekStart: Date;
   entries: ScheduleEntry[];
   crews: CrewWithColor[];
+  dailyNotesMap: Record<string, string>;
   onDayClick: (date: Date) => void;
   onEntryClick: (entry: ScheduleEntry) => void;
   onShowDayDetail: (date: Date, entries: ScheduleEntry[]) => void;
@@ -23,6 +25,7 @@ export const CalendarWeekView = memo(function CalendarWeekView({
   weekStart,
   entries,
   crews,
+  dailyNotesMap,
   onDayClick,
   onEntryClick,
   onShowDayDetail,
@@ -140,12 +143,17 @@ export const CalendarWeekView = memo(function CalendarWeekView({
               >
                 <div className="bg-card border border-border rounded-lg p-3">
                   <div className="flex items-center justify-between mb-3">
-                    <button
-                      onClick={() => onDayClick(day)}
-                      className="text-foreground font-semibold text-base hover:text-primary transition-colors"
-                    >
-                      {format(day, "EEEE, MMM d")}
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => onDayClick(day)}
+                        className="text-foreground font-semibold text-base hover:text-primary transition-colors"
+                      >
+                        {format(day, "EEEE, MMM d")}
+                      </button>
+                      {dailyNotesMap[dateStr] && (
+                        <StickyNote className="w-4 h-4 text-amber-500" />
+                      )}
+                    </div>
                     <button
                       onClick={() => onAddEntry(day)}
                       className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-all"
@@ -208,14 +216,46 @@ export const CalendarWeekView = memo(function CalendarWeekView({
               <div className="text-xs text-muted-foreground font-medium">
                 {format(day, "EEE")}
               </div>
-              <div
-                className={`text-lg font-semibold ${
-                  isCurrentDay ? "text-primary" : "text-foreground"
-                }`}
-              >
-                {format(day, "d")}
+              <div className="flex items-center justify-center gap-1">
+                <span
+                  className={`text-lg font-semibold ${
+                    isCurrentDay ? "text-primary" : "text-foreground"
+                  }`}
+                >
+                  {format(day, "d")}
+                </span>
               </div>
             </button>
+
+            {/* Daily Notes indicator */}
+            {dailyNotesMap[dateStr] && (
+              <div className="absolute top-2 left-2 z-10">
+                <TooltipProvider delayDuration={200}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDayClick(day);
+                        }}
+                        className="text-amber-500 hover:text-amber-400 transition-colors"
+                        aria-label="Daily notes"
+                      >
+                        <StickyNote className="w-4 h-4" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="max-w-[250px] text-xs">
+                      <p className="font-medium mb-0.5">Daily Notes</p>
+                      <p className="text-muted-foreground whitespace-pre-wrap">
+                        {dailyNotesMap[dateStr].length > 100
+                          ? dailyNotesMap[dateStr].slice(0, 100) + "…"
+                          : dailyNotesMap[dateStr]}
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            )}
 
             {/* Add Button - appears on hover */}
             <button

@@ -9,8 +9,9 @@ import {
   isSameMonth,
   isToday,
 } from "date-fns";
-import { Plus, ChevronDown, ChevronRight } from "lucide-react";
+import { Plus, ChevronDown, ChevronRight, StickyNote } from "lucide-react";
 import { CalendarEntry } from "./CalendarEntry";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import type { ScheduleEntry } from "@/types/schedule";
 import type { CrewWithColor } from "@/hooks/useCalendarData";
@@ -19,6 +20,7 @@ interface CalendarMonthViewProps {
   currentMonth: Date;
   entries: ScheduleEntry[];
   crews: CrewWithColor[];
+  dailyNotesMap: Record<string, string>;
   onDayClick: (date: Date) => void;
   onEntryClick: (entry: ScheduleEntry) => void;
   onShowDayDetail: (date: Date, entries: ScheduleEntry[]) => void;
@@ -33,6 +35,7 @@ export const CalendarMonthView = memo(function CalendarMonthView({
   currentMonth,
   entries,
   crews,
+  dailyNotesMap,
   onDayClick,
   onEntryClick,
   onShowDayDetail,
@@ -125,6 +128,7 @@ export const CalendarMonthView = memo(function CalendarMonthView({
               dayEntries={dayEntries}
               isToday={isTodayDay}
               crews={crews}
+              hasNotes={!!dailyNotesMap[dateStr]}
               onDayClick={onDayClick}
               onEntryClick={onEntryClick}
               onAddEntry={onAddEntry}
@@ -173,22 +177,50 @@ export const CalendarMonthView = memo(function CalendarMonthView({
               >
                 {/* Day Number */}
                 <div className="flex items-center justify-between p-1">
-                  <button
-                    onClick={() => onDayClick(day)}
-                    className={`hover:bg-muted/50 transition-colors rounded-full ${
-                      isCurrentDay ? "bg-primary/10" : ""
-                    }`}
-                  >
-                    <span
-                      className={`inline-flex items-center justify-center w-6 h-6 text-sm rounded-full ${
-                        isCurrentDay
-                          ? "bg-primary text-primary-foreground font-semibold"
-                          : "text-foreground"
+                  <div className="flex items-center gap-0.5">
+                    <button
+                      onClick={() => onDayClick(day)}
+                      className={`hover:bg-muted/50 transition-colors rounded-full ${
+                        isCurrentDay ? "bg-primary/10" : ""
                       }`}
                     >
-                      {format(day, "d")}
-                    </span>
-                  </button>
+                      <span
+                        className={`inline-flex items-center justify-center w-6 h-6 text-sm rounded-full ${
+                          isCurrentDay
+                            ? "bg-primary text-primary-foreground font-semibold"
+                            : "text-foreground"
+                        }`}
+                      >
+                        {format(day, "d")}
+                      </span>
+                    </button>
+                    {dailyNotesMap[dateStr] && (
+                      <TooltipProvider delayDuration={200}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onDayClick(day);
+                              }}
+                              className="text-amber-500 hover:text-amber-400 transition-colors"
+                              aria-label="Daily notes"
+                            >
+                              <StickyNote className="w-3.5 h-3.5" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom" className="max-w-[250px] text-xs">
+                            <p className="font-medium mb-0.5">Daily Notes</p>
+                            <p className="text-muted-foreground whitespace-pre-wrap">
+                              {dailyNotesMap[dateStr].length > 100
+                                ? dailyNotesMap[dateStr].slice(0, 100) + "…"
+                                : dailyNotesMap[dateStr]}
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                  </div>
 
                   {/* Add Button - appears on hover */}
                   {isCurrentMonth && (
@@ -241,6 +273,7 @@ interface MobileMonthDayProps {
   dayEntries: ScheduleEntry[];
   isToday: boolean;
   crews: CrewWithColor[];
+  hasNotes: boolean;
   onDayClick: (date: Date) => void;
   onEntryClick: (entry: ScheduleEntry) => void;
   onAddEntry: (date: Date) => void;
@@ -251,6 +284,7 @@ const MobileMonthDay = memo(function MobileMonthDay({
   dayEntries,
   isToday: isTodayDay,
   crews,
+  hasNotes,
   onDayClick,
   onEntryClick,
   onAddEntry,
@@ -282,6 +316,7 @@ const MobileMonthDay = memo(function MobileMonthDay({
                 {format(day, "MMM d (EEE)")}
               </span>
               <span className="text-xs text-muted-foreground">{entryLabel}</span>
+              {hasNotes && <StickyNote className="w-3.5 h-3.5 text-amber-500 shrink-0" />}
             </div>
             <button
               onClick={(e) => {
