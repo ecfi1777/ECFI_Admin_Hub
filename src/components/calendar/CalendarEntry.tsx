@@ -91,9 +91,6 @@ export const CalendarEntry = memo(function CalendarEntry({
       }}
       title={displayText}
     >
-      {isRescheduled && (
-        <RotateCcw className="inline-block w-3 h-3 mr-1 opacity-70" />
-      )}
       {displayText}
     </button>
   );
