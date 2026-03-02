@@ -6,7 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { getUserFriendlyError } from "@/lib/errorHandler";
 import { invalidateScheduleQueries } from "@/lib/queryHelpers";
-import { Trash2, CalendarIcon, MoreVertical, Pencil, CalendarX2, Undo2, ArrowRight, Copy } from "lucide-react";
+import { Trash2, CalendarIcon, MoreVertical, Pencil, CalendarX2, Undo2, ArrowRight, Copy, StickyNote } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -464,6 +464,42 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
                         </Button>
                       )}
                     </TableCell>
+                  </TableRow>
+                );
+              }
+
+              // No-project crew note row
+              if (!entry.project_id && !isDidNotWork) {
+                return (
+                  <TableRow key={entry.id} className="border-border hover:bg-muted/50">
+                    <TableCell className="text-foreground text-xs py-2">
+                      <span className="truncate block">{entry.crews?.name || "-"}</span>
+                    </TableCell>
+                    <TableCell colSpan={readOnly ? 9 : 10} className="text-xs py-2">
+                      <div className="flex items-start gap-2 bg-muted/30 border-l-2 border-accent rounded-r px-3 py-1.5 max-w-md">
+                        <StickyNote className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
+                        <span className="text-muted-foreground italic">
+                          {entry.notes || entry.crew_notes || "No notes"}
+                        </span>
+                      </div>
+                    </TableCell>
+                    {!readOnly && (
+                      <TableCell className="py-2">
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                          title="Edit entry"
+                          onClick={() => {
+                            setEditEntry(entry);
+                            setEditEntryTab("general");
+                          }}
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </Button>
+                      </TableCell>
+                    )}
                   </TableRow>
                 );
               }
