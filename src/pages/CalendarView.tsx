@@ -21,7 +21,7 @@ import { CrewColorLegend } from "@/components/calendar/CrewColorLegend";
 import { DayDetailModal } from "@/components/calendar/DayDetailModal";
 import { EditEntryDialog } from "@/components/schedule/EditEntryDialog";
 import { AddEntryDialog } from "@/components/schedule/AddEntryDialog";
-import { useCalendarEntries, useCrewsWithColors } from "@/hooks/useCalendarData";
+import { useCalendarEntries, useCrewsWithColors, useDailyNotesForRange } from "@/hooks/useCalendarData";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -79,6 +79,16 @@ export default function CalendarView() {
     endDate
   );
   const { data: crews = [], isLoading: crewsLoading } = useCrewsWithColors();
+  const { data: dailyNotes = [] } = useDailyNotesForRange(startDate, endDate);
+
+  // Build a map of date -> notes text for quick lookup
+  const dailyNotesMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    dailyNotes.forEach((n) => {
+      if (n.notes) map[n.note_date] = n.notes;
+    });
+    return map;
+  }, [dailyNotes]);
 
   const isLoading = entriesLoading || crewsLoading;
 
@@ -207,6 +217,7 @@ export default function CalendarView() {
             weekStart={startOfWeek(currentDate)}
             entries={entries}
             crews={crews}
+            dailyNotesMap={dailyNotesMap}
             onDayClick={handleDayClick}
             onEntryClick={handleEntryClick}
             onShowDayDetail={handleShowDayDetail}
@@ -218,6 +229,7 @@ export default function CalendarView() {
             currentMonth={currentDate}
             entries={entries}
             crews={crews}
+            dailyNotesMap={dailyNotesMap}
             onDayClick={handleDayClick}
             onEntryClick={handleEntryClick}
             onShowDayDetail={handleShowDayDetail}
