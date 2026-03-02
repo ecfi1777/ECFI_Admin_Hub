@@ -336,7 +336,7 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
     quickEditTab: "concrete" | "pump" | "inspection"
   ) => {
     if (readOnly) {
-      return <span className="px-1 py-0.5 block truncate text-sm">{displayValue}</span>;
+      return <span className="px-1 py-0.5 block truncate text-xs">{displayValue}</span>;
     }
     return (
       <div className="group flex items-center gap-1">
@@ -386,17 +386,17 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
         <Table>
           <TableHeader>
             <TableRow className="border-border">
-              <TableHead className="text-muted-foreground w-24">Crew</TableHead>
-              <TableHead className="text-muted-foreground w-20">Builder</TableHead>
-              <TableHead className="text-muted-foreground w-24">Location</TableHead>
-              <TableHead className="text-muted-foreground w-16">Lot #</TableHead>
-              <TableHead className="text-muted-foreground w-20">Phase</TableHead>
-              <TableHead className="text-muted-foreground w-20">Pump Co.</TableHead>
-              <TableHead className="text-muted-foreground w-24">Insp. Type</TableHead>
-              <TableHead className="text-muted-foreground w-24">Inspector</TableHead>
-              <TableHead className="text-muted-foreground w-20">Supplier</TableHead>
-              <TableHead className="text-muted-foreground w-16">Qty Ord</TableHead>
-              {!readOnly && <TableHead className="text-muted-foreground w-16 text-center">Need to Inv.</TableHead>}
+              <TableHead className="text-muted-foreground w-20">Crew</TableHead>
+              <TableHead className="text-muted-foreground w-[4.25rem]">Builder</TableHead>
+              <TableHead className="text-muted-foreground w-20">Location</TableHead>
+              <TableHead className="text-muted-foreground w-14">Lot #</TableHead>
+              <TableHead className="text-muted-foreground w-[4.25rem]">Phase</TableHead>
+              <TableHead className="text-muted-foreground w-[4.25rem]">Pump Co.</TableHead>
+              <TableHead className="text-muted-foreground w-20">Insp. Type</TableHead>
+              <TableHead className="text-muted-foreground w-20">Inspector</TableHead>
+              <TableHead className="text-muted-foreground w-[4.25rem]">Supplier</TableHead>
+              <TableHead className="text-muted-foreground w-14">Qty Ord</TableHead>
+              {!readOnly && <TableHead className="text-muted-foreground w-14 text-center">Need to Inv.</TableHead>}
               {!readOnly && <TableHead className="text-muted-foreground w-24">Actions</TableHead>}
             </TableRow>
           </TableHeader>
@@ -413,10 +413,10 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
                   : "another day";
                 return (
                   <TableRow key={entry.id} className="border-border bg-destructive/5">
-                    <TableCell className="text-sm py-2">
-                      <span className="text-destructive line-through decoration-destructive">{entry.crews?.name || "-"}</span>
+                    <TableCell className="text-xs py-2">
+                      <span className="text-destructive line-through decoration-destructive truncate block">{entry.crews?.name || "-"}</span>
                     </TableCell>
-                    <TableCell colSpan={readOnly ? 9 : 11} className="text-sm py-2">
+                    <TableCell colSpan={readOnly ? 9 : 11} className="text-xs py-2">
                       <span className="text-destructive/80 line-through decoration-destructive">
                         {[
                           entry.projects?.builders?.code || entry.projects?.builders?.name,
@@ -440,10 +440,10 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
               if (isDidNotWork) {
                 return (
                   <TableRow key={entry.id} className="border-border hover:bg-muted/50 bg-destructive/5 opacity-70">
-                    <TableCell className="text-foreground text-sm py-2">
+                    <TableCell className="text-foreground text-xs py-2">
                       <span className="truncate block">{entry.crews?.name || "-"}</span>
                     </TableCell>
-                    <TableCell colSpan={readOnly ? 9 : 11} className="text-sm py-2 text-destructive italic">
+                    <TableCell colSpan={readOnly ? 9 : 11} className="text-xs py-2 text-destructive italic">
                       <span className="line-through">Did not work</span>
                       {entry.not_working_reason && (
                         <span className="ml-2 no-underline">— {entry.not_working_reason}</span>
@@ -471,7 +471,7 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
               // Normal row (active entry)
               return (
                 <TableRow key={entry.id} className="border-border hover:bg-muted/50">
-                  <TableCell className="text-foreground text-sm py-2">
+                  <TableCell className="text-foreground text-xs py-2">
                     {readOnly ? (
                       <span className="truncate block">{entry.crews?.name || "-"}</span>
                     ) : (
@@ -494,7 +494,7 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
                       </div>
                     )}
                   </TableCell>
-                  <TableCell className="text-foreground text-sm py-2">
+                  <TableCell className="text-foreground text-xs py-2">
                     <button
                       onClick={() => {
                         if (entry.project_id) {
@@ -508,7 +508,7 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
                       {entry.projects?.builders?.code || entry.projects?.builders?.name || "-"}
                     </button>
                   </TableCell>
-                  <TableCell className="text-foreground text-sm py-2">
+                  <TableCell className="text-foreground text-xs py-2">
                     <button
                       onClick={() => {
                         if (entry.project_id) {
@@ -516,13 +516,13 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
                           setIsProjectSheetOpen(true);
                         }
                       }}
-                      className={`truncate block max-w-24 text-left ${entry.project_id ? "hover:underline hover:text-primary cursor-pointer" : ""}`}
+                      className={`truncate block max-w-20 text-left ${entry.project_id ? "hover:underline hover:text-primary cursor-pointer" : ""}`}
                       disabled={!entry.project_id}
                     >
                       {entry.projects?.locations?.name || "-"}
                     </button>
                   </TableCell>
-                  <TableCell className="text-sm py-2">
+                  <TableCell className="text-xs py-2">
                     <button
                       onClick={() => {
                         if (entry.project_id) {
