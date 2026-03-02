@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/select";
 import { Search, X } from "lucide-react";
 import { VendorTypeFilter } from "./types";
-import type { Supplier, PumpVendor, Inspector, Crew, StoneSupplier } from "@/hooks/useReferenceData";
+import type { Supplier, PumpVendor, Inspector, StoneSupplier } from "@/hooks/useReferenceData";
 
 interface VendorInvoiceFiltersProps {
   typeFilter: VendorTypeFilter;
@@ -29,7 +29,6 @@ interface VendorInvoiceFiltersProps {
   suppliers: Supplier[];
   pumpVendors: PumpVendor[];
   inspectors: Inspector[];
-  crews: Crew[];
   stoneSuppliers: StoneSupplier[];
 }
 
@@ -49,7 +48,6 @@ export function VendorInvoiceFilters({
   suppliers,
   pumpVendors,
   inspectors,
-  crews,
   stoneSuppliers,
 }: VendorInvoiceFiltersProps) {
   const vendorOptions = (() => {
@@ -62,8 +60,6 @@ export function VendorInvoiceFilters({
         return pumpVendors.map((p) => ({ id: p.id, name: p.name }));
       case "inspection":
         return inspectors.map((i) => ({ id: i.id, name: i.name }));
-      case "crew":
-        return crews.map((c) => ({ id: c.id, name: c.name }));
       default:
         return [];
     }
@@ -75,7 +71,6 @@ export function VendorInvoiceFilters({
     stone: "All Stone Suppliers",
     pump: "All Pump Vendors",
     inspection: "All Inspectors",
-    crew: "All Crews",
   };
 
   return (
@@ -107,7 +102,7 @@ export function VendorInvoiceFilters({
               <SelectItem value="stone">Stone</SelectItem>
               <SelectItem value="pump">Pump</SelectItem>
               <SelectItem value="inspection">Inspection</SelectItem>
-              <SelectItem value="crew">Crew</SelectItem>
+              
             </SelectContent>
           </Select>
 

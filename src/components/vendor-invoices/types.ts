@@ -1,4 +1,4 @@
-export type VendorTypeFilter = 'all' | 'concrete' | 'stone' | 'pump' | 'inspection' | 'crew';
+export type VendorTypeFilter = 'all' | 'concrete' | 'stone' | 'pump' | 'inspection';
 
 export interface VendorEntry {
   id: string;
@@ -38,6 +38,6 @@ export interface VendorEntry {
 
 export interface VendorInvoiceRowData {
   entry: VendorEntry;
-  type: 'concrete' | 'stone' | 'pump' | 'inspection' | 'crew';
+  type: 'concrete' | 'stone' | 'pump' | 'inspection';
   vendorName: string;
 }
