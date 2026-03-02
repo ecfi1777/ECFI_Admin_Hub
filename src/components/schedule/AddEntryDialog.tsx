@@ -20,7 +20,7 @@ import { getUserFriendlyError } from "@/lib/errorHandler";
 import { invalidateScheduleQueries } from "@/lib/queryHelpers";
 import { Search } from "lucide-react";
 import { useOrganization } from "@/hooks/useOrganization";
-import { useProjects } from "@/hooks/useReferenceData";
+import { useActiveProjects } from "@/hooks/useReferenceData";
 import { useEntryForm } from "./entry-form/useEntryForm";
 import { GeneralTab, ConcreteTab, PumpTab, InspectionTab } from "./entry-form/tabs";
 
@@ -46,7 +46,7 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate,
   
   const queryClient = useQueryClient();
   const { organizationId } = useOrganization();
-  const { data: projects = [] } = useProjects();
+  const { data: projects = [] } = useActiveProjects();
 
   // Use shared form hook with default crew if provided
   const { formData, updateField, resetForm, getInsertPayload } = useEntryForm({
