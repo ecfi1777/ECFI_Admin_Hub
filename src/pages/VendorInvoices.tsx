@@ -185,7 +185,7 @@ export default function VendorInvoices() {
       <div className="p-3 md:p-6">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-foreground">
-            Vendor Invoice Entry
+            Vendor Bills
           </h1>
           <p className="text-muted-foreground">
             {isLoading
