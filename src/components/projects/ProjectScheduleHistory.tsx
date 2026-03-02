@@ -454,6 +454,11 @@ export function ProjectScheduleHistory({ projectId, readOnly = false }: ProjectS
                                   {formatCurrency(entry.ready_mix_invoice_amount)}
                                 </div>
                               )}
+                              {!readOnly && entry.ready_mix_invoice_amount && entry.ready_mix_yards_billed && entry.ready_mix_yards_billed > 0 && (
+                                <div className="text-xs text-muted-foreground">
+                                  ${(Math.ceil((entry.ready_mix_invoice_amount / entry.ready_mix_yards_billed) * 100) / 100).toFixed(2)}/yd
+                                </div>
+                              )}
                               {entry.concrete_notes && (
                                 <div className="text-muted-foreground text-xs italic border-t border-border pt-1 mt-1">
                                   {entry.concrete_notes}
