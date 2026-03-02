@@ -74,7 +74,7 @@ export const CalendarEntry = memo(function CalendarEntry({
     if (entry.phases?.name) parts.push(entry.phases.name);
     if (project?.locations?.name) parts.push(project.locations.name);
     if (project?.lot_number) parts.push(project.lot_number);
-    displayText = parts.join(" | ") || "No details";
+    displayText = parts.join(" | ") || "See Notes";
   }
 
   const entryButton = (
