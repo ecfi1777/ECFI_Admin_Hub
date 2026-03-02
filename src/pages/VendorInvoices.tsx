@@ -148,6 +148,22 @@ export default function VendorInvoices() {
     const result: VendorInvoiceRowData[] = [];
 
     for (const entry of filtered) {
+      // When Show No Charge is on, ONLY show inspection entries marked no-charge
+      if (showNoCharge) {
+        if (
+          entry.inspector_id &&
+          entry.inspection_no_charge &&
+          (typeFilter === "all" || typeFilter === "inspection")
+        ) {
+          result.push({
+            entry,
+            type: "inspection",
+            vendorName: entry.inspectors?.name || "-",
+          });
+        }
+        continue;
+      }
+
       // Concrete: supplier set AND any concrete field missing
       if (
         entry.supplier_id &&
@@ -192,39 +208,23 @@ export default function VendorInvoices() {
         });
       }
 
-      // Inspection
+      // Inspection: normal mode only (showNoCharge handled above)
       if (
         entry.inspector_id &&
+        !entry.inspection_no_charge &&
+        (entry.inspection_invoice_number == null ||
+          entry.inspection_amount == null) &&
         (typeFilter === "all" || typeFilter === "inspection")
       ) {
-        if (showNoCharge) {
-          // Show only no-charge entries
-          if (entry.inspection_no_charge) {
-            result.push({
-              entry,
-              type: "inspection",
-              vendorName: entry.inspectors?.name || "-",
-            });
-          }
-        } else {
-          // Normal mode: show entries needing data, exclude no-charge
-          if (
-            !entry.inspection_no_charge &&
-            (entry.inspection_invoice_number == null ||
-              entry.inspection_amount == null)
-          ) {
-            result.push({
-              entry,
-              type: "inspection",
-              vendorName: entry.inspectors?.name || "-",
-            });
-          }
-        }
+        result.push({
+          entry,
+          type: "inspection",
+          vendorName: entry.inspectors?.name || "-",
+        });
       }
 
       // Crew
       if (
-        !showNoCharge &&
         entry.crew_id &&
         entry.crew_yards_poured == null &&
         (typeFilter === "all" || typeFilter === "crew")
