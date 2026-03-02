@@ -45,11 +45,12 @@ export function ConcreteTab({ formData, updateField, showInlineAdd = true }: Con
         ) : (
           <div className="space-y-2">
             <Label>Supplier</Label>
-            <Select value={formData.supplier_id} onValueChange={(v) => updateField("supplier_id", v)}>
+            <Select value={formData.supplier_id} onValueChange={(v) => updateField("supplier_id", v === "__none__" ? "" : v)}>
               <SelectTrigger>
                 <SelectValue placeholder="Select supplier" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="__none__" className="text-muted-foreground">— None —</SelectItem>
                 {suppliers.map((s) => (
                   <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                 ))}
@@ -59,11 +60,12 @@ export function ConcreteTab({ formData, updateField, showInlineAdd = true }: Con
         )}
         <div className="space-y-2">
           <Label>Concrete Mix</Label>
-          <Select value={formData.concrete_mix_id} onValueChange={(v) => updateField("concrete_mix_id", v)}>
+          <Select value={formData.concrete_mix_id} onValueChange={(v) => updateField("concrete_mix_id", v === "__none__" ? "" : v)}>
             <SelectTrigger>
               <SelectValue placeholder="Select mix" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="__none__" className="text-muted-foreground">— None —</SelectItem>
               {concreteMixes.map((m) => (
                 <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
               ))}
