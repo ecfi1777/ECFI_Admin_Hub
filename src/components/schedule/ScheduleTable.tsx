@@ -474,25 +474,18 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
                     </button>
                   </TableCell>
                   <TableCell className="text-sm py-2">
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => {
-                          if (entry.project_id) {
-                            setSelectedProjectId(entry.project_id);
-                            setIsProjectSheetOpen(true);
-                          }
-                        }}
-                        className={`text-left text-primary font-medium ${entry.project_id ? "hover:underline cursor-pointer" : ""}`}
-                        disabled={!entry.project_id}
-                      >
-                        {entry.projects?.lot_number || "-"}
-                      </button>
-                      {isRescheduledCopy && (
-                        <Badge variant="outline" className="text-[10px] px-1 py-0 border-amber-500/50 text-amber-500 whitespace-nowrap">
-                          Rescheduled
-                        </Badge>
-                      )}
-                    </div>
+                    <button
+                      onClick={() => {
+                        if (entry.project_id) {
+                          setSelectedProjectId(entry.project_id);
+                          setIsProjectSheetOpen(true);
+                        }
+                      }}
+                      className={`text-left text-primary font-medium ${entry.project_id ? "hover:underline cursor-pointer" : ""}`}
+                      disabled={!entry.project_id}
+                    >
+                      {entry.projects?.lot_number || "-"}
+                    </button>
                   </TableCell>
                   <TableCell className="py-2">
                     {renderSelectCell(
