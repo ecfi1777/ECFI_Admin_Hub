@@ -9,6 +9,9 @@ import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -101,17 +104,23 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
   });
 
   const handleSave = () => {
+    if (formData.did_not_work && !formData.not_working_reason.trim()) {
+      toast.error("Please enter a reason why the crew did not work");
+      return;
+    }
     updateMutation.mutate();
   };
 
   if (!entry) return null;
 
   // Use prop for the label (always has enough data for display)
-  const projectLabel = [
-    entry.projects?.builders?.code || entry.projects?.builders?.name,
-    entry.projects?.locations?.name,
-    entry.projects?.lot_number,
-  ].filter(Boolean).join(" / ");
+  const projectLabel = formData.did_not_work
+    ? `${entry.crews?.name || "Crew"} — Did not work`
+    : [
+        entry.projects?.builders?.code || entry.projects?.builders?.name,
+        entry.projects?.locations?.name,
+        entry.projects?.lot_number,
+      ].filter(Boolean).join(" / ");
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -126,63 +135,96 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
           </div>
         ) : (
           <>
-            <Tabs defaultValue={defaultTab} key={defaultTab} className="w-full overflow-hidden">
-              <TabsList className="w-full overflow-x-auto flex flex-nowrap justify-start gap-1 pb-1 pr-8">
-                <TabsTrigger value="general" className="flex-shrink-0">General</TabsTrigger>
-                <TabsTrigger value="concrete" className="flex-shrink-0">Concrete</TabsTrigger>
-                <TabsTrigger value="pump" className="flex-shrink-0">Pump</TabsTrigger>
-                <TabsTrigger value="inspection" className="flex-shrink-0">Inspection</TabsTrigger>
-                <TabsTrigger value="invoicing" className="flex-shrink-0">Invoicing</TabsTrigger>
-                <TabsTrigger value="crew" className="flex-shrink-0">Crew</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="general" className="mt-4">
-                <GeneralTab 
-                  formData={formData} 
-                  updateField={updateField}
-                  showCrew={false}
+            {/* Did not work checkbox */}
+            <div className="flex items-center space-x-2 p-3 rounded-md border border-border bg-muted/30">
+              <Checkbox
+                id="edit_did_not_work"
+                checked={formData.did_not_work}
+                onCheckedChange={(checked) => updateField("did_not_work", !!checked)}
+              />
+              <Label htmlFor="edit_did_not_work" className="text-sm font-medium cursor-pointer">
+                Crew did not work today
+              </Label>
+            </div>
+
+            {formData.did_not_work && (
+              <div className="space-y-2">
+                <Label>Reason <span className="text-destructive">*</span></Label>
+                <Textarea
+                  value={formData.not_working_reason}
+                  onChange={(e) => updateField("not_working_reason", e.target.value)}
+                  placeholder="e.g., Rain delay, Equipment breakdown..."
+                  rows={2}
                 />
-              </TabsContent>
-              
-              <TabsContent value="concrete" className="mt-4">
-                <ConcreteTab 
-                  formData={formData} 
-                  updateField={updateField}
-                  showInlineAdd={true}
-                />
-              </TabsContent>
-              
-              <TabsContent value="pump" className="mt-4">
-                <PumpTab 
-                  formData={formData} 
-                  updateField={updateField}
-                  showInlineAdd={true}
-                />
-              </TabsContent>
-              
-              <TabsContent value="inspection" className="mt-4">
-                <InspectionTab 
-                  formData={formData} 
-                  updateField={updateField}
-                  showInlineAdd={true}
-                />
-              </TabsContent>
-              
-              <TabsContent value="invoicing" className="mt-4">
-                <InvoicingTab 
-                  formData={formData} 
-                  updateField={updateField}
-                />
-              </TabsContent>
-              
-              <TabsContent value="crew" className="mt-4">
-                <CrewTab 
-                  formData={formData} 
-                  updateField={updateField}
-                  currentCrewId={(fullEntry as any)?.crew_id || entry.crew_id || undefined}
-                />
-              </TabsContent>
-            </Tabs>
+              </div>
+            )}
+
+            {formData.did_not_work ? (
+              <GeneralTab 
+                formData={formData} 
+                updateField={updateField}
+                showCrew={true}
+                hideNonCrewFields={true}
+              />
+            ) : (
+              <Tabs defaultValue={defaultTab} key={defaultTab} className="w-full overflow-hidden">
+                <TabsList className="w-full overflow-x-auto flex flex-nowrap justify-start gap-1 pb-1 pr-8">
+                  <TabsTrigger value="general" className="flex-shrink-0">General</TabsTrigger>
+                  <TabsTrigger value="concrete" className="flex-shrink-0">Concrete</TabsTrigger>
+                  <TabsTrigger value="pump" className="flex-shrink-0">Pump</TabsTrigger>
+                  <TabsTrigger value="inspection" className="flex-shrink-0">Inspection</TabsTrigger>
+                  <TabsTrigger value="invoicing" className="flex-shrink-0">Invoicing</TabsTrigger>
+                  <TabsTrigger value="crew" className="flex-shrink-0">Crew</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="general" className="mt-4">
+                  <GeneralTab 
+                    formData={formData} 
+                    updateField={updateField}
+                    showCrew={false}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="concrete" className="mt-4">
+                  <ConcreteTab 
+                    formData={formData} 
+                    updateField={updateField}
+                    showInlineAdd={true}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="pump" className="mt-4">
+                  <PumpTab 
+                    formData={formData} 
+                    updateField={updateField}
+                    showInlineAdd={true}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="inspection" className="mt-4">
+                  <InspectionTab 
+                    formData={formData} 
+                    updateField={updateField}
+                    showInlineAdd={true}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="invoicing" className="mt-4">
+                  <InvoicingTab 
+                    formData={formData} 
+                    updateField={updateField}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="crew" className="mt-4">
+                  <CrewTab 
+                    formData={formData} 
+                    updateField={updateField}
+                    currentCrewId={(fullEntry as any)?.crew_id || entry.crew_id || undefined}
+                  />
+                </TabsContent>
+              </Tabs>
+            )}
             
             <div className="flex justify-end gap-2 mt-6">
               <Button variant="outline" onClick={() => onOpenChange(false)}>

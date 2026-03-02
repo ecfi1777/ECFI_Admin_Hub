@@ -41,6 +41,8 @@ export interface ScheduleEntry {
   to_be_invoiced: boolean;
   invoice_complete: boolean;
   invoice_number: string | null;
+  did_not_work: boolean;
+  not_working_reason: string | null;
   additive_hot_water: boolean;
   additive_1_percent_he: boolean;
   additive_2_percent_he: boolean;

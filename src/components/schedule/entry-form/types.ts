@@ -42,6 +42,10 @@ export interface EntryFormValues {
   
   // Invoicing tab
   to_be_invoiced: boolean;
+
+  // Did not work
+  did_not_work: boolean;
+  not_working_reason: string;
 }
 
 export const DEFAULT_ENTRY_FORM_VALUES: EntryFormValues = {
@@ -73,6 +77,8 @@ export const DEFAULT_ENTRY_FORM_VALUES: EntryFormValues = {
   crew_yards_poured: "",
   crew_notes: "",
   to_be_invoiced: false,
+  did_not_work: false,
+  not_working_reason: "",
 };
 
 export type TabName = "general" | "concrete" | "pump" | "inspection" | "invoicing" | "crew";

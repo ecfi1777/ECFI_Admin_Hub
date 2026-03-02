@@ -8,6 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -95,7 +97,7 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate,
       const { error } = await supabase.from("schedule_entries").insert({
         organization_id: organizationId,
         scheduled_date: defaultDate,
-        project_id: projectId || null,
+        project_id: formData.did_not_work ? null : (projectId || null),
         ...payload,
       });
       if (error) throw error;
@@ -120,7 +122,16 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate,
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!projectId) {
+    if (formData.did_not_work) {
+      if (!formData.not_working_reason.trim()) {
+        toast.error("Please enter a reason why the crew did not work");
+        return;
+      }
+      if (!formData.crew_id) {
+        toast.error("Please select a crew");
+        return;
+      }
+    } else if (!projectId) {
       toast.error("Please select a project before adding an entry");
       return;
     }
@@ -142,109 +153,154 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate,
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Project Search - AddEntryDialog-specific */}
-          <div className="space-y-2">
-            <Label>Project <span className="text-destructive">*</span></Label>
-            {prefilledProject ? (
-              <div className="bg-muted border border-border rounded-md px-3 py-2 text-sm text-muted-foreground">
-                {prefilledProject.builder || "No Builder"} - {prefilledProject.location || "No Location"} - {prefilledProject.lot_number}
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    value={projectSearch}
-                    onChange={(e) => {
-                      setProjectSearch(e.target.value);
-                      if (projectId) setProjectId("");
-                    }}
-                    placeholder="Search by builder, location, or lot..."
-                    className="pl-9"
-                  />
-                </div>
-                
-                {/* Search results */}
-                {projectSearch.trim() && filteredProjects.length > 0 && !projectId && (
-                  <div className="bg-muted border border-border rounded-md max-h-48 overflow-y-auto">
-                    {filteredProjects.slice(0, 10).map((project) => (
-                      <div
-                        key={project.id}
-                        onClick={() => handleProjectSelect(project.id)}
-                        className="px-3 py-2 hover:bg-accent cursor-pointer text-sm border-b border-border last:border-b-0"
-                      >
-                        {project.builders?.code || project.builders?.name || "No Builder"} - {project.locations?.name || "No Location"} - {project.lot_number}
-                      </div>
-                    ))}
-                  </div>
-                )}
-                
-                {projectSearch.trim() && filteredProjects.length === 0 && !projectId && (
-                  <div className="text-muted-foreground text-sm py-2">
-                    No projects found matching "{projectSearch}"
-                  </div>
-                )}
-                
-                {/* Selected project */}
-                {selectedProject && (
-                  <div className="bg-primary/10 border border-primary/30 rounded-md px-3 py-2 text-sm flex justify-between items-center">
-                    <span>
-                      {selectedProject.builders?.code || selectedProject.builders?.name} - {selectedProject.locations?.name} - {selectedProject.lot_number}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setProjectId("")}
-                      className="text-muted-foreground hover:text-foreground ml-2"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
+          {/* Did not work checkbox */}
+          <div className="flex items-center space-x-2 p-3 rounded-md border border-border bg-muted/30">
+            <Checkbox
+              id="did_not_work"
+              checked={formData.did_not_work}
+              onCheckedChange={(checked) => {
+                updateField("did_not_work", !!checked);
+                if (checked) {
+                  setProjectId("");
+                  setProjectSearch("");
+                }
+              }}
+            />
+            <Label htmlFor="did_not_work" className="text-sm font-medium cursor-pointer">
+              Crew did not work today
+            </Label>
           </div>
 
-          {/* Tabs using shared components */}
-          <Tabs defaultValue="general" className="w-full">
-            <TabsList className="w-full overflow-x-auto flex flex-nowrap gap-1 pb-1">
-              <TabsTrigger value="general">General</TabsTrigger>
-              <TabsTrigger value="concrete">Concrete</TabsTrigger>
-              <TabsTrigger value="pump">Pump</TabsTrigger>
-              <TabsTrigger value="inspection">Inspection</TabsTrigger>
-            </TabsList>
+          {/* Reason field when did not work */}
+          {formData.did_not_work && (
+            <div className="space-y-2">
+              <Label>Reason <span className="text-destructive">*</span></Label>
+              <Textarea
+                value={formData.not_working_reason}
+                onChange={(e) => updateField("not_working_reason", e.target.value)}
+                placeholder="e.g., Rain delay, Equipment breakdown..."
+                rows={2}
+              />
+            </div>
+          )}
 
-            <TabsContent value="general" className="mt-4">
+          {/* Project Search - hidden when did_not_work */}
+          {!formData.did_not_work && (
+            <div className="space-y-2">
+              <Label>Project <span className="text-destructive">*</span></Label>
+              {prefilledProject ? (
+                <div className="bg-muted border border-border rounded-md px-3 py-2 text-sm text-muted-foreground">
+                  {prefilledProject.builder || "No Builder"} - {prefilledProject.location || "No Location"} - {prefilledProject.lot_number}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      value={projectSearch}
+                      onChange={(e) => {
+                        setProjectSearch(e.target.value);
+                        if (projectId) setProjectId("");
+                      }}
+                      placeholder="Search by builder, location, or lot..."
+                      className="pl-9"
+                    />
+                  </div>
+                  
+                  {projectSearch.trim() && filteredProjects.length > 0 && !projectId && (
+                    <div className="bg-muted border border-border rounded-md max-h-48 overflow-y-auto">
+                      {filteredProjects.slice(0, 10).map((project) => (
+                        <div
+                          key={project.id}
+                          onClick={() => handleProjectSelect(project.id)}
+                          className="px-3 py-2 hover:bg-accent cursor-pointer text-sm border-b border-border last:border-b-0"
+                        >
+                          {project.builders?.code || project.builders?.name || "No Builder"} - {project.locations?.name || "No Location"} - {project.lot_number}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {projectSearch.trim() && filteredProjects.length === 0 && !projectId && (
+                    <div className="text-muted-foreground text-sm py-2">
+                      No projects found matching "{projectSearch}"
+                    </div>
+                  )}
+                  
+                  {selectedProject && (
+                    <div className="bg-primary/10 border border-primary/30 rounded-md px-3 py-2 text-sm flex justify-between items-center">
+                      <span>
+                        {selectedProject.builders?.code || selectedProject.builders?.name} - {selectedProject.locations?.name} - {selectedProject.lot_number}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setProjectId("")}
+                        className="text-muted-foreground hover:text-foreground ml-2"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Crew selector - always shown (needed for did_not_work too) */}
+          {formData.did_not_work && (
+            <div className="space-y-4">
               <GeneralTab 
                 formData={formData} 
                 updateField={updateField}
                 showCrew={true}
+                hideNonCrewFields={true}
               />
-            </TabsContent>
+            </div>
+          )}
 
-            <TabsContent value="concrete" className="mt-4">
-              <ConcreteTab 
-                formData={formData} 
-                updateField={updateField}
-                showInlineAdd={false}
-              />
-            </TabsContent>
+          {/* Tabs using shared components - hidden when did_not_work */}
+          {!formData.did_not_work && (
+            <Tabs defaultValue="general" className="w-full">
+              <TabsList className="w-full overflow-x-auto flex flex-nowrap gap-1 pb-1">
+                <TabsTrigger value="general">General</TabsTrigger>
+                <TabsTrigger value="concrete">Concrete</TabsTrigger>
+                <TabsTrigger value="pump">Pump</TabsTrigger>
+                <TabsTrigger value="inspection">Inspection</TabsTrigger>
+              </TabsList>
 
-            <TabsContent value="pump" className="mt-4">
-              <PumpTab 
-                formData={formData} 
-                updateField={updateField}
-                showInlineAdd={false}
-              />
-            </TabsContent>
+              <TabsContent value="general" className="mt-4">
+                <GeneralTab 
+                  formData={formData} 
+                  updateField={updateField}
+                  showCrew={true}
+                />
+              </TabsContent>
 
-            <TabsContent value="inspection" className="mt-4">
-              <InspectionTab 
-                formData={formData} 
-                updateField={updateField}
-                showInlineAdd={false}
-              />
-            </TabsContent>
-          </Tabs>
+              <TabsContent value="concrete" className="mt-4">
+                <ConcreteTab 
+                  formData={formData} 
+                  updateField={updateField}
+                  showInlineAdd={false}
+                />
+              </TabsContent>
+
+              <TabsContent value="pump" className="mt-4">
+                <PumpTab 
+                  formData={formData} 
+                  updateField={updateField}
+                  showInlineAdd={false}
+                />
+              </TabsContent>
+
+              <TabsContent value="inspection" className="mt-4">
+                <InspectionTab 
+                  formData={formData} 
+                  updateField={updateField}
+                  showInlineAdd={false}
+                />
+              </TabsContent>
+            </Tabs>
+          )}
 
           <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
