@@ -17,7 +17,7 @@ export function AccessDenied() {
           You don't have permission to view this page. Contact your organization owner to request access.
         </p>
         <Button onClick={() => navigate("/")} variant="outline">
-          Go to Schedule
+          Go to Daily Schedule
         </Button>
       </div>
     </AppLayout>

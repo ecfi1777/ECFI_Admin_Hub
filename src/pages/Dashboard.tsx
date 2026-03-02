@@ -16,11 +16,11 @@ import {
 
 const dashboardItems = [
   { href: "/projects", label: "Projects", description: "Manage all your projects", icon: FolderKanban, minRole: "viewer" as const },
-  { href: "/", label: "Schedule", description: "Daily schedule and entries", icon: Calendar, minRole: "viewer" as const },
+  { href: "/", label: "Daily Schedule", description: "Daily schedule and entries", icon: Calendar, minRole: "viewer" as const },
   { href: "/calendar", label: "Calendar", description: "Monthly and weekly calendar views", icon: CalendarDays, minRole: "viewer" as const },
   { href: "/kanban", label: "Kanban", description: "Visual project pipeline", icon: Columns3, minRole: "manager" as const },
   { href: "/invoices", label: "Jobs to Invoice", description: "Track invoicing status", icon: FileText, minRole: "manager" as const },
-  { href: "/vendor-invoices", label: "Vendor Details", description: "Vendor invoice tracking", icon: Receipt, minRole: "manager" as const },
+  { href: "/vendor-invoices", label: "Vendor Bills", description: "Vendor invoice tracking", icon: Receipt, minRole: "manager" as const },
   { href: "/discrepancies", label: "Discrepancies", description: "Yard and entry discrepancies", icon: AlertTriangle, minRole: "manager" as const },
   { href: "/reports", label: "Reports", description: "Generate and view reports", icon: ClipboardList, minRole: "manager" as const },
   { href: "/settings", label: "Settings", description: "Manage your account and organization", icon: Settings, minRole: "viewer" as const },
