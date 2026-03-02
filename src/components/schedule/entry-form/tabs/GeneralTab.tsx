@@ -66,11 +66,12 @@ export function GeneralTab({ formData, updateField, showCrew = true, crewOptions
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Phase</Label>
-          <Select value={formData.phase_id} onValueChange={(v) => updateField("phase_id", v)}>
+          <Select value={formData.phase_id} onValueChange={(v) => updateField("phase_id", v === "__none__" ? "" : v)}>
             <SelectTrigger>
               <SelectValue placeholder="Select phase" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="__none__" className="text-muted-foreground">— None —</SelectItem>
               {phases.map((phase) => (
                 <SelectItem key={phase.id} value={phase.id}>{phase.name}</SelectItem>
               ))}
@@ -80,11 +81,12 @@ export function GeneralTab({ formData, updateField, showCrew = true, crewOptions
 
         <div className="space-y-2">
           <Label>Status</Label>
-          <Select value={formData.order_status} onValueChange={(v) => updateField("order_status", v)}>
+          <Select value={formData.order_status} onValueChange={(v) => updateField("order_status", v === "__none__" ? "" : v)}>
             <SelectTrigger>
               <SelectValue placeholder="Select status" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="__none__" className="text-muted-foreground">— None —</SelectItem>
               <SelectItem value="Sure Go">Sure Go</SelectItem>
               <SelectItem value="Will Call">Will Call</SelectItem>
             </SelectContent>

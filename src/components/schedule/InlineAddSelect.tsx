@@ -131,11 +131,12 @@ export function InlineAddSelect({
           </div>
         </div>
       ) : (
-        <Select value={value} onValueChange={onChange}>
+        <Select value={value} onValueChange={(v) => onChange(v === "__none__" ? "" : v)}>
           <SelectTrigger>
             <SelectValue placeholder={placeholder} />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="__none__" className="text-muted-foreground">— None —</SelectItem>
             {options.map((opt) => (
               <SelectItem key={opt.id} value={opt.id}>
                 {showCode && opt.code ? `${opt.code} - ${opt.name}` : opt.name}

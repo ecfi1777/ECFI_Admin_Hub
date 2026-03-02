@@ -42,11 +42,12 @@ export function PumpTab({ formData, updateField, showInlineAdd = true }: PumpTab
       ) : (
         <div className="space-y-2">
           <Label>Pump Vendor</Label>
-          <Select value={formData.pump_vendor_id} onValueChange={(v) => updateField("pump_vendor_id", v)}>
+          <Select value={formData.pump_vendor_id} onValueChange={(v) => updateField("pump_vendor_id", v === "__none__" ? "" : v)}>
             <SelectTrigger>
               <SelectValue placeholder="Select pump vendor" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="__none__" className="text-muted-foreground">— None —</SelectItem>
               {pumpVendors.map((p) => (
                 <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
               ))}

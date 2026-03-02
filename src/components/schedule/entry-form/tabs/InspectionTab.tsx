@@ -54,11 +54,12 @@ export function InspectionTab({ formData, updateField, showInlineAdd = true }: I
           <>
             <div className="space-y-2">
               <Label>Inspection Type</Label>
-              <Select value={formData.inspection_type_id} onValueChange={(v) => updateField("inspection_type_id", v)}>
+              <Select value={formData.inspection_type_id} onValueChange={(v) => updateField("inspection_type_id", v === "__none__" ? "" : v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="__none__" className="text-muted-foreground">— None —</SelectItem>
                   {inspectionTypes.map((t) => (
                     <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
                   ))}
@@ -67,11 +68,12 @@ export function InspectionTab({ formData, updateField, showInlineAdd = true }: I
             </div>
             <div className="space-y-2">
               <Label>Inspector</Label>
-              <Select value={formData.inspector_id} onValueChange={(v) => updateField("inspector_id", v)}>
+              <Select value={formData.inspector_id} onValueChange={(v) => updateField("inspector_id", v === "__none__" ? "" : v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select inspector" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="__none__" className="text-muted-foreground">— None —</SelectItem>
                   {inspectors.map((i) => (
                     <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>
                   ))}
