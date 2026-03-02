@@ -22,9 +22,9 @@ import { getUserFriendlyError } from "@/lib/errorHandler";
 import { invalidateScheduleQueries } from "@/lib/queryHelpers";
 import { Search } from "lucide-react";
 import { useOrganization } from "@/hooks/useOrganization";
-import { useActiveProjects } from "@/hooks/useReferenceData";
+import { useActiveProjects, usePhases } from "@/hooks/useReferenceData";
 import { useEntryForm } from "./entry-form/useEntryForm";
-import { GeneralTab, ConcreteTab, PumpTab, InspectionTab } from "./entry-form/tabs";
+import { GeneralTab, ConcreteTab, StoneTab, PumpTab, InspectionTab } from "./entry-form/tabs";
 
 export interface PrefilledProject {
   id: string;
@@ -49,6 +49,7 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate,
   const queryClient = useQueryClient();
   const { organizationId } = useOrganization();
   const { data: projects = [] } = useActiveProjects();
+  const { data: phases = [] } = usePhases();
 
   // Use shared form hook with default crew if provided
   const { formData, updateField, resetForm, getInsertPayload } = useEntryForm({
@@ -259,48 +260,68 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate,
           )}
 
           {/* Tabs using shared components - hidden when did_not_work */}
-          {!formData.did_not_work && (
-            <Tabs defaultValue="general" className="w-full">
-              <TabsList className="w-full overflow-x-auto flex flex-nowrap gap-1 pb-1">
-                <TabsTrigger value="general">General</TabsTrigger>
-                <TabsTrigger value="concrete">Concrete</TabsTrigger>
-                <TabsTrigger value="pump">Pump</TabsTrigger>
-                <TabsTrigger value="inspection">Inspection</TabsTrigger>
-              </TabsList>
+          {!formData.did_not_work && (() => {
+            const isPrepSlabs = (() => {
+              if (!formData.phase_id) return false;
+              const phase = phases.find(p => p.id === formData.phase_id);
+              return phase?.name === "Prep Slabs";
+            })();
+            const materialTabLabel = isPrepSlabs ? "Stone" : "Concrete";
+            const materialTabValue = isPrepSlabs ? "stone" : "concrete";
 
-              <TabsContent value="general" className="mt-4">
-                <GeneralTab 
-                  formData={formData} 
-                  updateField={updateField}
-                  showCrew={true}
-                />
-              </TabsContent>
+            return (
+              <Tabs defaultValue="general" className="w-full">
+                <TabsList className="w-full overflow-x-auto flex flex-nowrap gap-1 pb-1">
+                  <TabsTrigger value="general">General</TabsTrigger>
+                  <TabsTrigger value={materialTabValue}>{materialTabLabel}</TabsTrigger>
+                  <TabsTrigger value="pump">Pump</TabsTrigger>
+                  <TabsTrigger value="inspection">Inspection</TabsTrigger>
+                </TabsList>
 
-              <TabsContent value="concrete" className="mt-4">
-                <ConcreteTab 
-                  formData={formData} 
-                  updateField={updateField}
-                  showInlineAdd={false}
-                />
-              </TabsContent>
+                <TabsContent value="general" className="mt-4">
+                  <GeneralTab 
+                    formData={formData} 
+                    updateField={updateField}
+                    showCrew={true}
+                  />
+                </TabsContent>
 
-              <TabsContent value="pump" className="mt-4">
-                <PumpTab 
-                  formData={formData} 
-                  updateField={updateField}
-                  showInlineAdd={false}
-                />
-              </TabsContent>
+                {isPrepSlabs ? (
+                  <TabsContent value="stone" className="mt-4">
+                    <StoneTab 
+                      formData={formData} 
+                      updateField={updateField}
+                      showInlineAdd={false}
+                    />
+                  </TabsContent>
+                ) : (
+                  <TabsContent value="concrete" className="mt-4">
+                    <ConcreteTab 
+                      formData={formData} 
+                      updateField={updateField}
+                      showInlineAdd={false}
+                    />
+                  </TabsContent>
+                )}
 
-              <TabsContent value="inspection" className="mt-4">
-                <InspectionTab 
-                  formData={formData} 
-                  updateField={updateField}
-                  showInlineAdd={false}
-                />
-              </TabsContent>
-            </Tabs>
-          )}
+                <TabsContent value="pump" className="mt-4">
+                  <PumpTab 
+                    formData={formData} 
+                    updateField={updateField}
+                    showInlineAdd={false}
+                  />
+                </TabsContent>
+
+                <TabsContent value="inspection" className="mt-4">
+                  <InspectionTab 
+                    formData={formData} 
+                    updateField={updateField}
+                    showInlineAdd={false}
+                  />
+                </TabsContent>
+              </Tabs>
+            );
+          })()}
 
           <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

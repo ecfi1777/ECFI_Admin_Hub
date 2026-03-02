@@ -51,6 +51,13 @@ export interface ScheduleEntry {
   additive_hot_water: boolean;
   additive_1_percent_he: boolean;
   additive_2_percent_he: boolean;
+  // Stone fields
+  stone_supplier_id: string | null;
+  stone_type_id: string | null;
+  stone_tons_billed: number | null;
+  stone_invoice_number: string | null;
+  stone_invoice_amount: number | null;
+  stone_notes: string | null;
   // Nested relations
   crews: { name: string } | null;
   phases: { name: string } | null;
@@ -59,6 +66,8 @@ export interface ScheduleEntry {
   inspection_types: { name: string } | null;
   inspectors: { name: string } | null;
   concrete_mixes: { name: string } | null;
+  stone_suppliers: { name: string; code: string | null } | null;
+  stone_types: { name: string } | null;
   projects: ScheduleEntryProject | null;
 }
 

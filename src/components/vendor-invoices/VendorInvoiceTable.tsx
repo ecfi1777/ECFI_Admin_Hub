@@ -58,18 +58,19 @@ export function VendorInvoiceTable({
   const showTypeCol = typeFilter === "all";
   const showInvoiceCol = typeFilter === "all" || typeFilter !== "crew";
   const showYardsCol =
-    typeFilter === "all" || typeFilter === "concrete" || typeFilter === "crew";
+    typeFilter === "all" || typeFilter === "concrete" || typeFilter === "stone" || typeFilter === "crew";
   const showAmountCol = typeFilter === "all" || typeFilter !== "crew";
 
   const vendorLabel: Record<VendorTypeFilter, string> = {
     all: "Vendor/Crew",
     concrete: "Supplier",
+    stone: "Stone Supplier",
     pump: "Pump Vendor",
     inspection: "Inspector",
     crew: "Crew",
   };
 
-  const yardsLabel = typeFilter === "crew" ? "Crew Yards" : "Yards Billed";
+  const yardsLabel = typeFilter === "crew" ? "Crew Yards" : typeFilter === "stone" ? "Tons Billed" : "Yards Billed";
 
   return (
     <Card>

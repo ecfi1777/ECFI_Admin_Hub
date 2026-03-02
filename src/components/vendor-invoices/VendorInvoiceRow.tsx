@@ -19,6 +19,7 @@ interface VendorInvoiceRowProps {
 
 const TYPE_BADGE_STYLES: Record<string, string> = {
   concrete: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+  stone: "bg-amber-500/10 text-amber-500 border-amber-500/20",
   pump: "bg-purple-500/10 text-purple-500 border-purple-500/20",
   inspection: "bg-orange-500/10 text-orange-500 border-orange-500/20",
   crew: "bg-green-500/10 text-green-500 border-green-500/20",
@@ -31,27 +32,33 @@ export function VendorInvoiceRow({ row, typeFilter, isMobile }: VendorInvoiceRow
   const [invoiceNumber, setInvoiceNumber] = useState(
     type === "concrete"
       ? (entry.ready_mix_invoice_number ?? "")
-      : type === "pump"
-        ? (entry.pump_invoice_number ?? "")
-        : type === "inspection"
-          ? (entry.inspection_invoice_number ?? "")
-          : ""
+      : type === "stone"
+        ? (entry.stone_invoice_number ?? "")
+        : type === "pump"
+          ? (entry.pump_invoice_number ?? "")
+          : type === "inspection"
+            ? (entry.inspection_invoice_number ?? "")
+            : ""
   );
   const [yards, setYards] = useState(
     type === "concrete"
       ? (entry.ready_mix_yards_billed?.toString() ?? "")
-      : type === "crew"
-        ? (entry.crew_yards_poured?.toString() ?? "")
-        : ""
+      : type === "stone"
+        ? (entry.stone_tons_billed?.toString() ?? "")
+        : type === "crew"
+          ? (entry.crew_yards_poured?.toString() ?? "")
+          : ""
   );
   const [amount, setAmount] = useState(
     type === "concrete"
       ? (entry.ready_mix_invoice_amount?.toString() ?? "")
-      : type === "pump"
-        ? (entry.pump_invoice_amount?.toString() ?? "")
-        : type === "inspection"
-          ? (entry.inspection_amount?.toString() ?? "")
-          : ""
+      : type === "stone"
+        ? (entry.stone_invoice_amount?.toString() ?? "")
+        : type === "pump"
+          ? (entry.pump_invoice_amount?.toString() ?? "")
+          : type === "inspection"
+            ? (entry.inspection_amount?.toString() ?? "")
+            : ""
   );
 
   const saveMutation = useMutation({
@@ -61,6 +68,10 @@ export function VendorInvoiceRow({ row, typeFilter, isMobile }: VendorInvoiceRow
         updates.ready_mix_invoice_number = invoiceNumber || null;
         updates.ready_mix_yards_billed = yards ? parseFloat(yards) : null;
         updates.ready_mix_invoice_amount = amount ? parseFloat(amount) : null;
+      } else if (type === "stone") {
+        updates.stone_invoice_number = invoiceNumber || null;
+        updates.stone_tons_billed = yards ? parseFloat(yards) : null;
+        updates.stone_invoice_amount = amount ? parseFloat(amount) : null;
       } else if (type === "pump") {
         updates.pump_invoice_number = invoiceNumber || null;
         updates.pump_invoice_amount = amount ? parseFloat(amount) : null;
@@ -92,7 +103,7 @@ export function VendorInvoiceRow({ row, typeFilter, isMobile }: VendorInvoiceRow
 
   // Editability — in "all" mode, cells not applicable to this type show "-"
   const canEditInvoice = type !== "crew";
-  const canEditYards = type === "concrete" || type === "crew";
+  const canEditYards = type === "concrete" || type === "stone" || type === "crew";
   const canEditAmount = type !== "crew";
 
   const dateStr = format(

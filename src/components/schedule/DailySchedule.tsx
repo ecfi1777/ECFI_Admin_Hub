@@ -104,6 +104,8 @@ export function DailySchedule() {
           inspection_types(name),
           inspectors(name),
           concrete_mixes(name),
+          stone_suppliers(name, code),
+          stone_types(name),
           projects(
             lot_number,
             builders(name, code),

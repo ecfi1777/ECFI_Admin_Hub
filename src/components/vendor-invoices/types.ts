@@ -1,4 +1,4 @@
-export type VendorTypeFilter = 'all' | 'concrete' | 'pump' | 'inspection' | 'crew';
+export type VendorTypeFilter = 'all' | 'concrete' | 'stone' | 'pump' | 'inspection' | 'crew';
 
 export interface VendorEntry {
   id: string;
@@ -9,9 +9,13 @@ export interface VendorEntry {
   pump_vendor_id: string | null;
   inspector_id: string | null;
   phase_id: string | null;
+  stone_supplier_id: string | null;
   ready_mix_invoice_number: string | null;
   ready_mix_yards_billed: number | null;
   ready_mix_invoice_amount: number | null;
+  stone_invoice_number: string | null;
+  stone_tons_billed: number | null;
+  stone_invoice_amount: number | null;
   pump_invoice_number: string | null;
   pump_invoice_amount: number | null;
   inspection_invoice_number: string | null;
@@ -25,6 +29,7 @@ export interface VendorEntry {
   } | null;
   crews: { name: string } | null;
   suppliers: { name: string; code: string | null } | null;
+  stone_suppliers: { name: string; code: string | null } | null;
   pump_vendors: { name: string; code: string | null } | null;
   inspectors: { name: string } | null;
   phases: { name: string } | null;
@@ -32,6 +37,6 @@ export interface VendorEntry {
 
 export interface VendorInvoiceRowData {
   entry: VendorEntry;
-  type: 'concrete' | 'pump' | 'inspection' | 'crew';
+  type: 'concrete' | 'stone' | 'pump' | 'inspection' | 'crew';
   vendorName: string;
 }

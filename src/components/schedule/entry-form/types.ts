@@ -22,6 +22,14 @@ export interface EntryFormValues {
   ready_mix_invoice_amount: string;
   ready_mix_yards_billed: string;
   concrete_notes: string;
+
+  // Stone tab (used for Prep Slabs phase)
+  stone_supplier_id: string;
+  stone_type_id: string;
+  stone_tons_billed: string;
+  stone_invoice_number: string;
+  stone_invoice_amount: string;
+  stone_notes: string;
   
   // Pump tab
   pump_vendor_id: string;
@@ -65,6 +73,12 @@ export const DEFAULT_ENTRY_FORM_VALUES: EntryFormValues = {
   ready_mix_invoice_amount: "",
   ready_mix_yards_billed: "",
   concrete_notes: "",
+  stone_supplier_id: "",
+  stone_type_id: "",
+  stone_tons_billed: "",
+  stone_invoice_number: "",
+  stone_invoice_amount: "",
+  stone_notes: "",
   pump_vendor_id: "",
   pump_invoice_number: "",
   pump_invoice_amount: "",
@@ -81,4 +95,4 @@ export const DEFAULT_ENTRY_FORM_VALUES: EntryFormValues = {
   not_working_reason: "",
 };
 
-export type TabName = "general" | "concrete" | "pump" | "inspection" | "invoicing" | "crew";
+export type TabName = "general" | "concrete" | "stone" | "pump" | "inspection" | "invoicing" | "crew";

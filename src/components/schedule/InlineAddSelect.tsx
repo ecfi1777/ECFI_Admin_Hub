@@ -28,7 +28,7 @@ interface InlineAddSelectProps {
   onChange: (value: string) => void;
   options: Option[];
   placeholder: string;
-  tableName: "suppliers" | "pump_vendors" | "inspection_types" | "inspectors";
+  tableName: "suppliers" | "pump_vendors" | "inspection_types" | "inspectors" | "stone_suppliers";
   queryKey: string;
   hasCode?: boolean;
   showCode?: boolean;

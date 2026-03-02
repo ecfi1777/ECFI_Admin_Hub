@@ -1,11 +1,11 @@
-// force rebuild 2026-02-18
+// force rebuild 2026-03-02
 /**
  * Edit Entry Dialog - Uses shared entry-form architecture
  * Fetches the complete entry by ID on open to ensure all tabs are populated,
  * regardless of which view (Calendar, Schedule, etc.) opens it.
  */
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -24,9 +24,11 @@ import { Loader2, RotateCcw } from "lucide-react";
 import { getUserFriendlyError } from "@/lib/errorHandler";
 import { invalidateScheduleQueries } from "@/lib/queryHelpers";
 import { useEntryForm } from "./entry-form/useEntryForm";
+import { usePhases } from "@/hooks/useReferenceData";
 import { 
   GeneralTab, 
   ConcreteTab, 
+  StoneTab,
   PumpTab, 
   InspectionTab, 
   CrewTab, 
@@ -38,13 +40,29 @@ interface EditEntryDialogProps {
   entry: ScheduleEntry | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  defaultTab?: "general" | "concrete" | "pump" | "inspection" | "invoicing" | "crew";
+  defaultTab?: "general" | "concrete" | "stone" | "pump" | "inspection" | "invoicing" | "crew";
 }
 
 export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "general" }: EditEntryDialogProps) {
   const queryClient = useQueryClient();
   
   const { formData, updateField, loadFromEntry, getUpdatePayload } = useEntryForm();
+  const { data: phases = [] } = usePhases();
+
+  // Determine if the current phase is "Prep Slabs"
+  const isPrepSlabs = useMemo(() => {
+    const phaseId = formData.phase_id;
+    if (!phaseId) return false;
+    const phase = phases.find(p => p.id === phaseId);
+    return phase?.name === "Prep Slabs";
+  }, [formData.phase_id, phases]);
+
+  // Resolve the effective tab: if defaultTab is "concrete" but phase is Prep Slabs, use "stone"
+  const effectiveDefaultTab = useMemo(() => {
+    if (defaultTab === "concrete" && isPrepSlabs) return "stone";
+    if (defaultTab === "stone" && !isPrepSlabs) return "concrete";
+    return defaultTab;
+  }, [defaultTab, isPrepSlabs]);
 
   // Fetch the complete entry record by ID whenever the dialog opens
   const { data: fullEntry, isLoading: isLoadingEntry } = useQuery({
@@ -65,7 +83,9 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
           pump_vendors:pump_vendor_id ( id, name, code ),
           inspection_types:inspection_type_id ( id, name ),
           inspectors:inspector_id ( id, name ),
-          concrete_mixes:concrete_mix_id ( id, name )
+          concrete_mixes:concrete_mix_id ( id, name ),
+          stone_suppliers:stone_supplier_id ( id, name, code ),
+          stone_types:stone_type_id ( id, name )
         `)
         .eq("id", entry!.id)
         .maybeSingle();
@@ -121,6 +141,10 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
         entry.projects?.locations?.name,
         entry.projects?.lot_number,
       ].filter(Boolean).join(" / ");
+
+  // The material tab label and component
+  const materialTabLabel = isPrepSlabs ? "Stone" : "Concrete";
+  const materialTabValue = isPrepSlabs ? "stone" : "concrete";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -195,10 +219,10 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
                 hideNonCrewFields={true}
               />
             ) : (
-              <Tabs defaultValue={defaultTab} key={defaultTab} className="w-full overflow-hidden">
+              <Tabs defaultValue={effectiveDefaultTab} key={effectiveDefaultTab} className="w-full overflow-hidden">
                 <TabsList className="w-full overflow-x-auto flex flex-nowrap justify-start gap-1 pb-1 pr-8">
                   <TabsTrigger value="general" className="flex-shrink-0">General</TabsTrigger>
-                  <TabsTrigger value="concrete" className="flex-shrink-0">Concrete</TabsTrigger>
+                  <TabsTrigger value={materialTabValue} className="flex-shrink-0">{materialTabLabel}</TabsTrigger>
                   <TabsTrigger value="pump" className="flex-shrink-0">Pump</TabsTrigger>
                   <TabsTrigger value="inspection" className="flex-shrink-0">Inspection</TabsTrigger>
                   <TabsTrigger value="invoicing" className="flex-shrink-0">Invoicing</TabsTrigger>
@@ -213,13 +237,23 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
                   />
                 </TabsContent>
                 
-                <TabsContent value="concrete" className="mt-4">
-                  <ConcreteTab 
-                    formData={formData} 
-                    updateField={updateField}
-                    showInlineAdd={true}
-                  />
-                </TabsContent>
+                {isPrepSlabs ? (
+                  <TabsContent value="stone" className="mt-4">
+                    <StoneTab 
+                      formData={formData} 
+                      updateField={updateField}
+                      showInlineAdd={true}
+                    />
+                  </TabsContent>
+                ) : (
+                  <TabsContent value="concrete" className="mt-4">
+                    <ConcreteTab 
+                      formData={formData} 
+                      updateField={updateField}
+                      showInlineAdd={true}
+                    />
+                  </TabsContent>
+                )}
                 
                 <TabsContent value="pump" className="mt-4">
                   <PumpTab 
