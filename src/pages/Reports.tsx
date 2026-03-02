@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,10 +6,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { generateScheduleExcel } from "@/lib/generateScheduleExcel";
-import { Download, FileSpreadsheet, Loader2 } from "lucide-react";
+import { Download, FileSpreadsheet, Loader2, UserX } from "lucide-react";
 import { toast } from "sonner";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { useOrganization } from "@/hooks/useOrganization";
+import { CrewDaysNotWorkedReport } from "@/components/reports/CrewDaysNotWorkedReport";
 
 const months = [
   { value: "1", label: "January" },
@@ -38,6 +38,7 @@ export default function Reports() {
   const [selectedMonth, setSelectedMonth] = useState(String(new Date().getMonth() + 1));
   const [selectedYear, setSelectedYear] = useState(String(currentYear));
   const [isExporting, setIsExporting] = useState(false);
+  const [showCrewDaysReport, setShowCrewDaysReport] = useState(false);
   const { organizationId } = useOrganization();
 
   const handleExport = async () => {
@@ -193,7 +194,31 @@ export default function Reports() {
               </Button>
             </CardContent>
           </Card>
+          {/* Crew Days Not Worked Card */}
+          <Card
+            className="cursor-pointer hover:border-primary/50 transition-colors"
+            onClick={() => setShowCrewDaysReport(!showCrewDaysReport)}
+          >
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-amber-500/10 rounded-lg flex items-center justify-center">
+                  <UserX className="w-5 h-5 text-amber-500" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg">Crew Days Not Worked</CardTitle>
+                  <CardDescription>View all days crews did not work with reasons</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+          </Card>
         </div>
+
+        {/* Inline Crew Days Not Worked Report */}
+        {showCrewDaysReport && (
+          <div className="mt-6">
+            <CrewDaysNotWorkedReport />
+          </div>
+        )}
       </div>
     </AppLayout>
   );
