@@ -59,6 +59,11 @@ interface ScheduleEntry {
   to_be_invoiced: boolean;
   invoice_complete: boolean;
   invoice_number: string | null;
+  is_cancelled: boolean;
+  cancellation_reason: string | null;
+  rescheduled_to_date: string | null;
+  rescheduled_from_date: string | null;
+  rescheduled_from_entry_id: string | null;
   phases: { id: string; name: string } | null;
   crews: { id: string; name: string } | null;
   suppliers: { id: string; name: string; code: string | null } | null;
@@ -130,6 +135,11 @@ export function ProjectScheduleHistory({ projectId, readOnly = false }: ProjectS
           to_be_invoiced,
           invoice_complete,
           invoice_number,
+          is_cancelled,
+          cancellation_reason,
+          rescheduled_to_date,
+          rescheduled_from_date,
+          rescheduled_from_entry_id,
           phases(id, name),
           crews(id, name),
           suppliers(id, name, code),
@@ -356,32 +366,53 @@ export function ProjectScheduleHistory({ projectId, readOnly = false }: ProjectS
                     {groupedByPhase[phaseName].map((entry) => (
                       <div
                         key={entry.id}
-                        className="bg-slate-800 rounded-md p-3 space-y-2"
+                        className={
+                          entry.is_cancelled
+                            ? "bg-red-900/20 border border-red-800/30 rounded-md p-3 space-y-2"
+                            : "bg-slate-800 rounded-md p-3 space-y-2"
+                        }
                       >
                         <div className="flex items-center justify-between flex-wrap gap-2">
-                          <div className="flex items-center gap-4 flex-wrap">
-                            <button
-                              onClick={(e) => handleDateClick(entry.scheduled_date, e)}
-                              className="flex items-center gap-2 text-amber-500 hover:text-amber-400 transition-colors"
-                            >
-                              <Calendar className="w-4 h-4" />
-                              <span className="font-medium underline">
-                                {format(new Date(entry.scheduled_date + "T00:00:00"), "MMM d, yyyy")}
-                              </span>
-                              {entry.start_time && (
-                                <span className="text-slate-400 no-underline">
-                                  @ {entry.start_time.slice(0, 5)}
+                          <div className="flex flex-col gap-1">
+                            <div className={`flex items-center gap-4 flex-wrap ${entry.is_cancelled ? "line-through decoration-red-500" : ""}`}>
+                              <button
+                                onClick={(e) => handleDateClick(entry.scheduled_date, e)}
+                                className="flex items-center gap-2 text-amber-500 hover:text-amber-400 transition-colors"
+                              >
+                                <Calendar className="w-4 h-4" />
+                                <span className="font-medium underline">
+                                  {format(new Date(entry.scheduled_date + "T00:00:00"), "MMM d, yyyy")}
                                 </span>
+                                {entry.start_time && (
+                                  <span className="text-slate-400 no-underline">
+                                    @ {entry.start_time.slice(0, 5)}
+                                  </span>
+                                )}
+                              </button>
+                              {entry.crews && (
+                                <div className="flex items-center gap-2 text-slate-300">
+                                  <Users className="w-4 h-4" />
+                                  <span>{entry.crews.name}</span>
+                                </div>
                               )}
-                            </button>
-                            {entry.crews && (
-                              <div className="flex items-center gap-2 text-slate-300">
-                                <Users className="w-4 h-4" />
-                                <span>{entry.crews.name}</span>
+                            </div>
+                            {entry.is_cancelled && (
+                              <div className="text-red-400 text-xs">
+                                Cancelled{entry.rescheduled_to_date
+                                  ? ` — moved to ${format(new Date(entry.rescheduled_to_date + "T00:00:00"), "MMM d, yyyy")}`
+                                  : ""}
+                                {entry.cancellation_reason && (
+                                  <span className="italic text-red-400/80 ml-2">({entry.cancellation_reason})</span>
+                                )}
+                              </div>
+                            )}
+                            {!entry.is_cancelled && entry.rescheduled_from_date && (
+                              <div className="text-amber-400 text-xs">
+                                Rescheduled from {format(new Date(entry.rescheduled_from_date + "T00:00:00"), "MMM d, yyyy")}
                               </div>
                             )}
                           </div>
-                          {!readOnly && (
+                          {!readOnly && !entry.is_cancelled && (
                             <Button
                               variant="ghost"
                               size="sm"
