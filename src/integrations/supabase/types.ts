@@ -779,6 +779,7 @@ export type Database = {
           id: string
           inspection_amount: number | null
           inspection_invoice_number: string | null
+          inspection_no_charge: boolean
           inspection_notes: string | null
           inspection_type_id: string | null
           inspector_id: string | null
@@ -834,6 +835,7 @@ export type Database = {
           id?: string
           inspection_amount?: number | null
           inspection_invoice_number?: string | null
+          inspection_no_charge?: boolean
           inspection_notes?: string | null
           inspection_type_id?: string | null
           inspector_id?: string | null
@@ -889,6 +891,7 @@ export type Database = {
           id?: string
           inspection_amount?: number | null
           inspection_invoice_number?: string | null
+          inspection_no_charge?: boolean
           inspection_notes?: string | null
           inspection_type_id?: string | null
           inspector_id?: string | null

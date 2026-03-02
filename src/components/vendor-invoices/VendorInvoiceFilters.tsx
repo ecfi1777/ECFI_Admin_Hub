@@ -1,6 +1,8 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -30,6 +32,8 @@ interface VendorInvoiceFiltersProps {
   inspectors: Inspector[];
   crews: Crew[];
   stoneSuppliers: StoneSupplier[];
+  showNoCharge: boolean;
+  setShowNoCharge: (v: boolean) => void;
 }
 
 export function VendorInvoiceFilters({
@@ -50,6 +54,8 @@ export function VendorInvoiceFilters({
   inspectors,
   crews,
   stoneSuppliers,
+  showNoCharge,
+  setShowNoCharge,
 }: VendorInvoiceFiltersProps) {
   const vendorOptions = (() => {
     switch (typeFilter) {
@@ -146,6 +152,18 @@ export function VendorInvoiceFilters({
             placeholder="To"
             className="w-full md:w-36"
           />
+
+          {/* Show No Charge toggle */}
+          <div className="flex items-center gap-2 whitespace-nowrap">
+            <Checkbox
+              id="show-no-charge"
+              checked={showNoCharge}
+              onCheckedChange={(checked) => setShowNoCharge(checked === true)}
+            />
+            <Label htmlFor="show-no-charge" className="text-sm text-muted-foreground cursor-pointer">
+              Show No Charge
+            </Label>
+          </div>
 
           {hasActiveFilters && (
             <Button

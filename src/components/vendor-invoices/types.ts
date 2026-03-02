@@ -20,6 +20,7 @@ export interface VendorEntry {
   pump_invoice_amount: number | null;
   inspection_invoice_number: string | null;
   inspection_amount: number | null;
+  inspection_no_charge: boolean;
   crew_yards_poured: number | null;
   projects: {
     id: string;

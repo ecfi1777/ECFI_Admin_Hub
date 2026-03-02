@@ -1,0 +1,1 @@
+ALTER TABLE public.schedule_entries ADD COLUMN inspection_no_charge boolean NOT NULL DEFAULT false;
