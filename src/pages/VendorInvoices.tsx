@@ -82,6 +82,8 @@ export default function VendorInvoices() {
         )
         .eq("organization_id", organizationId)
         .eq("deleted", false)
+        .eq("did_not_work", false)
+        .not("project_id", "is", null)
         .or(
           "supplier_id.not.is.null,pump_vendor_id.not.is.null,inspector_id.not.is.null,crew_id.not.is.null,stone_supplier_id.not.is.null"
         )
