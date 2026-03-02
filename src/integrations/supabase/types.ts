@@ -784,6 +784,7 @@ export type Database = {
           inspector_id: string | null
           invoice_complete: boolean
           invoice_number: string | null
+          is_cancelled: boolean
           not_working_reason: string | null
           notes: string | null
           order_number: string | null
@@ -800,6 +801,8 @@ export type Database = {
           ready_mix_invoice_number: string | null
           ready_mix_yards_billed: number | null
           rescheduled_from_date: string | null
+          rescheduled_from_entry_id: string | null
+          rescheduled_to_date: string | null
           scheduled_date: string
           start_time: string | null
           supplier_id: string | null
@@ -830,6 +833,7 @@ export type Database = {
           inspector_id?: string | null
           invoice_complete?: boolean
           invoice_number?: string | null
+          is_cancelled?: boolean
           not_working_reason?: string | null
           notes?: string | null
           order_number?: string | null
@@ -846,6 +850,8 @@ export type Database = {
           ready_mix_invoice_number?: string | null
           ready_mix_yards_billed?: number | null
           rescheduled_from_date?: string | null
+          rescheduled_from_entry_id?: string | null
+          rescheduled_to_date?: string | null
           scheduled_date: string
           start_time?: string | null
           supplier_id?: string | null
@@ -876,6 +882,7 @@ export type Database = {
           inspector_id?: string | null
           invoice_complete?: boolean
           invoice_number?: string | null
+          is_cancelled?: boolean
           not_working_reason?: string | null
           notes?: string | null
           order_number?: string | null
@@ -892,6 +899,8 @@ export type Database = {
           ready_mix_invoice_number?: string | null
           ready_mix_yards_billed?: number | null
           rescheduled_from_date?: string | null
+          rescheduled_from_entry_id?: string | null
+          rescheduled_to_date?: string | null
           scheduled_date?: string
           start_time?: string | null
           supplier_id?: string | null
@@ -953,6 +962,13 @@ export type Database = {
             columns: ["pump_vendor_id"]
             isOneToOne: false
             referencedRelation: "pump_vendors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_entries_rescheduled_from_entry_id_fkey"
+            columns: ["rescheduled_from_entry_id"]
+            isOneToOne: false
+            referencedRelation: "schedule_entries"
             referencedColumns: ["id"]
           },
           {

@@ -45,6 +45,9 @@ export interface ScheduleEntry {
   not_working_reason: string | null;
   cancellation_reason: string | null;
   rescheduled_from_date: string | null;
+  is_cancelled: boolean;
+  rescheduled_to_date: string | null;
+  rescheduled_from_entry_id: string | null;
   additive_hot_water: boolean;
   additive_1_percent_he: boolean;
   additive_2_percent_he: boolean;
