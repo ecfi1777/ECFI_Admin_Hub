@@ -6,7 +6,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { getUserFriendlyError } from "@/lib/errorHandler";
 import { invalidateScheduleQueries } from "@/lib/queryHelpers";
-import { Trash2, CalendarIcon, MoreVertical, Pencil } from "lucide-react";
+import { Trash2, CalendarIcon, MoreVertical, Pencil, CalendarX2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -41,6 +42,7 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { EditEntryDialog } from "./EditEntryDialog";
+import { CancelRescheduleDialog } from "./CancelRescheduleDialog";
 import { ProjectDetailsSheet } from "@/components/projects/ProjectDetailsSheet";
 import {
   usePhases,
@@ -64,6 +66,7 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
   const [moveDate, setMoveDate] = useState<Date | undefined>(undefined);
   const [editEntry, setEditEntry] = useState<ScheduleEntry | null>(null);
   const [editEntryTab, setEditEntryTab] = useState<"general" | "concrete" | "pump" | "inspection" | "invoicing" | "crew">("general");
+  const [cancelRescheduleEntry, setCancelRescheduleEntry] = useState<ScheduleEntry | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [isProjectSheetOpen, setIsProjectSheetOpen] = useState(false);
   
@@ -403,18 +406,25 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
                     </button>
                   </TableCell>
                   <TableCell className="text-sm py-2">
-                    <button
-                      onClick={() => {
-                        if (entry.project_id) {
-                          setSelectedProjectId(entry.project_id);
-                          setIsProjectSheetOpen(true);
-                        }
-                      }}
-                      className={`text-left text-primary font-medium ${entry.project_id ? "hover:underline cursor-pointer" : ""}`}
-                      disabled={!entry.project_id}
-                    >
-                      {entry.projects?.lot_number || "-"}
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => {
+                          if (entry.project_id) {
+                            setSelectedProjectId(entry.project_id);
+                            setIsProjectSheetOpen(true);
+                          }
+                        }}
+                        className={`text-left text-primary font-medium ${entry.project_id ? "hover:underline cursor-pointer" : ""}`}
+                        disabled={!entry.project_id}
+                      >
+                        {entry.projects?.lot_number || "-"}
+                      </button>
+                      {entry.rescheduled_from_date && (
+                        <Badge variant="outline" className="text-[10px] px-1 py-0 border-amber-500/50 text-amber-500 whitespace-nowrap">
+                          Rescheduled
+                        </Badge>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="py-2">
                     {renderSelectCell(
@@ -556,6 +566,20 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
                           onPointerDown={(e) => e.stopPropagation()}
                           onClick={(e) => {
                             e.stopPropagation();
+                            setCancelRescheduleEntry(entry);
+                          }}
+                          className="h-7 w-7 text-muted-foreground hover:text-amber-500"
+                          title="Cancel & Reschedule"
+                        >
+                          <CalendarX2 className="w-3 h-3" />
+                        </Button>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          onPointerDown={(e) => e.stopPropagation()}
+                          onClick={(e) => {
+                            e.stopPropagation();
                             setDeleteEntryId(entry.id);
                           }}
                           className="h-7 w-7 text-muted-foreground hover:text-destructive"
@@ -602,6 +626,13 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
         open={!!editEntry}
         onOpenChange={(open) => !open && setEditEntry(null)}
         defaultTab={editEntryTab}
+      />
+
+      {/* Cancel & Reschedule Dialog */}
+      <CancelRescheduleDialog
+        entry={cancelRescheduleEntry}
+        open={!!cancelRescheduleEntry}
+        onOpenChange={(open) => !open && setCancelRescheduleEntry(null)}
       />
 
       {/* Project Details Sheet */}

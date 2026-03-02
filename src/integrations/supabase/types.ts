@@ -764,6 +764,7 @@ export type Database = {
           additive_1_percent_he: boolean
           additive_2_percent_he: boolean
           additive_hot_water: boolean
+          cancellation_reason: string | null
           concrete_mix_id: string | null
           concrete_notes: string | null
           created_at: string
@@ -798,6 +799,7 @@ export type Database = {
           ready_mix_invoice_amount: number | null
           ready_mix_invoice_number: string | null
           ready_mix_yards_billed: number | null
+          rescheduled_from_date: string | null
           scheduled_date: string
           start_time: string | null
           supplier_id: string | null
@@ -808,6 +810,7 @@ export type Database = {
           additive_1_percent_he?: boolean
           additive_2_percent_he?: boolean
           additive_hot_water?: boolean
+          cancellation_reason?: string | null
           concrete_mix_id?: string | null
           concrete_notes?: string | null
           created_at?: string
@@ -842,6 +845,7 @@ export type Database = {
           ready_mix_invoice_amount?: number | null
           ready_mix_invoice_number?: string | null
           ready_mix_yards_billed?: number | null
+          rescheduled_from_date?: string | null
           scheduled_date: string
           start_time?: string | null
           supplier_id?: string | null
@@ -852,6 +856,7 @@ export type Database = {
           additive_1_percent_he?: boolean
           additive_2_percent_he?: boolean
           additive_hot_water?: boolean
+          cancellation_reason?: string | null
           concrete_mix_id?: string | null
           concrete_notes?: string | null
           created_at?: string
@@ -886,6 +891,7 @@ export type Database = {
           ready_mix_invoice_amount?: number | null
           ready_mix_invoice_number?: string | null
           ready_mix_yards_billed?: number | null
+          rescheduled_from_date?: string | null
           scheduled_date?: string
           start_time?: string | null
           supplier_id?: string | null
