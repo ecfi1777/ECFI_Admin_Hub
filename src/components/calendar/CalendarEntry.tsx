@@ -67,7 +67,7 @@ export const CalendarEntry = memo(function CalendarEntry({
   let displayText: string;
   if (isDidNotWork) {
     const reason = entry.not_working_reason;
-    displayText = `${crew?.name || "Crew"} — DNW: ${reason || "No reason"}`;
+    displayText = `${crew?.name || "Crew"} — No Work`;
   } else {
     const project = entry.projects;
     const parts: string[] = [];
