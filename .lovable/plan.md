@@ -1,12 +1,26 @@
 
-## Set Default Calendar View to Monthly
+## Filter Active Projects in Add Schedule Entry Modal
 
-A single change in `src/pages/CalendarView.tsx`:
+### Problem
+The `useProjects()` hook in `src/hooks/useReferenceData.ts` fetches all projects without filtering out archived or deleted ones. Both the Add and Edit entry dialogs use this same hook.
 
-**Line 36** — Change the initial `viewMode` state from `"week"` to `"month"`:
+### Solution
+Create a separate `useActiveProjects()` hook (or add a parameter) that filters out archived and deleted projects, and use it only in the Add Entry dialog. The Edit Entry dialog will continue using the unfiltered `useProjects()` hook.
 
-```typescript
-const [viewMode, setViewMode] = useState<ViewMode>("month");
-```
+### Changes
 
-This means when users navigate to the Calendar page, it will load the monthly layout by default. They can still toggle to the weekly view using the existing toggle button.
+**1. `src/hooks/useReferenceData.ts`** — Add a new `useActiveProjects()` hook that adds two filters to the query:
+- `.eq("is_archived", false)` — excludes archived projects
+- `.is("deleted_at", null)` — excludes soft-deleted projects
+
+This keeps the existing `useProjects()` unchanged for the Edit dialog.
+
+**2. `src/components/schedule/AddEntryDialog.tsx`** — Change the import from `useProjects` to `useActiveProjects` so the Add modal only shows active, non-deleted projects.
+
+### Technical Details
+
+The projects table uses two separate mechanisms for hiding projects:
+- `is_archived` (boolean, default false) — for archiving
+- `deleted_at` (timestamp, nullable) — for soft-delete
+
+Note: RLS already hides soft-deleted projects from non-owners, but the `is_archived` filter is not enforced at the RLS level, so it must be applied in the query. Adding both filters at the query level ensures no unnecessary data is fetched regardless of the user's role.
