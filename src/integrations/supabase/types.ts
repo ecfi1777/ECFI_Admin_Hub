@@ -774,6 +774,7 @@ export type Database = {
           deleted: boolean
           deleted_at: string | null
           deleted_by: string | null
+          did_not_work: boolean
           id: string
           inspection_amount: number | null
           inspection_invoice_number: string | null
@@ -782,6 +783,7 @@ export type Database = {
           inspector_id: string | null
           invoice_complete: boolean
           invoice_number: string | null
+          not_working_reason: string | null
           notes: string | null
           order_number: string | null
           order_status: string | null
@@ -816,6 +818,7 @@ export type Database = {
           deleted?: boolean
           deleted_at?: string | null
           deleted_by?: string | null
+          did_not_work?: boolean
           id?: string
           inspection_amount?: number | null
           inspection_invoice_number?: string | null
@@ -824,6 +827,7 @@ export type Database = {
           inspector_id?: string | null
           invoice_complete?: boolean
           invoice_number?: string | null
+          not_working_reason?: string | null
           notes?: string | null
           order_number?: string | null
           order_status?: string | null
@@ -858,6 +862,7 @@ export type Database = {
           deleted?: boolean
           deleted_at?: string | null
           deleted_by?: string | null
+          did_not_work?: boolean
           id?: string
           inspection_amount?: number | null
           inspection_invoice_number?: string | null
@@ -866,6 +871,7 @@ export type Database = {
           inspector_id?: string | null
           invoice_complete?: boolean
           invoice_number?: string | null
+          not_working_reason?: string | null
           notes?: string | null
           order_number?: string | null
           order_status?: string | null

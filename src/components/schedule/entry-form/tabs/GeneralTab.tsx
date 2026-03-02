@@ -19,10 +19,11 @@ interface GeneralTabProps {
   formData: EntryFormValues;
   updateField: <K extends keyof EntryFormValues>(field: K, value: EntryFormValues[K]) => void;
   showCrew?: boolean;
+  hideNonCrewFields?: boolean;
   crewOptions?: Array<{ id: string; name: string; is_active: boolean }>;
 }
 
-export function GeneralTab({ formData, updateField, showCrew = true, crewOptions }: GeneralTabProps) {
+export function GeneralTab({ formData, updateField, showCrew = true, hideNonCrewFields = false, crewOptions }: GeneralTabProps) {
   const { data: phases = [] } = usePhases();
   const { data: defaultCrews = [] } = useCrews();
   
@@ -59,50 +60,55 @@ export function GeneralTab({ formData, updateField, showCrew = true, crewOptions
             type="time"
             value={formData.start_time}
             onChange={(e) => updateField("start_time", e.target.value)}
+            disabled={hideNonCrewFields}
           />
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label>Phase</Label>
-          <Select value={formData.phase_id} onValueChange={(v) => updateField("phase_id", v === "__none__" ? "" : v)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select phase" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__none__" className="text-muted-foreground">— None —</SelectItem>
-              {phases.map((phase) => (
-                <SelectItem key={phase.id} value={phase.id}>{phase.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+      {!hideNonCrewFields && (
+        <>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Phase</Label>
+              <Select value={formData.phase_id} onValueChange={(v) => updateField("phase_id", v === "__none__" ? "" : v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select phase" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__" className="text-muted-foreground">— None —</SelectItem>
+                  {phases.map((phase) => (
+                    <SelectItem key={phase.id} value={phase.id}>{phase.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-        <div className="space-y-2">
-          <Label>Status</Label>
-          <Select value={formData.order_status} onValueChange={(v) => updateField("order_status", v === "__none__" ? "" : v)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__none__" className="text-muted-foreground">— None —</SelectItem>
-              <SelectItem value="Sure Go">Sure Go</SelectItem>
-              <SelectItem value="Will Call">Will Call</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <Select value={formData.order_status} onValueChange={(v) => updateField("order_status", v === "__none__" ? "" : v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__" className="text-muted-foreground">— None —</SelectItem>
+                  <SelectItem value="Sure Go">Sure Go</SelectItem>
+                  <SelectItem value="Will Call">Will Call</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
-      <div className="space-y-2">
-        <Label>Notes</Label>
-        <Textarea
-          value={formData.notes}
-          onChange={(e) => updateField("notes", e.target.value)}
-          placeholder="Add notes..."
-          rows={3}
-        />
-      </div>
+          <div className="space-y-2">
+            <Label>Notes</Label>
+            <Textarea
+              value={formData.notes}
+              onChange={(e) => updateField("notes", e.target.value)}
+              placeholder="Add notes..."
+              rows={3}
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 }

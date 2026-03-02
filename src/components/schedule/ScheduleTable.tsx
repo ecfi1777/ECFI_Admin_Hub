@@ -318,8 +318,39 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
             </TableRow>
           </TableHeader>
           <TableBody>
-            {entries.map((entry) => (
-                <TableRow key={entry.id} className="border-border hover:bg-muted/50">
+            {entries.map((entry) => {
+              const isDidNotWork = (entry as any).did_not_work === true;
+              return (
+                <TableRow key={entry.id} className={`border-border hover:bg-muted/50 ${isDidNotWork ? "bg-destructive/5 opacity-70" : ""}`}>
+                  {isDidNotWork ? (
+                    <>
+                      <TableCell className="text-foreground text-sm py-2">
+                        <span className="truncate block">{entry.crews?.name || "-"}</span>
+                      </TableCell>
+                      <TableCell colSpan={readOnly ? 9 : 11} className="text-sm py-2 text-destructive italic">
+                        <span className="line-through">Did not work</span>
+                        {(entry as any).not_working_reason && (
+                          <span className="ml-2 no-underline">— {(entry as any).not_working_reason}</span>
+                        )}
+                        {!readOnly && (
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 ml-2 text-muted-foreground hover:text-foreground"
+                            title="Edit entry"
+                            onClick={() => {
+                              setEditEntry(entry);
+                              setEditEntryTab("general");
+                            }}
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                      </TableCell>
+                    </>
+                  ) : (
+                  <>
                   <TableCell className="text-foreground text-sm py-2">
                     {readOnly ? (
                       <span className="truncate block">{entry.crews?.name || "-"}</span>
@@ -535,8 +566,11 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
                       </div>
                     </TableCell>
                   )}
+                  </>
+                  )}
                 </TableRow>
-              ))}
+              );
+            })}
           </TableBody>
         </Table>
       </div>

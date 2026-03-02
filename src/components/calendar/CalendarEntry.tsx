@@ -15,26 +15,23 @@ export const CalendarEntry = memo(function CalendarEntry({
   onClick 
 }: CalendarEntryProps) {
   const crew = crews.find(c => c.id === entry.crew_id);
-  const crewColor = crew ? getCrewColor(crew) : "#6b7280";
-  const textColor = getContrastTextColor(crewColor);
+  const isDidNotWork = (entry as any).did_not_work === true;
+  const crewColor = isDidNotWork ? "hsl(var(--destructive) / 0.15)" : (crew ? getCrewColor(crew) : "#6b7280");
+  const textColor = isDidNotWork ? "hsl(var(--destructive))" : getContrastTextColor(crewColor);
 
-  // Build compact display text: "Phase | Location | Lot#"
-  const project = entry.projects;
-  const parts: string[] = [];
-  
-  if (entry.phases?.name) {
-    parts.push(entry.phases.name);
+  // Build compact display text
+  let displayText: string;
+  if (isDidNotWork) {
+    const reason = (entry as any).not_working_reason;
+    displayText = `${crew?.name || "Crew"} — DNW: ${reason || "No reason"}`;
+  } else {
+    const project = entry.projects;
+    const parts: string[] = [];
+    if (entry.phases?.name) parts.push(entry.phases.name);
+    if (project?.locations?.name) parts.push(project.locations.name);
+    if (project?.lot_number) parts.push(project.lot_number);
+    displayText = parts.join(" | ") || "No details";
   }
-  
-  if (project?.locations?.name) {
-    parts.push(project.locations.name);
-  }
-  
-  if (project?.lot_number) {
-    parts.push(project.lot_number);
-  }
-
-  const displayText = parts.join(" | ") || "No details";
 
   return (
     <button
@@ -42,11 +39,11 @@ export const CalendarEntry = memo(function CalendarEntry({
         e.stopPropagation();
         onClick(entry);
       }}
-      className="w-full text-left px-2 py-1 rounded text-xs font-medium truncate hover:opacity-80 transition-opacity cursor-pointer"
+      className={`w-full text-left px-2 py-1 rounded text-xs font-medium truncate hover:opacity-80 transition-opacity cursor-pointer ${isDidNotWork ? "line-through opacity-70" : ""}`}
       style={{ 
         backgroundColor: crewColor,
         color: textColor,
-        borderLeft: `3px solid ${crewColor}`,
+        borderLeft: `3px solid ${isDidNotWork ? "hsl(var(--destructive))" : crewColor}`,
       }}
       title={displayText}
     >
