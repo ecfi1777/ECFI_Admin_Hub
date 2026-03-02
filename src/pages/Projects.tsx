@@ -27,7 +27,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Search, Paperclip, X, FileText, ExternalLink, Archive, ArchiveRestore } from "lucide-react";
+import { Search, Paperclip, X, FileText, ExternalLink, Archive, ArchiveRestore, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { AddProjectDialog } from "@/components/projects/AddProjectDialog";
@@ -61,6 +61,9 @@ interface Project {
   project_statuses: { id: string; name: string } | null;
 }
 
+type SortColumn = "builder" | "location" | "lot_number" | "status" | "created_at";
+type SortDirection = "asc" | "desc";
+
 export default function Projects() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterBuilder, setFilterBuilder] = useState("all");
@@ -68,6 +71,8 @@ export default function Projects() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [includeArchived, setIncludeArchived] = useState(false);
   const [showDeleted, setShowDeleted] = useState(false);
+  const [sortColumn, setSortColumn] = useState<SortColumn>("created_at");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -218,6 +223,59 @@ export default function Projects() {
     return matchesSearch && matchesBuilder && matchesLocation && matchesStatus;
   });
 
+  const handleToggleSort = (column: SortColumn) => {
+    if (sortColumn === column) {
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortColumn(column);
+      setSortDirection("asc");
+    }
+  };
+
+  const getSortValue = (project: Project, column: SortColumn): string => {
+    switch (column) {
+      case "builder":
+        return (project.builders?.code || project.builders?.name || "").toLowerCase();
+      case "location":
+        return (project.locations?.name || "").toLowerCase();
+      case "lot_number":
+        return project.lot_number;
+      case "status":
+        return (project.project_statuses?.name || "").toLowerCase();
+      case "created_at":
+        return project.created_at;
+      default:
+        return "";
+    }
+  };
+
+  const sortedProjects = [...filteredProjects].sort((a, b) => {
+    const aVal = getSortValue(a, sortColumn);
+    const bVal = getSortValue(b, sortColumn);
+    let cmp: number;
+    if (sortColumn === "lot_number") {
+      const aNum = parseFloat(aVal);
+      const bNum = parseFloat(bVal);
+      if (!isNaN(aNum) && !isNaN(bNum)) {
+        cmp = aNum - bNum;
+      } else {
+        cmp = aVal.localeCompare(bVal);
+      }
+    } else if (sortColumn === "created_at") {
+      cmp = aVal.localeCompare(bVal);
+    } else {
+      cmp = aVal.localeCompare(bVal);
+    }
+    return sortDirection === "asc" ? cmp : -cmp;
+  });
+
+  const SortIcon = ({ column }: { column: SortColumn }) => {
+    if (sortColumn !== column) return <ArrowUpDown className="w-3.5 h-3.5 ml-1 opacity-40" />;
+    return sortDirection === "asc"
+      ? <ArrowUp className="w-3.5 h-3.5 ml-1" />
+      : <ArrowDown className="w-3.5 h-3.5 ml-1" />;
+  };
+
   const handleRowClick = (projectId: string) => {
     setSelectedProjectId(projectId);
     setIsDetailsOpen(true);
@@ -354,25 +412,33 @@ export default function Projects() {
             ) : (
               <Table>
                 <TableHeader>
-                  <TableRow className="hover:bg-transparent">
-                    <TableHead className="text-muted-foreground">Builder</TableHead>
-                    <TableHead className="text-muted-foreground">Location</TableHead>
-                    <TableHead className="text-muted-foreground">Lot #</TableHead>
-                    <TableHead className="text-muted-foreground">Status</TableHead>
-                    <TableHead className="text-muted-foreground">
-                      {showDeleted ? "Deleted" : "Created"}
-                    </TableHead>
-                    {showDeleted && (
-                      <TableHead className="text-muted-foreground">Auto-Purge</TableHead>
-                    )}
-                    {!showDeleted && (
-                      <TableHead className="text-muted-foreground w-16 text-center">Docs</TableHead>
-                    )}
-                    {canManage && !showDeleted && <TableHead className="text-muted-foreground w-12"></TableHead>}
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead className="text-muted-foreground cursor-pointer select-none" onClick={() => handleToggleSort("builder")}>
+                        <span className="inline-flex items-center">Builder<SortIcon column="builder" /></span>
+                      </TableHead>
+                      <TableHead className="text-muted-foreground cursor-pointer select-none" onClick={() => handleToggleSort("location")}>
+                        <span className="inline-flex items-center">Location<SortIcon column="location" /></span>
+                      </TableHead>
+                      <TableHead className="text-muted-foreground cursor-pointer select-none" onClick={() => handleToggleSort("lot_number")}>
+                        <span className="inline-flex items-center">Lot #<SortIcon column="lot_number" /></span>
+                      </TableHead>
+                      <TableHead className="text-muted-foreground cursor-pointer select-none" onClick={() => handleToggleSort("status")}>
+                        <span className="inline-flex items-center">Status<SortIcon column="status" /></span>
+                      </TableHead>
+                      <TableHead className="text-muted-foreground cursor-pointer select-none" onClick={() => handleToggleSort("created_at")}>
+                        <span className="inline-flex items-center">{showDeleted ? "Deleted" : "Created"}<SortIcon column="created_at" /></span>
+                      </TableHead>
+                      {showDeleted && (
+                        <TableHead className="text-muted-foreground">Auto-Purge</TableHead>
+                      )}
+                      {!showDeleted && (
+                        <TableHead className="text-muted-foreground w-16 text-center">Docs</TableHead>
+                      )}
+                      {canManage && !showDeleted && <TableHead className="text-muted-foreground w-12"></TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredProjects.map((project) => (
+                  {sortedProjects.map((project) => (
                     <TableRow
                       key={project.id}
                       className={`cursor-pointer ${showDeleted ? "opacity-60" : ""}`}
