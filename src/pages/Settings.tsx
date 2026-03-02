@@ -18,6 +18,8 @@ const allTabs = [
   { value: "suppliers", label: "Suppliers", table: "suppliers", minRole: "manager" as const },
   { value: "pump_vendors", label: "Pump Vendors", table: "pump_vendors", minRole: "manager" as const },
   { value: "concrete_mixes", label: "Concrete Mixes", table: "concrete_mixes", minRole: "manager" as const },
+  { value: "stone_suppliers", label: "Stone Suppliers", table: "stone_suppliers", minRole: "manager" as const },
+  { value: "stone_types", label: "Stone Types", table: "stone_types", minRole: "manager" as const },
   { value: "inspection_types", label: "Inspection Types", table: "inspection_types", minRole: "manager" as const },
   { value: "inspectors", label: "Inspectors", table: "inspectors", minRole: "manager" as const },
   { value: "activity_log", label: "Activity Log", table: null, minRole: "owner" as const },
@@ -74,7 +76,7 @@ export default function Settings() {
                 <ReferenceDataTable 
                   tableName={tab.table as any} 
                   displayName={tab.label}
-                  hasCode={["builders", "suppliers", "pump_vendors"].includes(tab.table || "")}
+                  hasCode={["builders", "suppliers", "pump_vendors", "stone_suppliers"].includes(tab.table || "")}
                 />
               )}
             </TabsContent>

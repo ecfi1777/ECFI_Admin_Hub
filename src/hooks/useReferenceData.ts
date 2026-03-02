@@ -60,6 +60,17 @@ export interface ConcreteMix {
   name: string;
 }
 
+export interface StoneSupplier {
+  id: string;
+  name: string;
+  code: string | null;
+}
+
+export interface StoneType {
+  id: string;
+  name: string;
+}
+
 export interface ProjectStatus {
   id: string;
   name: string;
@@ -271,6 +282,46 @@ export function useConcreteMixes() {
         .order("display_order");
       if (error) throw error;
       return data as ConcreteMix[];
+    },
+    enabled: !!organizationId,
+  });
+}
+
+export function useStoneSuppliers() {
+  const { organizationId } = useOrganization();
+
+  return useQuery({
+    queryKey: ["stone-suppliers-active", organizationId],
+    queryFn: async () => {
+      if (!organizationId) return [];
+      const { data, error } = await supabase
+        .from("stone_suppliers")
+        .select("id, name, code")
+        .eq("organization_id", organizationId)
+        .eq("is_active", true)
+        .order("name");
+      if (error) throw error;
+      return data as StoneSupplier[];
+    },
+    enabled: !!organizationId,
+  });
+}
+
+export function useStoneTypes() {
+  const { organizationId } = useOrganization();
+
+  return useQuery({
+    queryKey: ["stone-types-active", organizationId],
+    queryFn: async () => {
+      if (!organizationId) return [];
+      const { data, error } = await supabase
+        .from("stone_types")
+        .select("id, name")
+        .eq("organization_id", organizationId)
+        .eq("is_active", true)
+        .order("display_order");
+      if (error) throw error;
+      return data as StoneType[];
     },
     enabled: !!organizationId,
   });

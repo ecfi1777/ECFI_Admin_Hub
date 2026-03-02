@@ -42,7 +42,9 @@ type TableName =
   | "pump_vendors"
   | "inspection_types"
   | "inspectors"
-  | "concrete_mixes";
+  | "concrete_mixes"
+  | "stone_suppliers"
+  | "stone_types";
 
 interface ReferenceDataTableProps {
   tableName: TableName;

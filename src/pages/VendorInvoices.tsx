@@ -9,6 +9,7 @@ import {
   usePumpVendors,
   useInspectors,
   useCrews,
+  useStoneSuppliers,
 } from "@/hooks/useReferenceData";
 import { VendorInvoiceFilters } from "@/components/vendor-invoices/VendorInvoiceFilters";
 import { VendorInvoiceTable } from "@/components/vendor-invoices/VendorInvoiceTable";
@@ -39,6 +40,7 @@ export default function VendorInvoices() {
   const { data: pumpVendors = [] } = usePumpVendors();
   const { data: inspectors = [] } = useInspectors();
   const { data: crews = [] } = useCrews();
+  const { data: stoneSuppliers = [] } = useStoneSuppliers();
 
   // Fetch entries that have at least one vendor/crew assigned
   const { data: entries = [], isLoading } = useQuery({
@@ -50,14 +52,16 @@ export default function VendorInvoices() {
         .select(
           `
           id, scheduled_date, project_id, crew_id, supplier_id,
-          pump_vendor_id, inspector_id, phase_id,
+          pump_vendor_id, inspector_id, phase_id, stone_supplier_id,
           ready_mix_invoice_number, ready_mix_yards_billed, ready_mix_invoice_amount,
+          stone_invoice_number, stone_tons_billed, stone_invoice_amount,
           pump_invoice_number, pump_invoice_amount,
           inspection_invoice_number, inspection_amount,
           crew_yards_poured,
           projects(id, lot_number, builders(name, code), locations(name)),
           crews(name),
           suppliers(name, code),
+          stone_suppliers(name, code),
           pump_vendors(name, code),
           inspectors(name),
           phases(name)
@@ -66,7 +70,7 @@ export default function VendorInvoices() {
         .eq("organization_id", organizationId)
         .eq("deleted", false)
         .or(
-          "supplier_id.not.is.null,pump_vendor_id.not.is.null,inspector_id.not.is.null,crew_id.not.is.null"
+          "supplier_id.not.is.null,pump_vendor_id.not.is.null,inspector_id.not.is.null,crew_id.not.is.null,stone_supplier_id.not.is.null"
         )
         .order("scheduled_date", { ascending: false });
       if (error) throw error;
@@ -110,6 +114,21 @@ export default function VendorInvoices() {
           entry,
           type: "concrete",
           vendorName: entry.suppliers?.name || "-",
+        });
+      }
+
+      // Stone: stone_supplier set AND any stone field missing
+      if (
+        entry.stone_supplier_id &&
+        (entry.stone_invoice_number == null ||
+          entry.stone_tons_billed == null ||
+          entry.stone_invoice_amount == null) &&
+        (typeFilter === "all" || typeFilter === "stone")
+      ) {
+        result.push({
+          entry,
+          type: "stone",
+          vendorName: entry.stone_suppliers?.name || "-",
         });
       }
 
@@ -159,6 +178,7 @@ export default function VendorInvoices() {
     if (specificVendor !== "all") {
       return result.filter((row) => {
         if (row.type === "concrete") return row.entry.supplier_id === specificVendor;
+        if (row.type === "stone") return row.entry.stone_supplier_id === specificVendor;
         if (row.type === "pump") return row.entry.pump_vendor_id === specificVendor;
         if (row.type === "inspection") return row.entry.inspector_id === specificVendor;
         if (row.type === "crew") return row.entry.crew_id === specificVendor;
@@ -211,6 +231,7 @@ export default function VendorInvoices() {
           pumpVendors={pumpVendors}
           inspectors={inspectors}
           crews={crews}
+          stoneSuppliers={stoneSuppliers}
         />
 
         <VendorInvoiceTable

@@ -805,6 +805,12 @@ export type Database = {
           rescheduled_to_date: string | null
           scheduled_date: string
           start_time: string | null
+          stone_invoice_amount: number | null
+          stone_invoice_number: string | null
+          stone_notes: string | null
+          stone_supplier_id: string | null
+          stone_tons_billed: number | null
+          stone_type_id: string | null
           supplier_id: string | null
           to_be_invoiced: boolean
           updated_at: string
@@ -854,6 +860,12 @@ export type Database = {
           rescheduled_to_date?: string | null
           scheduled_date: string
           start_time?: string | null
+          stone_invoice_amount?: number | null
+          stone_invoice_number?: string | null
+          stone_notes?: string | null
+          stone_supplier_id?: string | null
+          stone_tons_billed?: number | null
+          stone_type_id?: string | null
           supplier_id?: string | null
           to_be_invoiced?: boolean
           updated_at?: string
@@ -903,6 +915,12 @@ export type Database = {
           rescheduled_to_date?: string | null
           scheduled_date?: string
           start_time?: string | null
+          stone_invoice_amount?: number | null
+          stone_invoice_number?: string | null
+          stone_notes?: string | null
+          stone_supplier_id?: string | null
+          stone_tons_billed?: number | null
+          stone_type_id?: string | null
           supplier_id?: string | null
           to_be_invoiced?: boolean
           updated_at?: string
@@ -972,6 +990,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "schedule_entries_stone_supplier_id_fkey"
+            columns: ["stone_supplier_id"]
+            isOneToOne: false
+            referencedRelation: "stone_suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_entries_stone_type_id_fkey"
+            columns: ["stone_type_id"]
+            isOneToOne: false
+            referencedRelation: "stone_types"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "schedule_entries_supplier_id_fkey"
             columns: ["supplier_id"]
             isOneToOne: false
@@ -1032,6 +1064,85 @@ export type Database = {
             columns: ["schedule_entry_id"]
             isOneToOne: true
             referencedRelation: "schedule_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stone_suppliers: {
+        Row: {
+          code: string | null
+          created_at: string
+          display_order: number
+          id: string
+          is_active: boolean
+          name: string
+          organization_id: string
+          updated_at: string
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          organization_id: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string | null
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          organization_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stone_suppliers_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stone_types: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          is_active: boolean
+          name: string
+          organization_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          organization_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          organization_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stone_types_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
