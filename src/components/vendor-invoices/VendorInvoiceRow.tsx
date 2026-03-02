@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { TableRow, TableCell } from "@/components/ui/table";
-import { Save } from "lucide-react";
+import { Save, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import { VendorInvoiceRowData, VendorTypeFilter } from "./types";
 
@@ -15,6 +16,11 @@ interface VendorInvoiceRowProps {
   row: VendorInvoiceRowData;
   typeFilter: VendorTypeFilter;
   isMobile: boolean;
+  isSelected: boolean;
+  onToggleSelect: (id: string) => void;
+  showCheckboxCol: boolean;
+  showNoCharge: boolean;
+  onUndoNoCharge: (id: string) => void;
 }
 
 const TYPE_BADGE_STYLES: Record<string, string> = {
@@ -25,7 +31,16 @@ const TYPE_BADGE_STYLES: Record<string, string> = {
   crew: "bg-green-500/10 text-green-500 border-green-500/20",
 };
 
-export function VendorInvoiceRow({ row, typeFilter, isMobile }: VendorInvoiceRowProps) {
+export function VendorInvoiceRow({
+  row,
+  typeFilter,
+  isMobile,
+  isSelected,
+  onToggleSelect,
+  showCheckboxCol,
+  showNoCharge,
+  onUndoNoCharge,
+}: VendorInvoiceRowProps) {
   const { entry, type } = row;
   const queryClient = useQueryClient();
 
@@ -106,6 +121,9 @@ export function VendorInvoiceRow({ row, typeFilter, isMobile }: VendorInvoiceRow
   const canEditYards = type === "concrete" || type === "stone" || type === "crew";
   const canEditAmount = type !== "crew";
 
+  const isInspection = type === "inspection";
+  const showRowCheckbox = showCheckboxCol && isInspection;
+
   const dateStr = format(
     new Date(entry.scheduled_date + "T00:00:00"),
     "M/d/yyyy"
@@ -125,10 +143,26 @@ export function VendorInvoiceRow({ row, typeFilter, isMobile }: VendorInvoiceRow
       <Card className="mb-3">
         <CardContent className="p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-foreground">{dateStr}</span>
-            <Badge variant="outline" className={TYPE_BADGE_STYLES[type]}>
-              {typeLabel}
-            </Badge>
+            <div className="flex items-center gap-2">
+              {showRowCheckbox && (
+                <Checkbox
+                  checked={isSelected}
+                  onCheckedChange={() => onToggleSelect(entry.id)}
+                  aria-label="Select for no charge"
+                />
+              )}
+              <span className="text-sm font-medium text-foreground">{dateStr}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              {showNoCharge && (
+                <Badge variant="outline" className="bg-muted text-muted-foreground border-border">
+                  No Charge
+                </Badge>
+              )}
+              <Badge variant="outline" className={TYPE_BADGE_STYLES[type]}>
+                {typeLabel}
+              </Badge>
+            </div>
           </div>
           <div className="text-sm text-muted-foreground">
             {builderName} · {locationName} · Lot {lotNumber}
@@ -136,45 +170,56 @@ export function VendorInvoiceRow({ row, typeFilter, isMobile }: VendorInvoiceRow
           <div className="text-sm text-muted-foreground">
             Phase: {phaseName} · {row.vendorName}
           </div>
-          <div className="flex flex-wrap gap-2">
-            {canEditInvoice && (
-              <Input
-                value={invoiceNumber}
-                onChange={(e) => setInvoiceNumber(e.target.value)}
-                placeholder="Invoice #"
-                className="h-9 flex-1 min-w-[100px]"
-              />
-            )}
-            {canEditYards && (
-              <Input
-                type="number"
-                value={yards}
-                onChange={(e) => setYards(e.target.value)}
-                placeholder={type === "crew" ? "Crew Yards" : "Yards"}
-                className="h-9 w-28"
-                step="0.01"
-              />
-            )}
-            {canEditAmount && (
-              <Input
-                type="number"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="Amount $"
-                className="h-9 w-28"
-                step="0.01"
-              />
-            )}
+          {showNoCharge ? (
             <Button
               size="sm"
-              onClick={() => saveMutation.mutate()}
-              disabled={saveMutation.isPending}
-              className="h-9"
+              variant="outline"
+              onClick={() => onUndoNoCharge(entry.id)}
             >
-              <Save className="w-4 h-4 mr-1" />
-              Save
+              <Undo2 className="w-4 h-4 mr-1" />
+              Restore
             </Button>
-          </div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {canEditInvoice && (
+                <Input
+                  value={invoiceNumber}
+                  onChange={(e) => setInvoiceNumber(e.target.value)}
+                  placeholder="Invoice #"
+                  className="h-9 flex-1 min-w-[100px]"
+                />
+              )}
+              {canEditYards && (
+                <Input
+                  type="number"
+                  value={yards}
+                  onChange={(e) => setYards(e.target.value)}
+                  placeholder={type === "crew" ? "Crew Yards" : "Yards"}
+                  className="h-9 w-28"
+                  step="0.01"
+                />
+              )}
+              {canEditAmount && (
+                <Input
+                  type="number"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="Amount $"
+                  className="h-9 w-28"
+                  step="0.01"
+                />
+              )}
+              <Button
+                size="sm"
+                onClick={() => saveMutation.mutate()}
+                disabled={saveMutation.isPending}
+                className="h-9"
+              >
+                <Save className="w-4 h-4 mr-1" />
+                Save
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     );
@@ -183,6 +228,17 @@ export function VendorInvoiceRow({ row, typeFilter, isMobile }: VendorInvoiceRow
   /* ─── Desktop table row ─── */
   return (
     <TableRow>
+      {showCheckboxCol && (
+        <TableCell>
+          {showRowCheckbox ? (
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={() => onToggleSelect(entry.id)}
+              aria-label="Select for no charge"
+            />
+          ) : null}
+        </TableCell>
+      )}
       <TableCell className="text-sm">{dateStr}</TableCell>
       <TableCell className="text-sm">
         {builderName} · {locationName} · {lotNumber}
@@ -195,8 +251,17 @@ export function VendorInvoiceRow({ row, typeFilter, isMobile }: VendorInvoiceRow
           </Badge>
         </TableCell>
       )}
-      <TableCell className="text-sm">{row.vendorName}</TableCell>
-      {showInvoiceCol && (
+      <TableCell className="text-sm">
+        <div className="flex items-center gap-2">
+          {row.vendorName}
+          {showNoCharge && (
+            <Badge variant="outline" className="bg-muted text-muted-foreground border-border">
+              No Charge
+            </Badge>
+          )}
+        </div>
+      </TableCell>
+      {!showNoCharge && showInvoiceCol && (
         <TableCell>
           {canEditInvoice ? (
             <Input
@@ -210,7 +275,7 @@ export function VendorInvoiceRow({ row, typeFilter, isMobile }: VendorInvoiceRow
           )}
         </TableCell>
       )}
-      {showYardsCol && (
+      {!showNoCharge && showYardsCol && (
         <TableCell>
           {canEditYards ? (
             <Input
@@ -226,7 +291,7 @@ export function VendorInvoiceRow({ row, typeFilter, isMobile }: VendorInvoiceRow
           )}
         </TableCell>
       )}
-      {showAmountCol && (
+      {!showNoCharge && showAmountCol && (
         <TableCell>
           {canEditAmount ? (
             <Input
@@ -243,15 +308,26 @@ export function VendorInvoiceRow({ row, typeFilter, isMobile }: VendorInvoiceRow
         </TableCell>
       )}
       <TableCell>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => saveMutation.mutate()}
-          disabled={saveMutation.isPending}
-          className="h-8"
-        >
-          <Save className="w-4 h-4" />
-        </Button>
+        {showNoCharge ? (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onUndoNoCharge(entry.id)}
+            className="h-8"
+          >
+            <Undo2 className="w-4 h-4" />
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => saveMutation.mutate()}
+            disabled={saveMutation.isPending}
+            className="h-8"
+          >
+            <Save className="w-4 h-4" />
+          </Button>
+        )}
       </TableCell>
     </TableRow>
   );

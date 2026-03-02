@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -13,6 +13,9 @@ import {
 } from "@/hooks/useReferenceData";
 import { VendorInvoiceFilters } from "@/components/vendor-invoices/VendorInvoiceFilters";
 import { VendorInvoiceTable } from "@/components/vendor-invoices/VendorInvoiceTable";
+import { Button } from "@/components/ui/button";
+import { Ban, X } from "lucide-react";
+import { toast } from "sonner";
 import type {
   VendorEntry,
   VendorInvoiceRowData,
@@ -22,6 +25,7 @@ import type {
 export default function VendorInvoices() {
   const { organizationId } = useOrganization();
   const isMobile = useIsMobile();
+  const queryClient = useQueryClient();
 
   // Filter state
   const [typeFilter, setTypeFilter] = useState<VendorTypeFilter>("all");
@@ -29,11 +33,20 @@ export default function VendorInvoices() {
   const [searchQuery, setSearchQuery] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [showNoCharge, setShowNoCharge] = useState(false);
+
+  // Selection state for inspection no-charge
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // Reset specific vendor when type changes
   useEffect(() => {
     setSpecificVendor("all");
   }, [typeFilter]);
+
+  // Clear selection when filters change
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [typeFilter, specificVendor, searchQuery, dateFrom, dateTo, showNoCharge]);
 
   // Reference data
   const { data: suppliers = [] } = useSuppliers();
@@ -56,7 +69,7 @@ export default function VendorInvoices() {
           ready_mix_invoice_number, ready_mix_yards_billed, ready_mix_invoice_amount,
           stone_invoice_number, stone_tons_billed, stone_invoice_amount,
           pump_invoice_number, pump_invoice_amount,
-          inspection_invoice_number, inspection_amount,
+          inspection_invoice_number, inspection_amount, inspection_no_charge,
           crew_yards_poured,
           projects(id, lot_number, builders(name, code), locations(name)),
           crews(name),
@@ -77,6 +90,39 @@ export default function VendorInvoices() {
       return data as VendorEntry[];
     },
     enabled: !!organizationId,
+  });
+
+  // Mark as no charge mutation
+  const noChargeMutation = useMutation({
+    mutationFn: async (entryIds: string[]) => {
+      const { error } = await supabase
+        .from("schedule_entries")
+        .update({ inspection_no_charge: true })
+        .in("id", entryIds);
+      if (error) throw error;
+    },
+    onSuccess: (_, entryIds) => {
+      queryClient.invalidateQueries({ queryKey: ["vendor-invoice-entries"] });
+      toast.success(`${entryIds.length} entr${entryIds.length === 1 ? "y" : "ies"} marked as No Charge`);
+      setSelectedIds(new Set());
+    },
+    onError: () => toast.error("Failed to update"),
+  });
+
+  // Undo no charge mutation
+  const undoNoChargeMutation = useMutation({
+    mutationFn: async (entryId: string) => {
+      const { error } = await supabase
+        .from("schedule_entries")
+        .update({ inspection_no_charge: false })
+        .eq("id", entryId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["vendor-invoice-entries"] });
+      toast.success("No Charge removed — entry restored to list");
+    },
+    onError: () => toast.error("Failed to update"),
   });
 
   // Transform entries → rows (one per missing vendor type)
@@ -149,19 +195,36 @@ export default function VendorInvoices() {
       // Inspection
       if (
         entry.inspector_id &&
-        (entry.inspection_invoice_number == null ||
-          entry.inspection_amount == null) &&
         (typeFilter === "all" || typeFilter === "inspection")
       ) {
-        result.push({
-          entry,
-          type: "inspection",
-          vendorName: entry.inspectors?.name || "-",
-        });
+        if (showNoCharge) {
+          // Show only no-charge entries
+          if (entry.inspection_no_charge) {
+            result.push({
+              entry,
+              type: "inspection",
+              vendorName: entry.inspectors?.name || "-",
+            });
+          }
+        } else {
+          // Normal mode: show entries needing data, exclude no-charge
+          if (
+            !entry.inspection_no_charge &&
+            (entry.inspection_invoice_number == null ||
+              entry.inspection_amount == null)
+          ) {
+            result.push({
+              entry,
+              type: "inspection",
+              vendorName: entry.inspectors?.name || "-",
+            });
+          }
+        }
       }
 
       // Crew
       if (
+        !showNoCharge &&
         entry.crew_id &&
         entry.crew_yards_poured == null &&
         (typeFilter === "all" || typeFilter === "crew")
@@ -187,10 +250,10 @@ export default function VendorInvoices() {
     }
 
     return result;
-  }, [entries, typeFilter, specificVendor, searchQuery, dateFrom, dateTo]);
+  }, [entries, typeFilter, specificVendor, searchQuery, dateFrom, dateTo, showNoCharge]);
 
   const hasActiveFilters =
-    searchQuery || typeFilter !== "all" || specificVendor !== "all" || dateFrom || dateTo;
+    searchQuery || typeFilter !== "all" || specificVendor !== "all" || dateFrom || dateTo || showNoCharge;
 
   const clearFilters = () => {
     setTypeFilter("all");
@@ -198,6 +261,27 @@ export default function VendorInvoices() {
     setSearchQuery("");
     setDateFrom("");
     setDateTo("");
+    setShowNoCharge(false);
+  };
+
+  const toggleSelect = (entryId: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(entryId)) next.delete(entryId);
+      else next.add(entryId);
+      return next;
+    });
+  };
+
+  const selectableRows = rows.filter((r) => r.type === "inspection" && !showNoCharge);
+  const allSelected = selectableRows.length > 0 && selectableRows.every((r) => selectedIds.has(r.entry.id));
+
+  const toggleSelectAll = () => {
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(selectableRows.map((r) => r.entry.id)));
+    }
   };
 
   return (
@@ -210,7 +294,9 @@ export default function VendorInvoices() {
           <p className="text-muted-foreground">
             {isLoading
               ? "Loading..."
-              : `${rows.length} entr${rows.length === 1 ? "y" : "ies"} need vendor data`}
+              : showNoCharge
+                ? `${rows.length} No Charge entr${rows.length === 1 ? "y" : "ies"}`
+                : `${rows.length} entr${rows.length === 1 ? "y" : "ies"} need vendor data`}
           </p>
         </div>
 
@@ -232,13 +318,48 @@ export default function VendorInvoices() {
           inspectors={inspectors}
           crews={crews}
           stoneSuppliers={stoneSuppliers}
+          showNoCharge={showNoCharge}
+          setShowNoCharge={setShowNoCharge}
         />
+
+        {/* Bulk action bar */}
+        {selectedIds.size > 0 && (
+          <div className="mb-4 flex items-center gap-3 rounded-lg border border-border bg-muted px-4 py-2.5">
+            <span className="text-sm font-medium text-foreground">
+              {selectedIds.size} selected
+            </span>
+            <Button
+              size="sm"
+              variant="default"
+              onClick={() => noChargeMutation.mutate(Array.from(selectedIds))}
+              disabled={noChargeMutation.isPending}
+            >
+              <Ban className="w-4 h-4 mr-1" />
+              Mark as No Charge
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setSelectedIds(new Set())}
+              className="text-muted-foreground"
+            >
+              <X className="w-4 h-4 mr-1" />
+              Clear
+            </Button>
+          </div>
+        )}
 
         <VendorInvoiceTable
           rows={rows}
           typeFilter={typeFilter}
           isMobile={isMobile}
           isLoading={isLoading}
+          selectedIds={selectedIds}
+          onToggleSelect={toggleSelect}
+          onToggleSelectAll={toggleSelectAll}
+          allSelected={allSelected}
+          showNoCharge={showNoCharge}
+          onUndoNoCharge={(id) => undoNoChargeMutation.mutate(id)}
         />
       </div>
     </AppLayout>

@@ -6,6 +6,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
 import { VendorInvoiceRowData, VendorTypeFilter } from "./types";
 import { VendorInvoiceRow } from "./VendorInvoiceRow";
 
@@ -14,6 +15,12 @@ interface VendorInvoiceTableProps {
   typeFilter: VendorTypeFilter;
   isMobile: boolean;
   isLoading: boolean;
+  selectedIds: Set<string>;
+  onToggleSelect: (id: string) => void;
+  onToggleSelectAll: () => void;
+  allSelected: boolean;
+  showNoCharge: boolean;
+  onUndoNoCharge: (id: string) => void;
 }
 
 export function VendorInvoiceTable({
@@ -21,6 +28,12 @@ export function VendorInvoiceTable({
   typeFilter,
   isMobile,
   isLoading,
+  selectedIds,
+  onToggleSelect,
+  onToggleSelectAll,
+  allSelected,
+  showNoCharge,
+  onUndoNoCharge,
 }: VendorInvoiceTableProps) {
   if (isLoading) {
     return (
@@ -32,11 +45,14 @@ export function VendorInvoiceTable({
     return (
       <Card>
         <CardContent className="py-12 text-center text-muted-foreground">
-          No entries need vendor data
+          {showNoCharge ? "No entries marked as No Charge" : "No entries need vendor data"}
         </CardContent>
       </Card>
     );
   }
+
+  const hasInspectionRows = rows.some((r) => r.type === "inspection");
+  const showCheckboxCol = hasInspectionRows && !showNoCharge;
 
   /* ─── Mobile: card list ─── */
   if (isMobile) {
@@ -48,6 +64,11 @@ export function VendorInvoiceTable({
             row={row}
             typeFilter={typeFilter}
             isMobile
+            isSelected={selectedIds.has(row.entry.id)}
+            onToggleSelect={onToggleSelect}
+            showCheckboxCol={showCheckboxCol}
+            showNoCharge={showNoCharge}
+            onUndoNoCharge={onUndoNoCharge}
           />
         ))}
       </div>
@@ -79,6 +100,15 @@ export function VendorInvoiceTable({
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
+                {showCheckboxCol && (
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={allSelected}
+                      onCheckedChange={onToggleSelectAll}
+                      aria-label="Select all inspection rows"
+                    />
+                  </TableHead>
+                )}
                 <TableHead className="text-muted-foreground">Date</TableHead>
                 <TableHead className="text-muted-foreground">
                   Builder · Location · Lot
@@ -90,23 +120,23 @@ export function VendorInvoiceTable({
                 <TableHead className="text-muted-foreground">
                   {vendorLabel[typeFilter]}
                 </TableHead>
-                {showInvoiceCol && (
+                {!showNoCharge && showInvoiceCol && (
                   <TableHead className="text-muted-foreground">
                     Invoice #
                   </TableHead>
                 )}
-                {showYardsCol && (
+                {!showNoCharge && showYardsCol && (
                   <TableHead className="text-muted-foreground">
                     {yardsLabel}
                   </TableHead>
                 )}
-                {showAmountCol && (
+                {!showNoCharge && showAmountCol && (
                   <TableHead className="text-muted-foreground">
                     Amount $
                   </TableHead>
                 )}
                 <TableHead className="text-muted-foreground w-16">
-                  Save
+                  {showNoCharge ? "Action" : "Save"}
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -117,6 +147,11 @@ export function VendorInvoiceTable({
                   row={row}
                   typeFilter={typeFilter}
                   isMobile={false}
+                  isSelected={selectedIds.has(row.entry.id)}
+                  onToggleSelect={onToggleSelect}
+                  showCheckboxCol={showCheckboxCol}
+                  showNoCharge={showNoCharge}
+                  onUndoNoCharge={onUndoNoCharge}
                 />
               ))}
             </TableBody>
