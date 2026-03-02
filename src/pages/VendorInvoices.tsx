@@ -194,9 +194,10 @@ export default function VendorInvoices() {
         });
       }
 
-      // Crew
+      // Crew: only show if entry also has a concrete supplier or stone supplier (pour day)
       if (
         entry.crew_id &&
+        (entry.supplier_id || entry.stone_supplier_id) &&
         entry.crew_yards_poured == null &&
         (typeFilter === "all" || typeFilter === "crew")
       ) {
