@@ -19,8 +19,6 @@ interface VendorInvoiceTableProps {
   onToggleSelect: (id: string) => void;
   onToggleSelectAll: () => void;
   allSelected: boolean;
-  showNoCharge: boolean;
-  onUndoNoCharge: (id: string) => void;
 }
 
 export function VendorInvoiceTable({
@@ -32,8 +30,6 @@ export function VendorInvoiceTable({
   onToggleSelect,
   onToggleSelectAll,
   allSelected,
-  showNoCharge,
-  onUndoNoCharge,
 }: VendorInvoiceTableProps) {
   if (isLoading) {
     return (
@@ -45,14 +41,14 @@ export function VendorInvoiceTable({
     return (
       <Card>
         <CardContent className="py-12 text-center text-muted-foreground">
-          {showNoCharge ? "No entries marked as No Charge" : "No entries need vendor data"}
+          No entries need vendor data
         </CardContent>
       </Card>
     );
   }
 
   const hasInspectionRows = rows.some((r) => r.type === "inspection");
-  const showCheckboxCol = hasInspectionRows && !showNoCharge;
+  const showCheckboxCol = hasInspectionRows;
 
   /* ─── Mobile: card list ─── */
   if (isMobile) {
@@ -67,8 +63,6 @@ export function VendorInvoiceTable({
             isSelected={selectedIds.has(row.entry.id)}
             onToggleSelect={onToggleSelect}
             showCheckboxCol={showCheckboxCol}
-            showNoCharge={showNoCharge}
-            onUndoNoCharge={onUndoNoCharge}
           />
         ))}
       </div>
@@ -120,24 +114,22 @@ export function VendorInvoiceTable({
                 <TableHead className="text-muted-foreground">
                   {vendorLabel[typeFilter]}
                 </TableHead>
-                {!showNoCharge && showInvoiceCol && (
+                {showInvoiceCol && (
                   <TableHead className="text-muted-foreground">
                     Invoice #
                   </TableHead>
                 )}
-                {!showNoCharge && showYardsCol && (
+                {showYardsCol && (
                   <TableHead className="text-muted-foreground">
                     {yardsLabel}
                   </TableHead>
                 )}
-                {!showNoCharge && showAmountCol && (
+                {showAmountCol && (
                   <TableHead className="text-muted-foreground">
                     Amount $
                   </TableHead>
                 )}
-                <TableHead className="text-muted-foreground w-16">
-                  {showNoCharge ? "Action" : "Save"}
-                </TableHead>
+                <TableHead className="text-muted-foreground w-16">Save</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -150,8 +142,6 @@ export function VendorInvoiceTable({
                   isSelected={selectedIds.has(row.entry.id)}
                   onToggleSelect={onToggleSelect}
                   showCheckboxCol={showCheckboxCol}
-                  showNoCharge={showNoCharge}
-                  onUndoNoCharge={onUndoNoCharge}
                 />
               ))}
             </TableBody>

@@ -33,7 +33,7 @@ export default function VendorInvoices() {
   const [searchQuery, setSearchQuery] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [showNoCharge, setShowNoCharge] = useState(false);
+  
 
   // Selection state for inspection no-charge
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -46,7 +46,7 @@ export default function VendorInvoices() {
   // Clear selection when filters change
   useEffect(() => {
     setSelectedIds(new Set());
-  }, [typeFilter, specificVendor, searchQuery, dateFrom, dateTo, showNoCharge]);
+  }, [typeFilter, specificVendor, searchQuery, dateFrom, dateTo]);
 
   // Reference data
   const { data: suppliers = [] } = useSuppliers();
@@ -109,21 +109,6 @@ export default function VendorInvoices() {
     onError: () => toast.error("Failed to update"),
   });
 
-  // Undo no charge mutation
-  const undoNoChargeMutation = useMutation({
-    mutationFn: async (entryId: string) => {
-      const { error } = await supabase
-        .from("schedule_entries")
-        .update({ inspection_no_charge: false })
-        .eq("id", entryId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["vendor-invoice-entries"] });
-      toast.success("No Charge removed — entry restored to list");
-    },
-    onError: () => toast.error("Failed to update"),
-  });
 
   // Transform entries → rows (one per missing vendor type)
   const rows = useMemo(() => {
@@ -148,22 +133,6 @@ export default function VendorInvoices() {
     const result: VendorInvoiceRowData[] = [];
 
     for (const entry of filtered) {
-      // When Show No Charge is on, ONLY show inspection entries marked no-charge
-      if (showNoCharge) {
-        if (
-          entry.inspector_id &&
-          entry.inspection_no_charge &&
-          (typeFilter === "all" || typeFilter === "inspection")
-        ) {
-          result.push({
-            entry,
-            type: "inspection",
-            vendorName: entry.inspectors?.name || "-",
-          });
-        }
-        continue;
-      }
-
       // Concrete: supplier set AND any concrete field missing
       if (
         entry.supplier_id &&
@@ -250,10 +219,10 @@ export default function VendorInvoices() {
     }
 
     return result;
-  }, [entries, typeFilter, specificVendor, searchQuery, dateFrom, dateTo, showNoCharge]);
+  }, [entries, typeFilter, specificVendor, searchQuery, dateFrom, dateTo]);
 
   const hasActiveFilters =
-    searchQuery || typeFilter !== "all" || specificVendor !== "all" || dateFrom || dateTo || showNoCharge;
+    searchQuery || typeFilter !== "all" || specificVendor !== "all" || dateFrom || dateTo;
 
   const clearFilters = () => {
     setTypeFilter("all");
@@ -261,7 +230,6 @@ export default function VendorInvoices() {
     setSearchQuery("");
     setDateFrom("");
     setDateTo("");
-    setShowNoCharge(false);
   };
 
   const toggleSelect = (entryId: string) => {
@@ -273,7 +241,7 @@ export default function VendorInvoices() {
     });
   };
 
-  const selectableRows = rows.filter((r) => r.type === "inspection" && !showNoCharge);
+  const selectableRows = rows.filter((r) => r.type === "inspection");
   const allSelected = selectableRows.length > 0 && selectableRows.every((r) => selectedIds.has(r.entry.id));
 
   const toggleSelectAll = () => {
@@ -294,9 +262,7 @@ export default function VendorInvoices() {
           <p className="text-muted-foreground">
             {isLoading
               ? "Loading..."
-              : showNoCharge
-                ? `${rows.length} No Charge entr${rows.length === 1 ? "y" : "ies"}`
-                : `${rows.length} entr${rows.length === 1 ? "y" : "ies"} need vendor data`}
+              : `${rows.length} entr${rows.length === 1 ? "y" : "ies"} need vendor data`}
           </p>
         </div>
 
@@ -318,8 +284,6 @@ export default function VendorInvoices() {
           inspectors={inspectors}
           crews={crews}
           stoneSuppliers={stoneSuppliers}
-          showNoCharge={showNoCharge}
-          setShowNoCharge={setShowNoCharge}
         />
 
         {/* Bulk action bar */}
@@ -358,8 +322,6 @@ export default function VendorInvoices() {
           onToggleSelect={toggleSelect}
           onToggleSelectAll={toggleSelectAll}
           allSelected={allSelected}
-          showNoCharge={showNoCharge}
-          onUndoNoCharge={(id) => undoNoChargeMutation.mutate(id)}
         />
       </div>
     </AppLayout>

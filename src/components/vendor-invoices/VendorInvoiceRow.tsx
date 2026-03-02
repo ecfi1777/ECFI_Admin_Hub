@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TableRow, TableCell } from "@/components/ui/table";
-import { Save, Undo2 } from "lucide-react";
+import { Save } from "lucide-react";
 import { toast } from "sonner";
 import { VendorInvoiceRowData, VendorTypeFilter } from "./types";
 
@@ -19,8 +19,6 @@ interface VendorInvoiceRowProps {
   isSelected: boolean;
   onToggleSelect: (id: string) => void;
   showCheckboxCol: boolean;
-  showNoCharge: boolean;
-  onUndoNoCharge: (id: string) => void;
 }
 
 const TYPE_BADGE_STYLES: Record<string, string> = {
@@ -38,8 +36,6 @@ export function VendorInvoiceRow({
   isSelected,
   onToggleSelect,
   showCheckboxCol,
-  showNoCharge,
-  onUndoNoCharge,
 }: VendorInvoiceRowProps) {
   const { entry, type } = row;
   const queryClient = useQueryClient();
@@ -154,11 +150,6 @@ export function VendorInvoiceRow({
               <span className="text-sm font-medium text-foreground">{dateStr}</span>
             </div>
             <div className="flex items-center gap-2">
-              {showNoCharge && (
-                <Badge variant="outline" className="bg-muted text-muted-foreground border-border">
-                  No Charge
-                </Badge>
-              )}
               <Badge variant="outline" className={TYPE_BADGE_STYLES[type]}>
                 {typeLabel}
               </Badge>
@@ -170,17 +161,7 @@ export function VendorInvoiceRow({
           <div className="text-sm text-muted-foreground">
             Phase: {phaseName} · {row.vendorName}
           </div>
-          {showNoCharge ? (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => onUndoNoCharge(entry.id)}
-            >
-              <Undo2 className="w-4 h-4 mr-1" />
-              Restore
-            </Button>
-          ) : (
-            <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2">
               {canEditInvoice && (
                 <Input
                   value={invoiceNumber}
@@ -219,7 +200,6 @@ export function VendorInvoiceRow({
                 Save
               </Button>
             </div>
-          )}
         </CardContent>
       </Card>
     );
@@ -252,16 +232,9 @@ export function VendorInvoiceRow({
         </TableCell>
       )}
       <TableCell className="text-sm">
-        <div className="flex items-center gap-2">
-          {row.vendorName}
-          {showNoCharge && (
-            <Badge variant="outline" className="bg-muted text-muted-foreground border-border">
-              No Charge
-            </Badge>
-          )}
-        </div>
+        {row.vendorName}
       </TableCell>
-      {!showNoCharge && showInvoiceCol && (
+      {showInvoiceCol && (
         <TableCell>
           {canEditInvoice ? (
             <Input
@@ -275,7 +248,7 @@ export function VendorInvoiceRow({
           )}
         </TableCell>
       )}
-      {!showNoCharge && showYardsCol && (
+      {showYardsCol && (
         <TableCell>
           {canEditYards ? (
             <Input
@@ -291,7 +264,7 @@ export function VendorInvoiceRow({
           )}
         </TableCell>
       )}
-      {!showNoCharge && showAmountCol && (
+      {showAmountCol && (
         <TableCell>
           {canEditAmount ? (
             <Input
@@ -308,26 +281,15 @@ export function VendorInvoiceRow({
         </TableCell>
       )}
       <TableCell>
-        {showNoCharge ? (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => onUndoNoCharge(entry.id)}
-            className="h-8"
-          >
-            <Undo2 className="w-4 h-4" />
-          </Button>
-        ) : (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => saveMutation.mutate()}
-            disabled={saveMutation.isPending}
-            className="h-8"
-          >
-            <Save className="w-4 h-4" />
-          </Button>
-        )}
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => saveMutation.mutate()}
+          disabled={saveMutation.isPending}
+          className="h-8"
+        >
+          <Save className="w-4 h-4" />
+        </Button>
       </TableCell>
     </TableRow>
   );
