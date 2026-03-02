@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { getUserFriendlyError } from "@/lib/errorHandler";
 import { invalidateScheduleQueries } from "@/lib/queryHelpers";
+import { useOrganization } from "@/hooks/useOrganization";
 import type { ScheduleEntry } from "@/types/schedule";
 
 interface CancelRescheduleDialogProps {
@@ -31,22 +32,51 @@ export function CancelRescheduleDialog({ entry, open, onOpenChange }: CancelResc
   const [reason, setReason] = useState("");
   const [newDate, setNewDate] = useState<Date | undefined>(undefined);
   const queryClient = useQueryClient();
+  const { organizationId } = useOrganization();
 
   const mutation = useMutation({
     mutationFn: async () => {
-      if (!entry || !newDate) return;
+      if (!entry || !newDate || !organizationId) return;
       const originalDate = entry.scheduled_date;
       const newDateStr = format(newDate, "yyyy-MM-dd");
 
-      const { error } = await supabase
+      // 1. Mark current entry as cancelled
+      const { error: updateError } = await supabase
         .from("schedule_entries")
         .update({
-          scheduled_date: newDateStr,
+          is_cancelled: true,
           cancellation_reason: reason,
-          rescheduled_from_date: originalDate,
+          rescheduled_to_date: newDateStr,
         })
         .eq("id", entry.id);
-      if (error) throw error;
+      if (updateError) throw updateError;
+
+      // 2. Create duplicate entry on the new date
+      const { error: insertError } = await supabase
+        .from("schedule_entries")
+        .insert({
+          organization_id: organizationId,
+          scheduled_date: newDateStr,
+          project_id: entry.project_id,
+          crew_id: entry.crew_id,
+          phase_id: entry.phase_id,
+          start_time: entry.start_time,
+          order_status: entry.order_status,
+          notes: entry.notes,
+          supplier_id: entry.supplier_id,
+          concrete_mix_id: entry.concrete_mix_id,
+          qty_ordered: entry.qty_ordered,
+          pump_vendor_id: entry.pump_vendor_id,
+          inspection_type_id: entry.inspection_type_id,
+          inspector_id: entry.inspector_id,
+          additive_hot_water: entry.additive_hot_water,
+          additive_1_percent_he: entry.additive_1_percent_he,
+          additive_2_percent_he: entry.additive_2_percent_he,
+          rescheduled_from_date: originalDate,
+          rescheduled_from_entry_id: entry.id,
+          cancellation_reason: reason,
+        });
+      if (insertError) throw insertError;
     },
     onSuccess: () => {
       invalidateScheduleQueries(queryClient);

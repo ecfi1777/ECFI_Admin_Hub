@@ -135,8 +135,23 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
           </div>
         ) : (
           <>
-            {/* Rescheduled info banner */}
-            {fullEntry?.rescheduled_from_date && (
+            {/* Cancelled info banner */}
+            {fullEntry?.is_cancelled && (
+              <div className="flex items-start gap-2 p-3 rounded-md border border-destructive/30 bg-destructive/5 text-sm">
+                <RotateCcw className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
+                <div>
+                  <p className="font-medium text-destructive">
+                    Cancelled — moved to {fullEntry.rescheduled_to_date || "another day"}
+                  </p>
+                  {fullEntry.cancellation_reason && (
+                    <p className="text-muted-foreground mt-1">Reason: {fullEntry.cancellation_reason}</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Rescheduled copy info banner */}
+            {fullEntry?.rescheduled_from_date && !fullEntry?.is_cancelled && (
               <div className="flex items-start gap-2 p-3 rounded-md border border-amber-500/30 bg-amber-500/5 text-sm">
                 <RotateCcw className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
                 <div>

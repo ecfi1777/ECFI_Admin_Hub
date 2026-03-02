@@ -6,7 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { getUserFriendlyError } from "@/lib/errorHandler";
 import { invalidateScheduleQueries } from "@/lib/queryHelpers";
-import { Trash2, CalendarIcon, MoreVertical, Pencil, CalendarX2 } from "lucide-react";
+import { Trash2, CalendarIcon, MoreVertical, Pencil, CalendarX2, Undo2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -69,6 +69,7 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
   const [cancelRescheduleEntry, setCancelRescheduleEntry] = useState<ScheduleEntry | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [isProjectSheetOpen, setIsProjectSheetOpen] = useState(false);
+  const [undoEntryId, setUndoEntryId] = useState<string | null>(null);
   
   const queryClient = useQueryClient();
 
@@ -133,6 +134,38 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
     },
   });
 
+  const undoRescheduleMutation = useMutation({
+    mutationFn: async (entry: ScheduleEntry) => {
+      if (!entry.rescheduled_from_entry_id) throw new Error("No parent entry to restore");
+      
+      // 1. Un-cancel the parent entry
+      const { error: restoreError } = await supabase
+        .from("schedule_entries")
+        .update({
+          is_cancelled: false,
+          cancellation_reason: null,
+          rescheduled_to_date: null,
+        })
+        .eq("id", entry.rescheduled_from_entry_id);
+      if (restoreError) throw restoreError;
+
+      // 2. Soft-delete the current (rescheduled) entry
+      const { error: deleteError } = await supabase
+        .from("schedule_entries")
+        .update({ deleted: true, deleted_at: new Date().toISOString() })
+        .eq("id", entry.id);
+      if (deleteError) throw deleteError;
+    },
+    onSuccess: () => {
+      invalidateScheduleQueries(queryClient);
+      toast.success("Reschedule undone — original entry restored");
+      setUndoEntryId(null);
+    },
+    onError: (error: Error) => {
+      toast.error(getUserFriendlyError(error));
+    },
+  });
+
   const startEdit = (entryId: string, field: string, currentValue: string) => {
     setEditingCell({ entryId, field });
     setEditValue(currentValue);
@@ -141,13 +174,11 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
   const saveEdit = (entryId: string, field: string) => {
     const updates: Record<string, any> = {};
     
-    // Numeric fields that need parsing
     const numericFields = ["crew_yards_poured", "ready_mix_yards_billed", "ready_mix_invoice_amount", "pump_invoice_amount", "inspection_amount"];
     
     if (numericFields.includes(field)) {
       updates[field] = parseFloat(editValue) || 0;
     } else {
-      // Text fields - store as-is (allows "10+", "8+2", etc.)
       updates[field] = editValue || null;
     }
     
@@ -322,38 +353,75 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
           </TableHeader>
           <TableBody>
             {entries.map((entry) => {
-              const isDidNotWork = (entry as any).did_not_work === true;
+              const isDidNotWork = entry.did_not_work === true;
+              const isCancelled = entry.is_cancelled === true;
+              const isRescheduledCopy = !!entry.rescheduled_from_entry_id && !isCancelled;
+
+              // Cancelled ghost row
+              if (isCancelled) {
+                const movedToLabel = entry.rescheduled_to_date
+                  ? format(new Date(entry.rescheduled_to_date + "T00:00:00"), "MMM d")
+                  : "another day";
+                return (
+                  <TableRow key={entry.id} className="border-border bg-destructive/5">
+                    <TableCell className="text-sm py-2">
+                      <span className="text-destructive line-through decoration-destructive">{entry.crews?.name || "-"}</span>
+                    </TableCell>
+                    <TableCell colSpan={readOnly ? 9 : 11} className="text-sm py-2">
+                      <span className="text-destructive/80 line-through decoration-destructive">
+                        {[
+                          entry.projects?.builders?.code || entry.projects?.builders?.name,
+                          entry.projects?.locations?.name,
+                          entry.projects?.lot_number,
+                        ].filter(Boolean).join(" / ")}
+                      </span>
+                      <span className="ml-2 text-destructive text-xs font-medium no-underline">
+                        Cancelled — moved to {movedToLabel}
+                      </span>
+                      {entry.cancellation_reason && (
+                        <span className="ml-1 text-muted-foreground text-xs no-underline">
+                          ({entry.cancellation_reason})
+                        </span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              }
+
+              if (isDidNotWork) {
+                return (
+                  <TableRow key={entry.id} className="border-border hover:bg-muted/50 bg-destructive/5 opacity-70">
+                    <TableCell className="text-foreground text-sm py-2">
+                      <span className="truncate block">{entry.crews?.name || "-"}</span>
+                    </TableCell>
+                    <TableCell colSpan={readOnly ? 9 : 11} className="text-sm py-2 text-destructive italic">
+                      <span className="line-through">Did not work</span>
+                      {entry.not_working_reason && (
+                        <span className="ml-2 no-underline">— {entry.not_working_reason}</span>
+                      )}
+                      {!readOnly && (
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7 ml-2 text-muted-foreground hover:text-foreground"
+                          title="Edit entry"
+                          onClick={() => {
+                            setEditEntry(entry);
+                            setEditEntryTab("general");
+                          }}
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              }
+
+              // Normal row (active entry)
               return (
-                <TableRow key={entry.id} className={`border-border hover:bg-muted/50 ${isDidNotWork ? "bg-destructive/5 opacity-70" : ""}`}>
-                  {isDidNotWork ? (
-                    <>
-                      <TableCell className="text-foreground text-sm py-2">
-                        <span className="truncate block">{entry.crews?.name || "-"}</span>
-                      </TableCell>
-                      <TableCell colSpan={readOnly ? 9 : 11} className="text-sm py-2 text-destructive italic">
-                        <span className="line-through">Did not work</span>
-                        {(entry as any).not_working_reason && (
-                          <span className="ml-2 no-underline">— {(entry as any).not_working_reason}</span>
-                        )}
-                        {!readOnly && (
-                          <Button
-                            type="button"
-                            size="icon"
-                            variant="ghost"
-                            className="h-7 w-7 ml-2 text-muted-foreground hover:text-foreground"
-                            title="Edit entry"
-                            onClick={() => {
-                              setEditEntry(entry);
-                              setEditEntryTab("general");
-                            }}
-                          >
-                            <Pencil className="w-3.5 h-3.5" />
-                          </Button>
-                        )}
-                      </TableCell>
-                    </>
-                  ) : (
-                  <>
+                <TableRow key={entry.id} className="border-border hover:bg-muted/50">
                   <TableCell className="text-foreground text-sm py-2">
                     {readOnly ? (
                       <span className="truncate block">{entry.crews?.name || "-"}</span>
@@ -419,7 +487,7 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
                       >
                         {entry.projects?.lot_number || "-"}
                       </button>
-                      {entry.rescheduled_from_date && (
+                      {isRescheduledCopy && (
                         <Badge variant="outline" className="text-[10px] px-1 py-0 border-amber-500/50 text-amber-500 whitespace-nowrap">
                           Rescheduled
                         </Badge>
@@ -573,6 +641,22 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
                         >
                           <CalendarX2 className="w-3 h-3" />
                         </Button>
+                        {isRescheduledCopy && (
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            onPointerDown={(e) => e.stopPropagation()}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setUndoEntryId(entry.id);
+                            }}
+                            className="h-7 w-7 text-amber-500 hover:text-amber-400"
+                            title="Undo Reschedule"
+                          >
+                            <Undo2 className="w-3 h-3" />
+                          </Button>
+                        )}
                         <Button
                           type="button"
                           size="icon"
@@ -589,8 +673,6 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
                         </Button>
                       </div>
                     </TableCell>
-                  )}
-                  </>
                   )}
                 </TableRow>
               );
@@ -615,6 +697,30 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
               className="bg-destructive text-destructive-foreground"
             >
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Undo Reschedule Confirmation Dialog */}
+      <AlertDialog open={!!undoEntryId} onOpenChange={() => setUndoEntryId(null)}>
+        <AlertDialogContent className="bg-card border-border">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-foreground">Undo Reschedule?</AlertDialogTitle>
+            <AlertDialogDescription className="text-muted-foreground">
+              This will delete this rescheduled entry and restore the original entry on its previous date.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-muted text-foreground border-border">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const entry = entries.find(e => e.id === undoEntryId);
+                if (entry) undoRescheduleMutation.mutate(entry);
+              }}
+              className="bg-amber-500 text-black hover:bg-amber-600"
+            >
+              Undo Reschedule
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
