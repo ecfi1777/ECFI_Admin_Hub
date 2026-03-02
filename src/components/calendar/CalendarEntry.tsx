@@ -1,5 +1,7 @@
 import { memo } from "react";
 import { getCrewColor, getContrastTextColor } from "@/lib/crewColors";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
+import { RotateCcw } from "lucide-react";
 import type { ScheduleEntry } from "@/types/schedule";
 import type { CrewWithColor } from "@/hooks/useCalendarData";
 
@@ -16,6 +18,7 @@ export const CalendarEntry = memo(function CalendarEntry({
 }: CalendarEntryProps) {
   const crew = crews.find(c => c.id === entry.crew_id);
   const isDidNotWork = (entry as any).did_not_work === true;
+  const isRescheduled = !!entry.rescheduled_from_date;
   const crewColor = isDidNotWork ? "hsl(var(--destructive) / 0.15)" : (crew ? getCrewColor(crew) : "#6b7280");
   const textColor = isDidNotWork ? "hsl(var(--destructive))" : getContrastTextColor(crewColor);
 
@@ -33,7 +36,7 @@ export const CalendarEntry = memo(function CalendarEntry({
     displayText = parts.join(" | ") || "No details";
   }
 
-  return (
+  const entryButton = (
     <button
       onClick={(e) => {
         e.stopPropagation();
@@ -47,7 +50,26 @@ export const CalendarEntry = memo(function CalendarEntry({
       }}
       title={displayText}
     >
+      {isRescheduled && (
+        <RotateCcw className="inline-block w-3 h-3 mr-1 opacity-70" />
+      )}
       {displayText}
     </button>
   );
+
+  if (isRescheduled) {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>{entryButton}</TooltipTrigger>
+          <TooltipContent side="top" className="text-xs max-w-[200px]">
+            <p>Rescheduled from {entry.rescheduled_from_date}</p>
+            {entry.cancellation_reason && <p className="text-muted-foreground mt-1">{entry.cancellation_reason}</p>}
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+
+  return entryButton;
 });

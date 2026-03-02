@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, RotateCcw } from "lucide-react";
 import { getUserFriendlyError } from "@/lib/errorHandler";
 import { invalidateScheduleQueries } from "@/lib/queryHelpers";
 import { useEntryForm } from "./entry-form/useEntryForm";
@@ -135,6 +135,19 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
           </div>
         ) : (
           <>
+            {/* Rescheduled info banner */}
+            {fullEntry?.rescheduled_from_date && (
+              <div className="flex items-start gap-2 p-3 rounded-md border border-amber-500/30 bg-amber-500/5 text-sm">
+                <RotateCcw className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+                <div>
+                  <p className="font-medium text-amber-500">Rescheduled from {fullEntry.rescheduled_from_date}</p>
+                  {fullEntry.cancellation_reason && (
+                    <p className="text-muted-foreground mt-1">Reason: {fullEntry.cancellation_reason}</p>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Did not work checkbox */}
             <div className="flex items-center space-x-2 p-3 rounded-md border border-border bg-muted/30">
               <Checkbox
