@@ -318,8 +318,8 @@ export function ProjectScheduleHistory({ projectId, readOnly = false }: ProjectS
 
   if (isLoading) {
     return (
-      <Card className="bg-slate-800 border-slate-700">
-        <CardContent className="p-6 text-center text-slate-400">
+      <Card className="bg-card border-border">
+        <CardContent className="p-6 text-center text-muted-foreground">
           Loading schedule history...
         </CardContent>
       </Card>
@@ -328,11 +328,11 @@ export function ProjectScheduleHistory({ projectId, readOnly = false }: ProjectS
 
   if (entries.length === 0) {
     return (
-      <Card className="bg-slate-800 border-slate-700">
+      <Card className="bg-card border-border">
         <CardHeader>
-          <CardTitle className="text-white text-lg">Schedule History</CardTitle>
+          <CardTitle className="text-foreground text-lg">Schedule History</CardTitle>
         </CardHeader>
-        <CardContent className="text-slate-400 text-center py-6">
+        <CardContent className="text-muted-foreground text-center py-6">
           No schedule entries for this project yet.
         </CardContent>
       </Card>
@@ -341,9 +341,9 @@ export function ProjectScheduleHistory({ projectId, readOnly = false }: ProjectS
 
   return (
     <>
-      <Card className="bg-slate-800 border-slate-700">
+      <Card className="bg-card border-border">
         <CardHeader>
-          <CardTitle className="text-white text-lg">Schedule History</CardTitle>
+          <CardTitle className="text-foreground text-lg">Schedule History</CardTitle>
         </CardHeader>
         <CardContent>
           <Accordion type="multiple" className="space-y-2">
@@ -351,12 +351,12 @@ export function ProjectScheduleHistory({ projectId, readOnly = false }: ProjectS
               <AccordionItem
                 key={phaseName}
                 value={phaseName}
-                className="bg-slate-700 rounded-lg border-0 px-4"
+                className="bg-muted rounded-lg border-0 px-4"
               >
-                <AccordionTrigger className="text-white hover:no-underline py-3">
+                <AccordionTrigger className="text-foreground hover:no-underline py-3">
                   <div className="flex items-center gap-2">
                     <span className="font-medium">{phaseName}</span>
-                    <span className="text-slate-400 text-sm">
+                    <span className="text-muted-foreground text-sm">
                       ({groupedByPhase[phaseName].length} entries)
                     </span>
                   </div>
@@ -368,8 +368,8 @@ export function ProjectScheduleHistory({ projectId, readOnly = false }: ProjectS
                         key={entry.id}
                         className={
                           entry.is_cancelled
-                            ? "bg-red-900/20 border border-red-800/30 rounded-md p-3 space-y-2"
-                            : "bg-slate-800 rounded-md p-3 space-y-2"
+                            ? "bg-destructive/10 border border-destructive/20 rounded-md p-3 space-y-2"
+                            : "bg-card rounded-md p-3 space-y-2"
                         }
                       >
                         <div className="flex items-center justify-between flex-wrap gap-2">
@@ -384,13 +384,13 @@ export function ProjectScheduleHistory({ projectId, readOnly = false }: ProjectS
                                   {format(new Date(entry.scheduled_date + "T00:00:00"), "MMM d, yyyy")}
                                 </span>
                                 {entry.start_time && (
-                                  <span className="text-slate-400 no-underline">
+                                  <span className="text-muted-foreground no-underline">
                                     @ {entry.start_time.slice(0, 5)}
                                   </span>
                                 )}
                               </button>
                               {entry.crews && (
-                                <div className="flex items-center gap-2 text-slate-300">
+                                <div className="flex items-center gap-2 text-muted-foreground">
                                   <Users className="w-4 h-4" />
                                   <span>{entry.crews.name}</span>
                                 </div>
@@ -417,7 +417,7 @@ export function ProjectScheduleHistory({ projectId, readOnly = false }: ProjectS
                               variant="ghost"
                               size="sm"
                               onClick={(e) => handleEditClick(entry, e)}
-                              className="text-slate-400 hover:text-white h-7 px-2"
+                              className="text-muted-foreground hover:text-foreground h-7 px-2"
                             >
                               <Pencil className="w-3 h-3 mr-1" />
                               Edit
@@ -429,23 +429,23 @@ export function ProjectScheduleHistory({ projectId, readOnly = false }: ProjectS
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
                           {/* Concrete/Ready Mix */}
                           {(entry.suppliers || entry.ready_mix_yards_billed || entry.concrete_notes) && (
-                            <div className="bg-slate-900 rounded p-2 space-y-1">
-                              <div className="flex items-center gap-1 text-slate-400 text-xs font-medium">
+                            <div className="bg-muted rounded p-2 space-y-1">
+                              <div className="flex items-center gap-1 text-muted-foreground text-xs font-medium">
                                 <Truck className="w-3 h-3" />
                                 Concrete
                               </div>
                               {entry.suppliers && (
-                                <div className="text-slate-300">
+                                <div className="text-muted-foreground">
                                   {entry.suppliers.code || entry.suppliers.name}
                                 </div>
                               )}
                               {entry.ready_mix_yards_billed !== null && entry.ready_mix_yards_billed > 0 && (
-                                <div className="text-slate-400">
+                                <div className="text-muted-foreground">
                                   Billed: {entry.ready_mix_yards_billed} yds
                                 </div>
                               )}
                               {!readOnly && entry.ready_mix_invoice_number && (
-                                <div className="text-slate-400">
+                                <div className="text-muted-foreground">
                                   Inv: {entry.ready_mix_invoice_number}
                                 </div>
                               )}
@@ -455,7 +455,7 @@ export function ProjectScheduleHistory({ projectId, readOnly = false }: ProjectS
                                 </div>
                               )}
                               {entry.concrete_notes && (
-                                <div className="text-slate-400 text-xs italic border-t border-slate-700 pt-1 mt-1">
+                                <div className="text-muted-foreground text-xs italic border-t border-border pt-1 mt-1">
                                   {entry.concrete_notes}
                                 </div>
                               )}
@@ -464,18 +464,18 @@ export function ProjectScheduleHistory({ projectId, readOnly = false }: ProjectS
 
                           {/* Pump */}
                           {(entry.pump_vendors || entry.pump_invoice_number || entry.pump_notes) && (
-                            <div className="bg-slate-900 rounded p-2 space-y-1">
-                              <div className="flex items-center gap-1 text-slate-400 text-xs font-medium">
+                            <div className="bg-muted rounded p-2 space-y-1">
+                              <div className="flex items-center gap-1 text-muted-foreground text-xs font-medium">
                                 <Building className="w-3 h-3" />
                                 Pump
                               </div>
                               {entry.pump_vendors && (
-                                <div className="text-slate-300">
+                                <div className="text-muted-foreground">
                                   {entry.pump_vendors.code || entry.pump_vendors.name}
                                 </div>
                               )}
                               {!readOnly && entry.pump_invoice_number && (
-                                <div className="text-slate-400">
+                                <div className="text-muted-foreground">
                                   Inv: {entry.pump_invoice_number}
                                 </div>
                               )}
@@ -485,7 +485,7 @@ export function ProjectScheduleHistory({ projectId, readOnly = false }: ProjectS
                                 </div>
                               )}
                               {entry.pump_notes && (
-                                <div className="text-slate-400 text-xs italic border-t border-slate-700 pt-1 mt-1">
+                                <div className="text-muted-foreground text-xs italic border-t border-border pt-1 mt-1">
                                   {entry.pump_notes}
                                 </div>
                               )}
@@ -494,23 +494,23 @@ export function ProjectScheduleHistory({ projectId, readOnly = false }: ProjectS
 
                           {/* Inspection */}
                           {(entry.inspectors || entry.inspection_types || entry.inspection_invoice_number || entry.inspection_notes) && (
-                            <div className="bg-slate-900 rounded p-2 space-y-1">
-                              <div className="flex items-center gap-1 text-slate-400 text-xs font-medium">
+                            <div className="bg-muted rounded p-2 space-y-1">
+                              <div className="flex items-center gap-1 text-muted-foreground text-xs font-medium">
                                 <ClipboardCheck className="w-3 h-3" />
                                 Inspection
                               </div>
                               {entry.inspection_types && (
-                                <div className="text-slate-300">
+                                <div className="text-muted-foreground">
                                   {entry.inspection_types.name}
                                 </div>
                               )}
                               {entry.inspectors && (
-                                <div className="text-slate-400">
+                                <div className="text-muted-foreground">
                                   {entry.inspectors.name}
                                 </div>
                               )}
                               {!readOnly && entry.inspection_invoice_number && (
-                                <div className="text-slate-400">
+                                <div className="text-muted-foreground">
                                   Inv: {entry.inspection_invoice_number}
                                 </div>
                               )}
@@ -520,7 +520,7 @@ export function ProjectScheduleHistory({ projectId, readOnly = false }: ProjectS
                                 </div>
                               )}
                               {entry.inspection_notes && (
-                                <div className="text-slate-400 text-xs italic border-t border-slate-700 pt-1 mt-1">
+                                <div className="text-muted-foreground text-xs italic border-t border-border pt-1 mt-1">
                                   {entry.inspection_notes}
                                 </div>
                               )}
@@ -529,18 +529,18 @@ export function ProjectScheduleHistory({ projectId, readOnly = false }: ProjectS
 
                           {/* Crew */}
                           {(entry.crew_yards_poured || entry.crew_notes) && (
-                            <div className="bg-slate-900 rounded p-2 space-y-1">
-                              <div className="flex items-center gap-1 text-slate-400 text-xs font-medium">
+                            <div className="bg-muted rounded p-2 space-y-1">
+                              <div className="flex items-center gap-1 text-muted-foreground text-xs font-medium">
                                 <Users className="w-3 h-3" />
                                 Crew
                               </div>
                               {entry.crew_yards_poured !== null && entry.crew_yards_poured > 0 && (
-                                <div className="text-slate-300">
+                                <div className="text-muted-foreground">
                                   Poured: {entry.crew_yards_poured} yds
                                 </div>
                               )}
                               {entry.crew_notes && (
-                                <div className="text-slate-400 text-xs italic border-t border-slate-700 pt-1 mt-1">
+                                <div className="text-muted-foreground text-xs italic border-t border-border pt-1 mt-1">
                                   {entry.crew_notes}
                                 </div>
                               )}
@@ -549,13 +549,13 @@ export function ProjectScheduleHistory({ projectId, readOnly = false }: ProjectS
 
                           {/* Invoicing - hidden for viewers */}
                           {!readOnly && (entry.to_be_invoiced || entry.invoice_complete || entry.invoice_number) && (
-                            <div className="bg-slate-900 rounded p-2 space-y-1">
-                              <div className="flex items-center gap-1 text-slate-400 text-xs font-medium">
+                            <div className="bg-muted rounded p-2 space-y-1">
+                              <div className="flex items-center gap-1 text-muted-foreground text-xs font-medium">
                                 <FileText className="w-3 h-3" />
                                 Invoicing
                               </div>
                               {entry.invoice_number && (
-                                <div className="text-slate-300">
+                                <div className="text-muted-foreground">
                                   Inv #: {entry.invoice_number}
                                 </div>
                               )}
@@ -567,7 +567,7 @@ export function ProjectScheduleHistory({ projectId, readOnly = false }: ProjectS
                         </div>
 
                         {entry.notes && (
-                          <div className="text-slate-400 text-sm italic border-t border-slate-700 pt-2 mt-2">
+                          <div className="text-muted-foreground text-sm italic border-t border-border pt-2 mt-2">
                             {entry.notes}
                           </div>
                         )}
@@ -583,146 +583,146 @@ export function ProjectScheduleHistory({ projectId, readOnly = false }: ProjectS
 
       {/* Edit Vendor Details Dialog */}
       <Dialog open={!!editingEntry} onOpenChange={(open) => !open && setEditingEntry(null)}>
-        <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto bg-slate-800 border-slate-700">
+        <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto bg-card border-border">
           <DialogHeader>
-            <DialogTitle className="text-white">
+            <DialogTitle className="text-foreground">
               Edit Vendor Details - {editingEntry && format(new Date(editingEntry.scheduled_date + "T00:00:00"), "MMM d, yyyy")}
             </DialogTitle>
           </DialogHeader>
 
           <Tabs defaultValue="concrete" className="w-full">
-            <TabsList className="grid w-full grid-cols-4 bg-slate-700">
-              <TabsTrigger value="concrete" className="data-[state=active]:bg-slate-600">Concrete</TabsTrigger>
-              <TabsTrigger value="pump" className="data-[state=active]:bg-slate-600">Pump</TabsTrigger>
-              <TabsTrigger value="inspection" className="data-[state=active]:bg-slate-600">Inspection</TabsTrigger>
-              <TabsTrigger value="crew" className="data-[state=active]:bg-slate-600">Crew</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-4 bg-muted">
+              <TabsTrigger value="concrete" className="data-[state=active]:bg-border">Concrete</TabsTrigger>
+              <TabsTrigger value="pump" className="data-[state=active]:bg-border">Pump</TabsTrigger>
+              <TabsTrigger value="inspection" className="data-[state=active]:bg-border">Inspection</TabsTrigger>
+              <TabsTrigger value="crew" className="data-[state=active]:bg-border">Crew</TabsTrigger>
             </TabsList>
 
             <TabsContent value="concrete" className="space-y-4 mt-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-slate-300">Supplier</Label>
+                  <Label className="text-muted-foreground">Supplier</Label>
                   <Select value={formData.supplier_id} onValueChange={(v) => updateField("supplier_id", v)}>
-                    <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                    <SelectTrigger className="bg-muted border-border text-foreground">
                       <SelectValue placeholder="Select supplier" />
                     </SelectTrigger>
-                    <SelectContent className="bg-slate-700 border-slate-600">
+                    <SelectContent className="bg-muted border-border">
                       {suppliers.map((s) => (
-                        <SelectItem key={s.id} value={s.id} className="text-white">{s.name}</SelectItem>
+                        <SelectItem key={s.id} value={s.id} className="text-foreground">{s.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-slate-300">Qty Ordered</Label>
+                  <Label className="text-muted-foreground">Qty Ordered</Label>
                   <Input
                     value={formData.qty_ordered}
                     onChange={(e) => updateField("qty_ordered", e.target.value)}
                     placeholder="e.g. 10+ or 8+2"
-                    className="bg-slate-700 border-slate-600 text-white"
+                    className="bg-muted border-border text-foreground"
                   />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label className="text-slate-300">Order Number</Label>
+                <Label className="text-muted-foreground">Order Number</Label>
                 <Input
                   value={formData.order_number}
                   onChange={(e) => updateField("order_number", e.target.value)}
                   placeholder="Order #"
-                  className="bg-slate-700 border-slate-600 text-white"
+                  className="bg-muted border-border text-foreground"
                 />
               </div>
-              <hr className="border-slate-600 my-4" />
-              <h4 className="text-sm font-medium text-slate-400">Ready Mix Invoice</h4>
+              <hr className="border-border my-4" />
+              <h4 className="text-sm font-medium text-muted-foreground">Ready Mix Invoice</h4>
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-slate-300">Invoice #</Label>
+                  <Label className="text-muted-foreground">Invoice #</Label>
                   <Input
                     value={formData.ready_mix_invoice_number}
                     onChange={(e) => updateField("ready_mix_invoice_number", e.target.value)}
                     placeholder="Invoice #"
-                    className="bg-slate-700 border-slate-600 text-white"
+                    className="bg-muted border-border text-foreground"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-slate-300">Amount ($)</Label>
+                  <Label className="text-muted-foreground">Amount ($)</Label>
                   <Input
                     type="number"
                     step="0.01"
                     value={formData.ready_mix_invoice_amount}
                     onChange={(e) => updateField("ready_mix_invoice_amount", e.target.value)}
                     placeholder="0.00"
-                    className="bg-slate-700 border-slate-600 text-white"
+                    className="bg-muted border-border text-foreground"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-slate-300">Yards Billed</Label>
+                  <Label className="text-muted-foreground">Yards Billed</Label>
                   <Input
                     type="number"
                     step="0.01"
                     value={formData.ready_mix_yards_billed}
                     onChange={(e) => updateField("ready_mix_yards_billed", e.target.value)}
                     placeholder="0"
-                    className="bg-slate-700 border-slate-600 text-white"
+                    className="bg-muted border-border text-foreground"
                   />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label className="text-slate-300">Concrete Notes</Label>
+                <Label className="text-muted-foreground">Concrete Notes</Label>
                 <Textarea
                   value={formData.concrete_notes}
                   onChange={(e) => updateField("concrete_notes", e.target.value)}
                   placeholder="Notes related to concrete/ready mix..."
                   rows={3}
-                  className="bg-slate-700 border-slate-600 text-white"
+                  className="bg-muted border-border text-foreground"
                 />
               </div>
             </TabsContent>
 
             <TabsContent value="pump" className="space-y-4 mt-4">
               <div className="space-y-2">
-                <Label className="text-slate-300">Pump Vendor</Label>
+                <Label className="text-muted-foreground">Pump Vendor</Label>
                 <Select value={formData.pump_vendor_id} onValueChange={(v) => updateField("pump_vendor_id", v)}>
-                  <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                  <SelectTrigger className="bg-muted border-border text-foreground">
                     <SelectValue placeholder="Select pump vendor" />
                   </SelectTrigger>
-                  <SelectContent className="bg-slate-700 border-slate-600">
+                  <SelectContent className="bg-muted border-border">
                     {pumpVendors.map((p) => (
-                      <SelectItem key={p.id} value={p.id} className="text-white">{p.name}</SelectItem>
+                      <SelectItem key={p.id} value={p.id} className="text-foreground">{p.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-slate-300">Invoice #</Label>
+                  <Label className="text-muted-foreground">Invoice #</Label>
                   <Input
                     value={formData.pump_invoice_number}
                     onChange={(e) => updateField("pump_invoice_number", e.target.value)}
                     placeholder="Invoice #"
-                    className="bg-slate-700 border-slate-600 text-white"
+                    className="bg-muted border-border text-foreground"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-slate-300">Amount ($)</Label>
+                  <Label className="text-muted-foreground">Amount ($)</Label>
                   <Input
                     type="number"
                     step="0.01"
                     value={formData.pump_invoice_amount}
                     onChange={(e) => updateField("pump_invoice_amount", e.target.value)}
                     placeholder="0.00"
-                    className="bg-slate-700 border-slate-600 text-white"
+                    className="bg-muted border-border text-foreground"
                   />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label className="text-slate-300">Pump Notes</Label>
+                <Label className="text-muted-foreground">Pump Notes</Label>
                 <Textarea
                   value={formData.pump_notes}
                   onChange={(e) => updateField("pump_notes", e.target.value)}
                   placeholder="Notes related to pump vendor..."
                   rows={3}
-                  className="bg-slate-700 border-slate-600 text-white"
+                  className="bg-muted border-border text-foreground"
                 />
               </div>
             </TabsContent>
@@ -730,27 +730,27 @@ export function ProjectScheduleHistory({ projectId, readOnly = false }: ProjectS
             <TabsContent value="inspection" className="space-y-4 mt-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-slate-300">Inspection Type</Label>
+                  <Label className="text-muted-foreground">Inspection Type</Label>
                   <Select value={formData.inspection_type_id} onValueChange={(v) => updateField("inspection_type_id", v)}>
-                    <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                    <SelectTrigger className="bg-muted border-border text-foreground">
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
-                    <SelectContent className="bg-slate-700 border-slate-600">
+                    <SelectContent className="bg-muted border-border">
                       {inspectionTypes.map((t) => (
-                        <SelectItem key={t.id} value={t.id} className="text-white">{t.name}</SelectItem>
+                        <SelectItem key={t.id} value={t.id} className="text-foreground">{t.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-slate-300">Inspector</Label>
+                  <Label className="text-muted-foreground">Inspector</Label>
                   <Select value={formData.inspector_id} onValueChange={(v) => updateField("inspector_id", v)}>
-                    <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                    <SelectTrigger className="bg-muted border-border text-foreground">
                       <SelectValue placeholder="Select inspector" />
                     </SelectTrigger>
-                    <SelectContent className="bg-slate-700 border-slate-600">
+                    <SelectContent className="bg-muted border-border">
                       {inspectors.map((i) => (
-                        <SelectItem key={i.id} value={i.id} className="text-white">{i.name}</SelectItem>
+                        <SelectItem key={i.id} value={i.id} className="text-foreground">{i.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -758,58 +758,58 @@ export function ProjectScheduleHistory({ projectId, readOnly = false }: ProjectS
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-slate-300">Invoice #</Label>
+                  <Label className="text-muted-foreground">Invoice #</Label>
                   <Input
                     value={formData.inspection_invoice_number}
                     onChange={(e) => updateField("inspection_invoice_number", e.target.value)}
                     placeholder="Invoice #"
-                    className="bg-slate-700 border-slate-600 text-white"
+                    className="bg-muted border-border text-foreground"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-slate-300">Amount ($)</Label>
+                  <Label className="text-muted-foreground">Amount ($)</Label>
                   <Input
                     type="number"
                     step="0.01"
                     value={formData.inspection_amount}
                     onChange={(e) => updateField("inspection_amount", e.target.value)}
                     placeholder="0.00"
-                    className="bg-slate-700 border-slate-600 text-white"
+                    className="bg-muted border-border text-foreground"
                   />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label className="text-slate-300">Inspection Notes</Label>
+                <Label className="text-muted-foreground">Inspection Notes</Label>
                 <Textarea
                   value={formData.inspection_notes}
                   onChange={(e) => updateField("inspection_notes", e.target.value)}
                   placeholder="Notes related to inspection..."
                   rows={3}
-                  className="bg-slate-700 border-slate-600 text-white"
+                  className="bg-muted border-border text-foreground"
                 />
               </div>
             </TabsContent>
 
             <TabsContent value="crew" className="space-y-4 mt-4">
               <div className="space-y-2">
-                <Label className="text-slate-300">Crew Yards Poured</Label>
+                <Label className="text-muted-foreground">Crew Yards Poured</Label>
                 <Input
                   type="number"
                   step="0.01"
                   value={formData.crew_yards_poured}
                   onChange={(e) => updateField("crew_yards_poured", e.target.value)}
                   placeholder="0"
-                  className="bg-slate-700 border-slate-600 text-white"
+                  className="bg-muted border-border text-foreground"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-slate-300">Crew Notes</Label>
+                <Label className="text-muted-foreground">Crew Notes</Label>
                 <Textarea
                   value={formData.crew_notes}
                   onChange={(e) => updateField("crew_notes", e.target.value)}
                   placeholder="Notes related to crew work on this entry..."
                   rows={4}
-                  className="bg-slate-700 border-slate-600 text-white"
+                  className="bg-muted border-border text-foreground"
                 />
               </div>
             </TabsContent>
@@ -819,7 +819,7 @@ export function ProjectScheduleHistory({ projectId, readOnly = false }: ProjectS
             <Button
               variant="outline"
               onClick={() => setEditingEntry(null)}
-              className="border-slate-600 text-slate-300 hover:bg-slate-700"
+              className="border-border text-muted-foreground hover:bg-muted"
             >
               Cancel
             </Button>
