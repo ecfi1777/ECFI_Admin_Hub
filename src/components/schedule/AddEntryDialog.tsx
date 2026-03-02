@@ -132,8 +132,8 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate,
         toast.error("Please select a crew");
         return;
       }
-    } else if (!projectId) {
-      toast.error("Please select a project before adding an entry");
+    } else if (!formData.crew_id) {
+      toast.error("Please select a crew");
       return;
     }
     createMutation.mutate();
@@ -188,7 +188,7 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate,
           {/* Project Search - hidden when did_not_work */}
           {!formData.did_not_work && (
             <div className="space-y-2">
-              <Label>Project <span className="text-destructive">*</span></Label>
+              <Label>Project</Label>
               {prefilledProject ? (
                 <div className="bg-muted border border-border rounded-md px-3 py-2 text-sm text-muted-foreground">
                   {prefilledProject.builder || "No Builder"} - {prefilledProject.location || "No Location"} - {prefilledProject.lot_number}
