@@ -1,59 +1,61 @@
 
-## Theme-Aware Color Replacement in ProjectScheduleHistory
 
-### Summary
-Replace all hardcoded dark-theme Tailwind classes in `ProjectScheduleHistory.tsx` with semantic theme tokens so the component respects light/dark mode like the rest of the app. Amber-500 accent colors will be preserved.
+# Google Drive Integration — Full Implementation Plan
 
-### Mapping Applied
+All 5 secrets are now confirmed and ready to store:
 
-| Hardcoded Class | Theme Token |
-|---|---|
-| `bg-slate-800` | `bg-card` |
-| `bg-slate-700` | `bg-muted` |
-| `bg-slate-900` | `bg-muted` (detail cards within entries) |
-| `bg-slate-600` (tab active) | `bg-border` |
-| `text-white` | `text-foreground` |
-| `text-slate-300` | `text-muted-foreground` |
-| `text-slate-400` | `text-muted-foreground` |
-| `border-slate-700` | `border-border` |
-| `border-slate-600` | `border-border` |
-| `bg-red-900/20` | `bg-destructive/10` |
-| `border-red-800/30` | `border-destructive/20` |
+| Secret | Value |
+|--------|-------|
+| GOOGLE_CLIENT_ID | `993703510072-...apps.googleusercontent.com` |
+| GOOGLE_CLIENT_SECRET | `GOCSPX-Zq0Umo...` |
+| GOOGLE_API_KEY | `AIzaSyDs8yGx...` |
+| GOOGLE_REFRESH_TOKEN | `1//05rMy6fIMpt...` |
+| GOOGLE_DRIVE_SHARE_EMAIL | `elan@easternconcrete.com` |
 
-### File Changed
-**`src/components/projects/ProjectScheduleHistory.tsx`** -- single file, class-name-only changes throughout.
+## Implementation Steps
 
-### Locations (by line range)
+### 1. Store all 5 secrets
+Add each secret to the backend secrets store.
 
-1. **Loading state** (lines 321-326): `bg-slate-800 border-slate-700` -> `bg-card border-border`, `text-slate-400` -> `text-muted-foreground`
-2. **Empty state** (lines 331-338): Same card and text replacements
-3. **Main card** (line 344): `bg-slate-800 border-slate-700` -> `bg-card border-border`
-4. **Card title** (line 346): `text-white` -> `text-foreground`
-5. **Accordion items** (line 354): `bg-slate-700` -> `bg-muted`
-6. **Accordion trigger** (line 356): `text-white` -> `text-foreground`
-7. **Entry count** (line 359): `text-slate-400` -> `text-muted-foreground`
-8. **Entry rows** (lines 370-373): `bg-red-900/20 border-red-800/30` -> `bg-destructive/10 border-destructive/20`, `bg-slate-800` -> `bg-card`
-9. **Time text** (line 387): `text-slate-400` -> `text-muted-foreground`
-10. **Crew text** (line 393): `text-slate-300` -> `text-muted-foreground`
-11. **Edit button** (line 420): `text-slate-400 hover:text-white` -> `text-muted-foreground hover:text-foreground`
-12. **Detail cards** (lines 432, 467, 497, 532, 552): `bg-slate-900` -> `bg-muted`
-13. **Detail card headers** (lines 433, 468, 498, 533, 553): `text-slate-400` -> `text-muted-foreground`
-14. **Detail card values** (lines 438, 443, 448, 473, 478, 503, 508, 513, 538, 558): `text-slate-300` -> `text-muted-foreground`, `text-slate-400` -> `text-muted-foreground`
-15. **Border dividers in detail cards** (lines 458, 488, 523, 543, 570): `border-slate-700` -> `border-border`
-16. **Dialog** (line 586): `bg-slate-800 border-slate-700` -> `bg-card border-border`
-17. **Dialog title** (line 588): `text-white` -> `text-foreground`
-18. **TabsList** (line 594): `bg-slate-700` -> `bg-muted`
-19. **TabsTriggers** (lines 595-598): `data-[state=active]:bg-slate-600` -> `data-[state=active]:bg-border`
-20. **All Labels** in form (lines 604, 617, 639, 648, 659, 671, 684, 698, 708, 720, 733, 746, 761, 770, 782, 795, 806): `text-slate-300` -> `text-muted-foreground`
-21. **All Inputs/Textareas** in form: `bg-slate-700 border-slate-600 text-white` -> `bg-muted border-border text-foreground`
-22. **All SelectTriggers**: `bg-slate-700 border-slate-600 text-white` -> `bg-muted border-border text-foreground`
-23. **All SelectContents**: `bg-slate-700 border-slate-600` -> `bg-muted border-border`
-24. **All SelectItems**: `text-white` -> `text-foreground`
-25. **Section header** (line 636): `border-slate-600` -> `border-border`, `text-slate-400` -> `text-muted-foreground`
-26. **Cancel button** (line 822): `border-slate-600 text-slate-300 hover:bg-slate-700` -> `border-border text-muted-foreground hover:bg-muted`
+### 2. Database migration
+- Add `google_drive_folder_id TEXT` to `projects`
+- Add `drive_file_id TEXT`, `drive_file_url TEXT`, `storage_type TEXT DEFAULT 'supabase'` to `project_documents`
+- Create `project_drive_folders` table (project_id, organization_id, category, drive_folder_id) with RLS policies scoped to org membership
 
-### Not Changed
-- `text-amber-500`, `hover:text-amber-400`, `text-amber-400`, `bg-amber-500`, `hover:bg-amber-600`, `text-black` (on save button) -- intentional brand colors
-- `text-green-400` -- status indicator
-- `text-red-400`, `text-red-400/80` -- cancellation text (semantic, not theme background)
-- `decoration-red-500` -- strikethrough on cancelled entries
+### 3. Create edge function: `create-drive-folders`
+- Exchanges refresh token for access token via Google OAuth2
+- Finds or creates "ECFI Hub" root folder, shares with owner email
+- Creates `{builder_code}_{location}_{lot}` project folder with 7 subfolders
+- Returns folder IDs and URLs
+- JWT validation in code, CORS headers
+
+### 4. Create edge function: `get-picker-token`
+- Exchanges refresh token for short-lived access token
+- Returns access_token, api_key, client_id for Google Picker
+- JWT validation in code, CORS headers
+
+### 5. Update `supabase/config.toml`
+Add both functions with `verify_jwt = false`.
+
+### 6. Create `src/types/google-picker.d.ts`
+Type declarations for `google.picker` namespace.
+
+### 7. Update `AddProjectDialog.tsx`
+- After project creation, call `create-drive-folders` with builder code, location, lot
+- Save folder URL to project, subfolder mappings to `project_drive_folders`
+- Non-blocking: if Drive fails, show warning toast, project still created
+
+### 8. Update `ProjectDocuments.tsx`
+- Load Google Picker API (`gapi`) on mount
+- "Upload to Drive" button per category (scoped to subfolder)
+- Handle both `google_drive` and `supabase` storage types for viewing/deleting
+- Keep existing FileDropZone as fallback
+
+### 9. Update `ProjectFormFields.tsx`
+- Replace manual Google Drive URL input with read-only auto-generated link
+- "Open in Google Drive" button when URL exists
+
+## Backward Compatibility
+- Existing Supabase Storage documents continue to work via `storage_type='supabase'` default
+- No existing upload code is removed
+
