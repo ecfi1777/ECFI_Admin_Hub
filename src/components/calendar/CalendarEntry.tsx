@@ -24,11 +24,14 @@ export const CalendarEntry = memo(function CalendarEntry({
 
   // Cancelled ghost styling
   if (isCancelled) {
-    const movedToLabel = entry.rescheduled_to_date
-      ? format(new Date(entry.rescheduled_to_date + "T00:00:00"), "MMM d")
-      : "another day";
+    const hasRescheduleDate = !!entry.rescheduled_to_date;
+    const movedToLabel = hasRescheduleDate
+      ? format(new Date(entry.rescheduled_to_date! + "T00:00:00"), "MMM d")
+      : null;
 
-    const displayText = `${crew?.name || "Crew"} — Cancelled → ${movedToLabel}`;
+    const displayText = hasRescheduleDate
+      ? `${crew?.name || "Crew"} — Cancelled → ${movedToLabel}`
+      : `${crew?.name || "Crew"} — Cancelled`;
 
     return (
       <TooltipProvider>
@@ -52,7 +55,7 @@ export const CalendarEntry = memo(function CalendarEntry({
             </button>
           </TooltipTrigger>
           <TooltipContent side="top" className="text-xs max-w-[200px]">
-            <p>Cancelled — moved to {movedToLabel}</p>
+            <p>{hasRescheduleDate ? `Cancelled — moved to ${movedToLabel}` : "Cancelled"}</p>
             {entry.cancellation_reason && <p className="text-muted-foreground mt-1">{entry.cancellation_reason}</p>}
           </TooltipContent>
         </Tooltip>
