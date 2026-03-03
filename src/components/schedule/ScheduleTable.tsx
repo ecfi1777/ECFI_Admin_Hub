@@ -56,6 +56,7 @@ import { ProjectDetailsSheet } from "@/components/projects/ProjectDetailsSheet";
 import {
   usePhases,
   useSuppliers,
+  useStoneSuppliers,
   usePumpVendors,
   useInspectionTypes,
   useInspectors,
@@ -88,9 +89,14 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
   // Fetch reference data for dropdowns using shared hooks
   const { data: phases = [] } = usePhases();
   const { data: suppliers = [] } = useSuppliers();
+  const { data: stoneSuppliers = [] } = useStoneSuppliers();
   const { data: pumpVendors = [] } = usePumpVendors();
   const { data: inspectionTypes = [] } = useInspectionTypes();
   const { data: inspectors = [] } = useInspectors();
+
+  // Helper to detect stone phase entries
+  const isPrepSlabs = (entry: ScheduleEntry) =>
+    entry.phases?.name?.toLowerCase() === "prep slabs";
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Record<string, any> }) => {
@@ -615,14 +621,23 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
                     )}
                   </TableCell>
                   <TableCell className="py-2">
-                    {renderSelectCellWithQuickEdit(
-                      entry,
-                      "supplier_id",
-                      entry.supplier_id,
-                      suppliers,
-                      entry.suppliers?.code || entry.suppliers?.name || "-",
-                      "concrete"
-                    )}
+                    {isPrepSlabs(entry)
+                      ? renderSelectCellWithQuickEdit(
+                          entry,
+                          "stone_supplier_id",
+                          entry.stone_supplier_id,
+                          stoneSuppliers,
+                          entry.stone_suppliers?.code || entry.stone_suppliers?.name || "-",
+                          "concrete"
+                        )
+                      : renderSelectCellWithQuickEdit(
+                          entry,
+                          "supplier_id",
+                          entry.supplier_id,
+                          suppliers,
+                          entry.suppliers?.code || entry.suppliers?.name || "-",
+                          "concrete"
+                        )}
                   </TableCell>
                   <TableCell className="py-2">
                     {renderEditableCell(
