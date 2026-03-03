@@ -531,12 +531,15 @@ export type Database = {
           content_type: string | null
           created_at: string
           created_by: string | null
+          drive_file_id: string | null
+          drive_file_url: string | null
           file_name: string
           file_path: string
           file_size: number | null
           id: string
           organization_id: string
           project_id: string
+          storage_type: string
           updated_at: string
         }
         Insert: {
@@ -544,12 +547,15 @@ export type Database = {
           content_type?: string | null
           created_at?: string
           created_by?: string | null
+          drive_file_id?: string | null
+          drive_file_url?: string | null
           file_name: string
           file_path: string
           file_size?: number | null
           id?: string
           organization_id: string
           project_id: string
+          storage_type?: string
           updated_at?: string
         }
         Update: {
@@ -557,12 +563,15 @@ export type Database = {
           content_type?: string | null
           created_at?: string
           created_by?: string | null
+          drive_file_id?: string | null
+          drive_file_url?: string | null
           file_name?: string
           file_path?: string
           file_size?: number | null
           id?: string
           organization_id?: string
           project_id?: string
+          storage_type?: string
           updated_at?: string
         }
         Relationships: [
@@ -575,6 +584,48 @@ export type Database = {
           },
           {
             foreignKeyName: "project_documents_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_drive_folders: {
+        Row: {
+          category: string
+          created_at: string | null
+          drive_folder_id: string
+          id: string
+          organization_id: string
+          project_id: string
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          drive_folder_id: string
+          id?: string
+          organization_id: string
+          project_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          drive_folder_id?: string
+          id?: string
+          organization_id?: string
+          project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_drive_folders_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_drive_folders_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
@@ -630,6 +681,7 @@ export type Database = {
           created_by: string | null
           deleted_at: string | null
           full_address: string | null
+          google_drive_folder_id: string | null
           google_drive_url: string | null
           id: string
           is_archived: boolean
@@ -652,6 +704,7 @@ export type Database = {
           created_by?: string | null
           deleted_at?: string | null
           full_address?: string | null
+          google_drive_folder_id?: string | null
           google_drive_url?: string | null
           id?: string
           is_archived?: boolean
@@ -674,6 +727,7 @@ export type Database = {
           created_by?: string | null
           deleted_at?: string | null
           full_address?: string | null
+          google_drive_folder_id?: string | null
           google_drive_url?: string | null
           id?: string
           is_archived?: boolean
