@@ -162,6 +162,52 @@ export function AddProjectDialog({ builders, locations, statuses }: AddProjectDi
       return data.id as string;
     },
     onSuccess: async (projectId) => {
+      // Auto-create Google Drive folders (non-blocking)
+      try {
+        const builder = builders.find((b) => b.id === formData.builderId);
+        const location = locations.find((l) => l.id === formData.locationId);
+        if (builder || location || formData.lotNumber) {
+          const { data: sessionData } = await supabase.auth.getSession();
+          const accessToken = sessionData?.session?.access_token;
+          if (accessToken && organizationId) {
+            const res = await supabase.functions.invoke("create-drive-folders", {
+              body: {
+                builder_code: builder?.code || builder?.name || "",
+                location_name: location?.name || "",
+                lot_number: formData.lotNumber,
+              },
+            });
+            if (res.data && !res.error) {
+              const driveData = res.data;
+              // Update project with Drive folder info
+              await supabase
+                .from("projects")
+                .update({
+                  google_drive_url: driveData.folder_url,
+                  google_drive_folder_id: driveData.folder_id,
+                })
+                .eq("id", projectId);
+              // Save subfolder mappings
+              if (driveData.subfolders?.length) {
+                const mappings = driveData.subfolders.map((sf: any) => ({
+                  project_id: projectId,
+                  organization_id: organizationId,
+                  category: sf.category,
+                  drive_folder_id: sf.folder_id,
+                }));
+                await supabase.from("project_drive_folders").insert(mappings);
+              }
+            } else {
+              console.warn("Drive folder creation failed:", res.error);
+              toast.warning("Project created, but Google Drive folder setup failed. You can retry later.");
+            }
+          }
+        }
+      } catch (driveErr) {
+        console.warn("Drive folder creation error:", driveErr);
+        toast.warning("Project created, but Google Drive folder setup failed.");
+      }
+
       await uploadStagedFiles(projectId);
       invalidateProjectQueries(queryClient);
       toast.success("Project created");

@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, ExternalLink } from "lucide-react";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -361,15 +361,24 @@ export function ProjectFormFields({
         </Select>
       </div>
 
-      {/* Google Drive URL */}
+      {/* Google Drive URL (auto-generated) */}
       <div className="space-y-2">
-        <Label className="text-muted-foreground">Google Drive Folder URL</Label>
-        <Input
-          value={formData.googleDriveUrl}
-          onChange={(e) => onChange("googleDriveUrl", e.target.value)}
-          placeholder="https://drive.google.com/..."
-          className="bg-background border-border text-foreground"
-        />
+        <Label className="text-muted-foreground">Google Drive Folder</Label>
+        {formData.googleDriveUrl ? (
+          <a
+            href={formData.googleDriveUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 text-sm text-primary hover:underline"
+          >
+            <ExternalLink className="w-4 h-4" />
+            Open in Google Drive
+          </a>
+        ) : (
+          <p className="text-sm text-muted-foreground italic">
+            Drive folder will be created automatically
+          </p>
+        )}
       </div>
 
       {/* Notes */}
