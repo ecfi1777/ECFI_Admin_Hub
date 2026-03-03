@@ -6,7 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { getUserFriendlyError } from "@/lib/errorHandler";
 import { invalidateScheduleQueries } from "@/lib/queryHelpers";
-import { Trash2, CalendarIcon, MoreVertical, Pencil, CalendarX2, Undo2, ArrowRight, Copy, StickyNote } from "lucide-react";
+import { Trash2, CalendarIcon, MoreVertical, Pencil, CalendarX2, Undo2, ArrowRight, Copy, StickyNote, Ban } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -51,6 +51,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { EditEntryDialog } from "./EditEntryDialog";
 import { CancelRescheduleDialog } from "./CancelRescheduleDialog";
+import { CancelDialog } from "./CancelDialog";
 import { ProjectDetailsSheet } from "@/components/projects/ProjectDetailsSheet";
 import {
   usePhases,
@@ -80,6 +81,7 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
   const [undoEntryId, setUndoEntryId] = useState<string | null>(null);
   const [copyEntry, setCopyEntry] = useState<ScheduleEntry | null>(null);
   const [copyDate, setCopyDate] = useState<Date | undefined>(undefined);
+  const [cancelEntry, setCancelEntry] = useState<ScheduleEntry | null>(null);
   
   const queryClient = useQueryClient();
 
@@ -408,9 +410,10 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
 
               // Cancelled ghost row
               if (isCancelled) {
-                const movedToLabel = entry.rescheduled_to_date
-                  ? format(new Date(entry.rescheduled_to_date + "T00:00:00"), "MMM d")
-                  : "another day";
+                const hasRescheduleDate = !!entry.rescheduled_to_date;
+                const movedToLabel = hasRescheduleDate
+                  ? format(new Date(entry.rescheduled_to_date! + "T00:00:00"), "MMM d")
+                  : null;
                 return (
                   <TableRow key={entry.id} className="border-border bg-destructive/5">
                     <TableCell className="text-xs py-2">
@@ -425,7 +428,7 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
                         ].filter(Boolean).join(" / ")}
                       </span>
                       <span className="ml-2 text-destructive text-xs font-medium no-underline">
-                        Cancelled — moved to {movedToLabel}
+                        {hasRescheduleDate ? `Cancelled — moved to ${movedToLabel}` : "Cancelled"}
                       </span>
                       {entry.cancellation_reason && (
                         <span className="ml-1 text-muted-foreground text-xs no-underline">
@@ -707,6 +710,16 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
                               <Copy className="w-4 h-4 mr-2" />
                               Copy to Another Day
                             </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setCancelEntry(entry);
+                              }}
+                              className="text-destructive"
+                            >
+                              <Ban className="w-4 h-4 mr-2" />
+                              Cancel Job
+                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                         {isRescheduledCopy && (
@@ -807,6 +820,13 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
         entry={cancelRescheduleEntry}
         open={!!cancelRescheduleEntry}
         onOpenChange={(open) => !open && setCancelRescheduleEntry(null)}
+      />
+
+      {/* Cancel Job Dialog */}
+      <CancelDialog
+        entry={cancelEntry}
+        open={!!cancelEntry}
+        onOpenChange={(open) => !open && setCancelEntry(null)}
       />
 
       {/* Move to Another Day Dialog */}
