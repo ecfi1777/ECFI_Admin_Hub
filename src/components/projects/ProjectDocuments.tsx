@@ -42,9 +42,10 @@ interface DriveFolderMapping {
 interface ProjectDocumentsProps {
   projectId: string;
   readOnly?: boolean;
+  onPickerOpenChange?: (isOpen: boolean) => void;
 }
 
-export function ProjectDocuments({ projectId, readOnly = false }: ProjectDocumentsProps) {
+export function ProjectDocuments({ projectId, readOnly = false, onPickerOpenChange }: ProjectDocumentsProps) {
   const [uploadingCategory, setUploadingCategory] = useState<string | null>(null);
   const [documentToDelete, setDocumentToDelete] = useState<ProjectDocument | null>(null);
   const [pickerReady, setPickerReady] = useState(false);
