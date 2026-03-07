@@ -1,12 +1,11 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { getUserFriendlyError } from "@/lib/errorHandler";
-import { File, X, ExternalLink, CheckCircle, Upload } from "lucide-react";
-
+import { File, X, ExternalLink, CheckCircle, Upload, Loader2 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useOrganization } from "@/hooks/useOrganization";
 
@@ -42,32 +41,15 @@ interface DriveFolderMapping {
 interface ProjectDocumentsProps {
   projectId: string;
   readOnly?: boolean;
-  onPickerOpenChange?: (isOpen: boolean) => void;
 }
 
-export function ProjectDocuments({ projectId, readOnly = false, onPickerOpenChange }: ProjectDocumentsProps) {
+export function ProjectDocuments({ projectId, readOnly = false }: ProjectDocumentsProps) {
   const [uploadingCategory, setUploadingCategory] = useState<string | null>(null);
   const [documentToDelete, setDocumentToDelete] = useState<ProjectDocument | null>(null);
-  const [pickerReady, setPickerReady] = useState(false);
+  const [dragOverCategory, setDragOverCategory] = useState<string | null>(null);
+  const dragCounters = useRef<Record<string, number>>({});
   const queryClient = useQueryClient();
   const { organizationId } = useOrganization();
-
-  // Load Google Picker API
-  useEffect(() => {
-    if (document.getElementById("gapi-script")) {
-      if (window.gapi) {
-        window.gapi.load("picker", () => setPickerReady(true));
-      }
-      return;
-    }
-    const script = document.createElement("script");
-    script.id = "gapi-script";
-    script.src = "https://apis.google.com/js/api.js";
-    script.onload = () => {
-      window.gapi.load("picker", () => setPickerReady(true));
-    };
-    document.body.appendChild(script);
-  }, []);
 
   const { data: documents = [] } = useQuery({
     queryKey: ["project-documents", projectId],
@@ -82,7 +64,6 @@ export function ProjectDocuments({ projectId, readOnly = false, onPickerOpenChan
     },
   });
 
-  // Fetch drive folder mappings
   const { data: driveFolders = [] } = useQuery({
     queryKey: ["project-drive-folders", projectId],
     queryFn: async () => {
@@ -98,35 +79,92 @@ export function ProjectDocuments({ projectId, readOnly = false, onPickerOpenChan
   const getDriveFolderForCategory = (category: string) =>
     driveFolders.find((df) => df.category === category);
 
-  const uploadMutation = useMutation({
-    mutationFn: async ({ file, category }: { file: File; category: string }) => {
+  const uploadToDrive = useCallback(
+    async (file: globalThis.File, category: string, driveFolderId: string) => {
       if (!organizationId) throw new Error("No organization found");
       if (file.size > MAX_FILE_SIZE) throw new Error("File exceeds 10 MB limit");
-      const fileExt = file.name.split(".").pop();
-      const filePath = `${projectId}/${category}/${Date.now()}.${fileExt}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from("project-documents")
-        .upload(filePath, file);
+      // Get access token
+      const { data: tokenData, error: tokenError } = await supabase.functions.invoke("get-picker-token");
+      if (tokenError || !tokenData?.access_token) {
+        throw new Error("Failed to get Google Drive access");
+      }
 
-      if (uploadError) throw uploadError;
+      // Build multipart body
+      const metadata = JSON.stringify({
+        name: file.name,
+        parents: [driveFolderId],
+      });
 
+      const boundary = "----LovableBoundary" + Date.now();
+      const delimiter = "\r\n--" + boundary + "\r\n";
+      const closeDelimiter = "\r\n--" + boundary + "--";
+
+      const metadataPart =
+        delimiter +
+        "Content-Type: application/json; charset=UTF-8\r\n\r\n" +
+        metadata;
+
+      const fileBytes = new Uint8Array(await file.arrayBuffer());
+
+      const encoder = new TextEncoder();
+      const metaBytes = encoder.encode(
+        metadataPart + delimiter + "Content-Type: " + (file.type || "application/octet-stream") + "\r\n\r\n"
+      );
+      const closeBytes = encoder.encode(closeDelimiter);
+
+      const body = new Uint8Array(metaBytes.length + fileBytes.length + closeBytes.length);
+      body.set(metaBytes, 0);
+      body.set(fileBytes, metaBytes.length);
+      body.set(closeBytes, metaBytes.length + fileBytes.length);
+
+      const res = await fetch(
+        "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,mimeType,size",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${tokenData.access_token}`,
+            "Content-Type": `multipart/related; boundary=${boundary}`,
+          },
+          body: body.buffer,
+        }
+      );
+
+      if (!res.ok) {
+        const errText = await res.text();
+        console.error("Drive upload failed:", errText);
+        throw new Error("Google Drive upload failed");
+      }
+
+      const driveFile = await res.json();
+      const driveFileUrl = `https://drive.google.com/file/d/${driveFile.id}/view`;
+
+      // Save to project_documents
       const { error: dbError } = await supabase.from("project_documents").insert({
         organization_id: organizationId,
         project_id: projectId,
         category,
-        file_name: file.name,
-        file_path: filePath,
+        file_name: driveFile.name || file.name,
+        file_path: driveFileUrl,
         file_size: file.size,
-        content_type: file.type,
-        storage_type: "supabase",
+        content_type: driveFile.mimeType || file.type || null,
+        storage_type: "google_drive",
+        drive_file_id: driveFile.id,
+        drive_file_url: driveFileUrl,
       });
 
       if (dbError) throw dbError;
     },
+    [organizationId, projectId]
+  );
+
+  const driveUploadMutation = useMutation({
+    mutationFn: async ({ file, category, driveFolderId }: { file: globalThis.File; category: string; driveFolderId: string }) => {
+      await uploadToDrive(file, category, driveFolderId);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["project-documents", projectId] });
-      toast.success("Document uploaded");
+      toast.success("Document uploaded to Google Drive");
       setUploadingCategory(null);
     },
     onError: (error: Error) => {
@@ -137,19 +175,16 @@ export function ProjectDocuments({ projectId, readOnly = false, onPickerOpenChan
 
   const deleteMutation = useMutation({
     mutationFn: async (doc: ProjectDocument) => {
-      // Only delete from storage if it's a Supabase file
       if (!doc.storage_type || doc.storage_type === "supabase") {
         const { error: storageError } = await supabase.storage
           .from("project-documents")
           .remove([doc.file_path]);
         if (storageError) throw storageError;
       }
-
       const { error: dbError } = await supabase
         .from("project_documents")
         .delete()
         .eq("id", doc.id);
-
       if (dbError) throw dbError;
     },
     onSuccess: () => {
@@ -170,91 +205,24 @@ export function ProjectDocuments({ projectId, readOnly = false, onPickerOpenChan
     }
   };
 
-  const handleFileSelect = useCallback(
-    (category: string, file: File) => {
+  const handleFileDrop = useCallback(
+    (category: string, files: FileList | null) => {
+      if (!files || files.length === 0) return;
+      const file = files[0];
       if (file.size > MAX_FILE_SIZE) {
         toast.error("File exceeds 10 MB limit");
         return;
       }
-      setUploadingCategory(category);
-      uploadMutation.mutate({ file, category });
-    },
-    [uploadMutation]
-  );
-
-  const openDrivePicker = async (category: string, driveFolderId: string) => {
-    if (!pickerReady) {
-      toast.error("Google Picker is still loading. Please try again.");
-      return;
-    }
-    try {
-      const { data, error } = await supabase.functions.invoke("get-picker-token");
-      if (error || !data?.access_token) {
-        toast.error("Failed to get Google Drive access");
+      const driveFolder = getDriveFolderForCategory(category);
+      if (!driveFolder) {
+        toast.error("Drive folder not ready for this category. Please try again later.");
         return;
       }
-
-      const view = new window.google.picker.DocsUploadView();
-      view.setParent(driveFolderId);
-
-      let pickerInstance: google.picker.Picker | null = null;
-
-      const disposePicker = () => {
-        if (pickerInstance) {
-          pickerInstance.dispose();
-          pickerInstance = null;
-        }
-        onPickerOpenChange?.(false);
-      };
-
-      onPickerOpenChange?.(true);
-
-      pickerInstance = new window.google.picker.PickerBuilder()
-        .addView(view)
-        .setOAuthToken(data.access_token)
-        .setDeveloperKey(data.api_key)
-        .setCallback(async (pickerData: google.picker.PickerCallbackData) => {
-          if (pickerData.action === "picked" && pickerData.docs?.length) {
-            for (const doc of pickerData.docs) {
-              if (doc.sizeBytes && doc.sizeBytes > MAX_FILE_SIZE) {
-                toast.error(`${doc.name} exceeds 10 MB limit`);
-                continue;
-              }
-              try {
-                const { error: dbError } = await supabase.from("project_documents").insert({
-                  organization_id: organizationId!,
-                  project_id: projectId,
-                  category,
-                  file_name: doc.name,
-                  file_path: doc.url,
-                  file_size: doc.sizeBytes || null,
-                  content_type: doc.mimeType || null,
-                  storage_type: "google_drive",
-                  drive_file_id: doc.id,
-                  drive_file_url: doc.url,
-                });
-                if (dbError) throw dbError;
-              } catch (err) {
-                toast.error(`Failed to save ${doc.name}`);
-              }
-            }
-            queryClient.invalidateQueries({ queryKey: ["project-documents", projectId] });
-            toast.success("Document(s) uploaded to Google Drive");
-            disposePicker();
-          } else if (pickerData.action === "cancel") {
-            disposePicker();
-          }
-        })
-        .setTitle(`Upload to ${DOCUMENT_CATEGORIES.find((c) => c.id === category)?.label}`)
-        .build();
-
-      pickerInstance.setVisible(true);
-    } catch (err) {
-      console.error("Picker error:", err);
-      toast.error("Failed to open Google Drive picker");
-      onPickerOpenChange?.(false);
-    }
-  };
+      setUploadingCategory(category);
+      driveUploadMutation.mutate({ file, category, driveFolderId: driveFolder.drive_folder_id });
+    },
+    [driveFolders, driveUploadMutation]
+  );
 
   const openDocument = async (doc: ProjectDocument) => {
     if (doc.storage_type === "google_drive" && doc.drive_file_url) {
@@ -283,6 +251,7 @@ export function ProjectDocuments({ projectId, readOnly = false, onPickerOpenChan
           const isUploading = uploadingCategory === cat.id;
           const hasDoc = categoryDocs.length > 0;
           const driveFolder = getDriveFolderForCategory(cat.id);
+          const isDragOver = dragOverCategory === cat.id;
 
           return (
             <div key={cat.id} className="space-y-2">
@@ -328,17 +297,66 @@ export function ProjectDocuments({ projectId, readOnly = false, onPickerOpenChan
                 </div>
               ))}
 
-              {!readOnly && driveFolder && pickerReady && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => openDrivePicker(cat.id, driveFolder.drive_folder_id)}
-                  className="text-xs"
+              {!readOnly && driveFolder && (
+                <div
+                  className={`relative flex items-center justify-center gap-2 rounded-md border-2 border-dashed px-3 py-2 transition-colors cursor-pointer ${
+                    isDragOver
+                      ? "border-accent bg-accent/10"
+                      : "border-border hover:border-muted-foreground/50"
+                  }`}
+                  onDragEnter={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dragCounters.current[cat.id] = (dragCounters.current[cat.id] || 0) + 1;
+                    setDragOverCategory(cat.id);
+                  }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                  onDragLeave={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dragCounters.current[cat.id] = (dragCounters.current[cat.id] || 0) - 1;
+                    if (dragCounters.current[cat.id] <= 0) {
+                      dragCounters.current[cat.id] = 0;
+                      setDragOverCategory(null);
+                    }
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dragCounters.current[cat.id] = 0;
+                    setDragOverCategory(null);
+                    if (!isUploading) {
+                      handleFileDrop(cat.id, e.dataTransfer.files);
+                    }
+                  }}
+                  onClick={() => {
+                    if (isUploading) return;
+                    const input = document.createElement("input");
+                    input.type = "file";
+                    input.onchange = () => handleFileDrop(cat.id, input.files);
+                    input.click();
+                  }}
                 >
-                  <Upload className="w-3 h-3 mr-1" />
-                  Upload to Drive
-                </Button>
+                  {isUploading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                      <span className="text-xs text-muted-foreground">Uploading…</span>
+                    </>
+                  ) : isDragOver ? (
+                    <>
+                      <Upload className="w-4 h-4 text-accent-foreground" />
+                      <span className="text-xs text-accent-foreground font-medium">Release to upload</span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-3 h-3 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">Drop file or click to upload</span>
+                    </>
+                  )}
+                </div>
               )}
             </div>
           );
