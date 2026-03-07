@@ -210,7 +210,7 @@ export function ProjectDocuments({ projectId, readOnly = false }: ProjectDocumen
         .setOAuthToken(data.access_token)
         .setDeveloperKey(data.api_key)
         .setCallback(async (pickerData: google.picker.PickerCallbackData) => {
-          if (pickerData.action === google.picker.Action.PICKED && pickerData.docs?.length) {
+          if (pickerData.action === "picked" && pickerData.docs?.length) {
             for (const doc of pickerData.docs) {
               if (doc.sizeBytes && doc.sizeBytes > MAX_FILE_SIZE) {
                 toast.error(`${doc.name} exceeds 10 MB limit`);
@@ -237,7 +237,7 @@ export function ProjectDocuments({ projectId, readOnly = false }: ProjectDocumen
             queryClient.invalidateQueries({ queryKey: ["project-documents", projectId] });
             toast.success("Document(s) uploaded to Google Drive");
             disposePicker();
-          } else if (pickerData.action === google.picker.Action.CANCEL) {
+          } else if (pickerData.action === "cancel") {
             disposePicker();
           }
         })
