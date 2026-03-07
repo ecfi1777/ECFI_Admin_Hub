@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { getUserFriendlyError } from "@/lib/errorHandler";
 import { File, X, ExternalLink, CheckCircle, Upload } from "lucide-react";
-import { FileDropZone } from "@/components/ui/file-drop-zone";
+
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useOrganization } from "@/hooks/useOrganization";
 
@@ -311,27 +311,17 @@ export function ProjectDocuments({ projectId, readOnly = false }: ProjectDocumen
                 </div>
               ))}
 
-              {!readOnly && (
-                <div className="flex gap-2">
-                  {driveFolder && pickerReady && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openDrivePicker(cat.id, driveFolder.drive_folder_id)}
-                      className="text-xs"
-                    >
-                      <Upload className="w-3 h-3 mr-1" />
-                      Upload to Drive
-                    </Button>
-                  )}
-                  <div className="flex-1">
-                    <FileDropZone
-                      onFileSelect={(file) => handleFileSelect(cat.id, file)}
-                      isUploading={isUploading}
-                    />
-                  </div>
-                </div>
+              {!readOnly && driveFolder && pickerReady && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => openDrivePicker(cat.id, driveFolder.drive_folder_id)}
+                  className="text-xs"
+                >
+                  <Upload className="w-3 h-3 mr-1" />
+                  Upload to Drive
+                </Button>
               )}
             </div>
           );
