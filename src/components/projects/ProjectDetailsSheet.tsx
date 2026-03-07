@@ -35,6 +35,7 @@ interface ProjectDetailsSheetProps {
   projectId: string | null;
   isOpen: boolean;
   onClose: () => void;
+  initialTab?: "history" | "documents";
 }
 
 const KANBAN_STATUSES = ["Upcoming", "Ready to Start", "In Progress", "Complete"];
