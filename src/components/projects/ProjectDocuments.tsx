@@ -19,7 +19,7 @@ const DOCUMENT_CATEGORIES = [
   { id: "additional_documents", label: "Additional Project Documents" },
 ];
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+
 
 interface ProjectDocument {
   id: string;
@@ -82,7 +82,7 @@ export function ProjectDocuments({ projectId, readOnly = false }: ProjectDocumen
   const uploadToDrive = useCallback(
     async (file: globalThis.File, category: string, driveFolderId: string) => {
       if (!organizationId) throw new Error("No organization found");
-      if (file.size > MAX_FILE_SIZE) throw new Error("File exceeds 10 MB limit");
+      
 
       // Get access token
       const { data: tokenData, error: tokenError } = await supabase.functions.invoke("get-picker-token");
@@ -209,10 +209,6 @@ export function ProjectDocuments({ projectId, readOnly = false }: ProjectDocumen
     (category: string, files: FileList | null) => {
       if (!files || files.length === 0) return;
       const file = files[0];
-      if (file.size > MAX_FILE_SIZE) {
-        toast.error("File exceeds 10 MB limit");
-        return;
-      }
       const driveFolder = getDriveFolderForCategory(category);
       if (!driveFolder) {
         toast.error("Drive folder not ready for this category. Please try again later.");
