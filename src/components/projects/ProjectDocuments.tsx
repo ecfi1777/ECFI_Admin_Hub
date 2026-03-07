@@ -384,9 +384,14 @@ export function ProjectDocuments({ projectId, readOnly = false }: ProjectDocumen
         open={!!documentToDelete}
         onOpenChange={(open) => !open && setDocumentToDelete(null)}
         title="Delete Document?"
-        description={`Are you sure you want to delete "${documentToDelete?.file_name}"? This action cannot be undone.`}
+        description={
+          documentToDelete?.storage_type === "google_drive"
+            ? `This will permanently delete "${documentToDelete?.file_name}" from both ECFI Hub and Google Drive. This cannot be undone.`
+            : `Are you sure you want to delete "${documentToDelete?.file_name}"? This action cannot be undone.`
+        }
         confirmLabel="Delete"
         onConfirm={handleDeleteConfirm}
+        isLoading={deleteMutation.isPending}
       />
     </Card>
   );
