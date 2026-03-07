@@ -198,7 +198,17 @@ export function ProjectDocuments({ projectId, readOnly = false }: ProjectDocumen
 
       let pickerInstance: google.picker.Picker | null = null;
 
+      // Lower the Sheet overlay so the Google Picker iframe can receive clicks
+      const sheetOverlays = document.querySelectorAll<HTMLElement>('[data-state="open"][role="dialog"], [data-radix-portal]');
+      sheetOverlays.forEach((el) => {
+        el.style.pointerEvents = 'none';
+      });
+
       const disposePicker = () => {
+        // Restore pointer-events on the Sheet overlay
+        sheetOverlays.forEach((el) => {
+          el.style.pointerEvents = '';
+        });
         if (pickerInstance) {
           pickerInstance.dispose();
           pickerInstance = null;
