@@ -175,7 +175,28 @@ export function ProjectDocuments({ projectId, readOnly = false }: ProjectDocumen
 
   const deleteMutation = useMutation({
     mutationFn: async (doc: ProjectDocument) => {
-      if (!doc.storage_type || doc.storage_type === "supabase") {
+      if (doc.storage_type === "google_drive" && doc.drive_file_id) {
+        try {
+          const { data: tokenData, error: tokenError } = await supabase.functions.invoke("get-picker-token");
+          if (tokenError || !tokenData?.access_token) {
+            throw new Error("Failed to get Drive access");
+          }
+          const res = await fetch(
+            `https://www.googleapis.com/drive/v3/files/${doc.drive_file_id}`,
+            {
+              method: "DELETE",
+              headers: { Authorization: `Bearer ${tokenData.access_token}` },
+            }
+          );
+          if (!res.ok && res.status !== 404) {
+            console.error("Drive delete failed:", res.status, await res.text());
+            toast.warning("File removed from ECFI Hub but could not be removed from Google Drive.");
+          }
+        } catch (driveErr) {
+          console.error("Drive delete error:", driveErr);
+          toast.warning("File removed from ECFI Hub but could not be removed from Google Drive.");
+        }
+      } else if (!doc.storage_type || doc.storage_type === "supabase") {
         const { error: storageError } = await supabase.storage
           .from("project-documents")
           .remove([doc.file_path]);
@@ -363,9 +384,14 @@ export function ProjectDocuments({ projectId, readOnly = false }: ProjectDocumen
         open={!!documentToDelete}
         onOpenChange={(open) => !open && setDocumentToDelete(null)}
         title="Delete Document?"
-        description={`Are you sure you want to delete "${documentToDelete?.file_name}"? This action cannot be undone.`}
+        description={
+          documentToDelete?.storage_type === "google_drive"
+            ? `This will permanently delete "${documentToDelete?.file_name}" from both ECFI Hub and Google Drive. This cannot be undone.`
+            : `Are you sure you want to delete "${documentToDelete?.file_name}"? This action cannot be undone.`
+        }
         confirmLabel="Delete"
         onConfirm={handleDeleteConfirm}
+        isLoading={deleteMutation.isPending}
       />
     </Card>
   );
