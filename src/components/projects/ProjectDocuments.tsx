@@ -42,9 +42,10 @@ interface DriveFolderMapping {
 interface ProjectDocumentsProps {
   projectId: string;
   readOnly?: boolean;
+  onPickerOpenChange?: (isOpen: boolean) => void;
 }
 
-export function ProjectDocuments({ projectId, readOnly = false }: ProjectDocumentsProps) {
+export function ProjectDocuments({ projectId, readOnly = false, onPickerOpenChange }: ProjectDocumentsProps) {
   const [uploadingCategory, setUploadingCategory] = useState<string | null>(null);
   const [documentToDelete, setDocumentToDelete] = useState<ProjectDocument | null>(null);
   const [pickerReady, setPickerReady] = useState(false);
@@ -198,22 +199,15 @@ export function ProjectDocuments({ projectId, readOnly = false }: ProjectDocumen
 
       let pickerInstance: google.picker.Picker | null = null;
 
-      // Lower the Sheet overlay so the Google Picker iframe can receive clicks
-      const sheetOverlays = document.querySelectorAll<HTMLElement>('[data-state="open"][role="dialog"], [data-radix-portal]');
-      sheetOverlays.forEach((el) => {
-        el.style.pointerEvents = 'none';
-      });
-
       const disposePicker = () => {
-        // Restore pointer-events on the Sheet overlay
-        sheetOverlays.forEach((el) => {
-          el.style.pointerEvents = '';
-        });
         if (pickerInstance) {
           pickerInstance.dispose();
           pickerInstance = null;
         }
+        onPickerOpenChange?.(false);
       };
+
+      onPickerOpenChange?.(true);
 
       pickerInstance = new window.google.picker.PickerBuilder()
         .addView(view)
@@ -258,6 +252,7 @@ export function ProjectDocuments({ projectId, readOnly = false }: ProjectDocumen
     } catch (err) {
       console.error("Picker error:", err);
       toast.error("Failed to open Google Drive picker");
+      onPickerOpenChange?.(false);
     }
   };
 
