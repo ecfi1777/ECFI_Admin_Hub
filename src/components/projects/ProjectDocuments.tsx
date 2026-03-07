@@ -196,12 +196,21 @@ export function ProjectDocuments({ projectId, readOnly = false }: ProjectDocumen
       const view = new window.google.picker.DocsUploadView();
       view.setParent(driveFolderId);
 
-      const picker = new window.google.picker.PickerBuilder()
+      let pickerInstance: google.picker.Picker | null = null;
+
+      const disposePicker = () => {
+        if (pickerInstance) {
+          pickerInstance.dispose();
+          pickerInstance = null;
+        }
+      };
+
+      pickerInstance = new window.google.picker.PickerBuilder()
         .addView(view)
         .setOAuthToken(data.access_token)
         .setDeveloperKey(data.api_key)
         .setCallback(async (pickerData: google.picker.PickerCallbackData) => {
-          if (pickerData.action === "picked" && pickerData.docs?.length) {
+          if (pickerData.action === google.picker.Action.PICKED && pickerData.docs?.length) {
             for (const doc of pickerData.docs) {
               if (doc.sizeBytes && doc.sizeBytes > MAX_FILE_SIZE) {
                 toast.error(`${doc.name} exceeds 10 MB limit`);
@@ -227,12 +236,15 @@ export function ProjectDocuments({ projectId, readOnly = false }: ProjectDocumen
             }
             queryClient.invalidateQueries({ queryKey: ["project-documents", projectId] });
             toast.success("Document(s) uploaded to Google Drive");
+            disposePicker();
+          } else if (pickerData.action === google.picker.Action.CANCEL) {
+            disposePicker();
           }
         })
         .setTitle(`Upload to ${DOCUMENT_CATEGORIES.find((c) => c.id === category)?.label}`)
         .build();
 
-      picker.setVisible(true);
+      pickerInstance.setVisible(true);
     } catch (err) {
       console.error("Picker error:", err);
       toast.error("Failed to open Google Drive picker");
