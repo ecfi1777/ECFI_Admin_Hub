@@ -44,6 +44,7 @@ export function ProjectDetailsSheet({
   projectId,
   isOpen,
   onClose,
+  initialTab = "history",
 }: ProjectDetailsSheetProps) {
   const [editProject, setEditProject] = useState<any>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -435,7 +436,7 @@ export function ProjectDetailsSheet({
                 )}
               </SheetHeader>
 
-              <Tabs defaultValue="history" className="mt-6">
+              <Tabs defaultValue={initialTab} key={projectId + initialTab} className="mt-6">
                 <TabsList className="bg-slate-700 border-slate-600">
                   <TabsTrigger
                     value="history"
