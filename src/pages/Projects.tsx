@@ -279,6 +279,7 @@ export default function Projects() {
 
   const handleRowClick = (projectId: string) => {
     setSelectedProjectId(projectId);
+    setDetailsInitialTab("history");
     setIsDetailsOpen(true);
   };
 
