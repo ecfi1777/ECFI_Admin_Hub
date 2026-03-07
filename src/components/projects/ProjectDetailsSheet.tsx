@@ -48,6 +48,7 @@ export function ProjectDetailsSheet({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
   const [showAddEntry, setShowAddEntry] = useState(false);
+  const [isDrivePickerOpen, setIsDrivePickerOpen] = useState(false);
 
   const { organizationId } = useOrganization();
   const { canManage, isOwner } = useUserRole();
@@ -227,7 +228,16 @@ export function ProjectDetailsSheet({
 
   return (
     <>
-      <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <Sheet
+        modal={!isDrivePickerOpen}
+        open={isOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setIsDrivePickerOpen(false);
+            onClose();
+          }
+        }}
+      >
         <SheetContent className="bg-slate-800 border-slate-700 w-full sm:max-w-2xl overflow-y-auto">
           {isLoading ? (
             <div className="text-slate-400 text-center py-12">Loading...</div>
@@ -445,7 +455,11 @@ export function ProjectDetailsSheet({
                   <ProjectScheduleHistory projectId={projectId} readOnly={!canManage || isDeleted} />
                 </TabsContent>
                 <TabsContent value="documents" className="mt-4">
-                  <ProjectDocuments projectId={projectId} readOnly={!canManage || isDeleted} />
+                  <ProjectDocuments
+                    projectId={projectId}
+                    readOnly={!canManage || isDeleted}
+                    onPickerOpenChange={setIsDrivePickerOpen}
+                  />
                 </TabsContent>
               </Tabs>
             </>
