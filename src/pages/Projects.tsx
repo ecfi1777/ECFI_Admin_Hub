@@ -76,6 +76,7 @@ export default function Projects() {
   
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [detailsInitialTab, setDetailsInitialTab] = useState<"history" | "documents">("history");
   const { organizationId } = useOrganization();
   const { canManage, isOwner } = useUserRole();
   const queryClient = useQueryClient();
@@ -307,6 +308,11 @@ export default function Projects() {
               builders={builders}
               locations={locations}
               statuses={statuses}
+              onAddDocuments={(projectId) => {
+                setSelectedProjectId(projectId);
+                setDetailsInitialTab("documents");
+                setIsDetailsOpen(true);
+              }}
             />
           )}
         </div>
@@ -567,7 +573,8 @@ export default function Projects() {
       <ProjectDetailsSheet
         projectId={selectedProjectId}
         isOpen={isDetailsOpen}
-        onClose={() => setIsDetailsOpen(false)}
+        onClose={() => { setIsDetailsOpen(false); setDetailsInitialTab("history"); }}
+        initialTab={detailsInitialTab}
       />
     </AppLayout>
   );
