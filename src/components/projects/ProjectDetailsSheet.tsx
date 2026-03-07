@@ -48,7 +48,7 @@ export function ProjectDetailsSheet({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
   const [showAddEntry, setShowAddEntry] = useState(false);
-  const [isDrivePickerOpen, setIsDrivePickerOpen] = useState(false);
+  
 
   const { organizationId } = useOrganization();
   const { canManage, isOwner } = useUserRole();
@@ -229,11 +229,9 @@ export function ProjectDetailsSheet({
   return (
     <>
       <Sheet
-        modal={!isDrivePickerOpen}
         open={isOpen}
         onOpenChange={(open) => {
           if (!open) {
-            setIsDrivePickerOpen(false);
             onClose();
           }
         }}
@@ -458,7 +456,6 @@ export function ProjectDetailsSheet({
                   <ProjectDocuments
                     projectId={projectId}
                     readOnly={!canManage || isDeleted}
-                    onPickerOpenChange={setIsDrivePickerOpen}
                   />
                 </TabsContent>
               </Tabs>
