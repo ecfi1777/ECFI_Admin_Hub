@@ -32,12 +32,8 @@ interface VendorEntry {
   inspection_amount: number | null;
 }
 
-interface LaborEntry {
-  pl_section: string;
-  entry_mode: string;
-  total_cost: number | null;
-  project_labor_employees?: { line_cost: number | null; hours: number; hourly_rate: number }[];
-}
+
+
 
 interface OtherCost {
   id: string;
@@ -152,22 +148,41 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
     enabled: !!projectId,
   });
 
-  // ── Labor entries ──
-  const { data: laborEntries = [] } = useQuery({
-    queryKey: ["pl-labor", projectId],
+  // ── Schedule entry hours for labor ──
+  const { data: scheduleEntries = [] } = useQuery({
+    queryKey: ["pl-schedule-hours", projectId],
     queryFn: async () => {
       if (!projectId) return [];
       const { data, error } = await supabase
-        .from("project_labor_entries")
+        .from("schedule_entries")
         .select(`
-          id, pl_section, entry_mode, total_cost,
-          project_labor_employees(line_cost, hours, hourly_rate)
+          id, crew_hours, crew_labor_cost_override, crew_id,
+          phases(pl_section),
+          crews(id, name)
         `)
-        .eq("project_id", projectId);
+        .eq("project_id", projectId)
+        .eq("deleted", false)
+        .not("crew_hours", "is", null);
       if (error) throw error;
-      return (data || []) as any as LaborEntry[];
+      return data || [];
     },
     enabled: !!projectId,
+  });
+
+  const { data: crewMemberRates = [] } = useQuery({
+    queryKey: ["crew-member-rates", organizationId],
+    queryFn: async () => {
+      if (!organizationId) return [];
+      const { data, error } = await supabase
+        .from("crew_members")
+        .select("crew_id, hourly_rate")
+        .eq("organization_id", organizationId)
+        .eq("is_active", true)
+        .not("hourly_rate", "is", null);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!organizationId,
   });
 
   // ── Other costs ──
@@ -216,18 +231,36 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
     };
   };
 
-  // ── Aggregate labor per section ──
+  // ── Aggregate labor per section from schedule entry hours ──
+  const getCrewRate = (crewId: string | null) => {
+    if (!crewId) return 0;
+    return crewMemberRates
+      .filter((m: any) => m.crew_id === crewId)
+      .reduce((sum: number, m: any) => sum + (m.hourly_rate ?? 0), 0);
+  };
+
   const aggregateLabor = (section: Section) => {
-    return laborEntries
-      .filter((e) => e.pl_section === section)
-      .reduce((sum, e) => {
-        if (e.entry_mode === "by_employee" && e.project_labor_employees?.length) {
-          return sum + e.project_labor_employees.reduce(
-            (s, emp) => s + (emp.line_cost ?? emp.hours * emp.hourly_rate), 0
-          );
+    return scheduleEntries
+      .filter((e: any) => {
+        const s = e.phases?.pl_section;
+        return s === section || s === "both";
+      })
+      .reduce((sum: number, e: any) => {
+        if (e.crew_labor_cost_override != null) {
+          return sum + e.crew_labor_cost_override;
         }
-        return sum + (e.total_cost ?? 0);
+        return sum + (e.crew_hours ?? 0) * getCrewRate(e.crew_id);
       }, 0);
+  };
+
+  const getLaborHoursSummary = (section: string) => {
+    const sectionEntries = scheduleEntries.filter((e: any) => {
+      const s = e.phases?.pl_section;
+      return s === section || s === "both";
+    });
+    const totalHours = sectionEntries.reduce((s: number, e: any) => s + (e.crew_hours ?? 0), 0);
+    const count = sectionEntries.length;
+    return { totalHours, count };
   };
 
   const buildSection = (section: Section) => {
@@ -269,6 +302,11 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
       {/* Section Cards */}
       {(["footings_walls", "slab"] as Section[]).map((section) => {
         const data = section === "footings_walls" ? fw : slab;
+        const { totalHours, count } = getLaborHoursSummary(section);
+        const overrideEntry = scheduleEntries.find((e: any) => {
+          const s = e.phases?.pl_section;
+          return (s === section || s === "both") && e.crew_labor_cost_override != null;
+        });
         return (
           <SectionCard
             key={section}
@@ -278,6 +316,11 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
             organizationId={organizationId}
             readOnly={readOnly}
             queryClient={queryClient}
+            laborHours={totalHours}
+            laborEntryCount={count}
+            hasOverride={overrideEntry != null}
+            overrideValue={overrideEntry?.crew_labor_cost_override ?? null}
+            scheduleEntries={scheduleEntries}
           />
         );
       })}
@@ -319,6 +362,20 @@ interface SectionData {
   rev: RevenueRow | undefined;
 }
 
+interface SectionCardProps {
+  section: Section;
+  data: SectionData;
+  projectId: string | null;
+  organizationId: string | null;
+  readOnly: boolean;
+  queryClient: ReturnType<typeof useQueryClient>;
+  laborHours: number;
+  laborEntryCount: number;
+  hasOverride: boolean;
+  overrideValue: number | null;
+  scheduleEntries: any[];
+}
+
 function SectionCard({
   section,
   data,
@@ -326,14 +383,12 @@ function SectionCard({
   organizationId,
   readOnly,
   queryClient,
-}: {
-  section: Section;
-  data: SectionData;
-  projectId: string | null;
-  organizationId: string | null;
-  readOnly: boolean;
-  queryClient: ReturnType<typeof useQueryClient>;
-}) {
+  laborHours,
+  laborEntryCount,
+  hasOverride,
+  overrideValue,
+  scheduleEntries,
+}: SectionCardProps) {
   const [isOpen, setIsOpen] = useState(true);
 
   return (
@@ -363,7 +418,90 @@ function SectionCard({
               {data.vendor.stone > 0 && <CostLine label="Stone / Gravel" amount={data.vendor.stone} />}
               {data.vendor.pump > 0 && <CostLine label="Pump" amount={data.vendor.pump} />}
               {data.vendor.inspection > 0 && <CostLine label="Inspection" amount={data.vendor.inspection} />}
-              <CostLine label="Labor" amount={data.labor} />
+              {/* Labor */}
+              <div className="flex items-start justify-between py-1 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Labor</span>
+                  {laborEntryCount > 0 && (
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      {laborHours.toFixed(1)} hrs across {laborEntryCount} entries
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-col items-end gap-1">
+                  <div className="flex items-center gap-2">
+                    {hasOverride && (
+                      <span className="text-xs text-muted-foreground line-through">
+                        {fmtTotal(data.labor)}
+                      </span>
+                    )}
+                    {readOnly ? (
+                      <span className={data.labor > 0 ? "text-foreground" : "text-muted-foreground"}>
+                        {fmt(hasOverride ? (overrideValue ?? 0) : data.labor)}
+                      </span>
+                    ) : (
+                      <div className="relative w-32">
+                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          defaultValue={hasOverride ? (overrideValue ?? 0) : data.labor.toFixed(2)}
+                          key={`${section}-${hasOverride}-${overrideValue}-${data.labor}`}
+                          onBlur={async (e) => {
+                            const val = parseFloat(e.target.value);
+                            if (isNaN(val)) return;
+                            const sectionIds = scheduleEntries
+                              .filter((se: any) => {
+                                const s = se.phases?.pl_section;
+                                return s === section || s === "both";
+                              })
+                              .map((se: any) => se.id);
+                            if (sectionIds.length > 0) {
+                              await supabase
+                                .from("schedule_entries")
+                                .update({ crew_labor_cost_override: null } as any)
+                                .in("id", sectionIds);
+                              await supabase
+                                .from("schedule_entries")
+                                .update({ crew_labor_cost_override: val } as any)
+                                .eq("id", sectionIds[0]);
+                              queryClient.invalidateQueries({
+                                queryKey: ["pl-schedule-hours", projectId],
+                              });
+                            }
+                          }}
+                          className="h-7 text-sm pl-5 pr-2 text-right w-32 border border-input rounded-md bg-background"
+                        />
+                      </div>
+                    )}
+                  </div>
+                  {hasOverride && !readOnly && (
+                    <button
+                      className="text-xs text-muted-foreground hover:text-foreground underline"
+                      onClick={async () => {
+                        const sectionIds = scheduleEntries
+                          .filter((se: any) => {
+                            const s = se.phases?.pl_section;
+                            return s === section || s === "both";
+                          })
+                          .map((se: any) => se.id);
+                        if (sectionIds.length > 0) {
+                          await supabase
+                            .from("schedule_entries")
+                            .update({ crew_labor_cost_override: null } as any)
+                            .in("id", sectionIds);
+                          queryClient.invalidateQueries({
+                            queryKey: ["pl-schedule-hours", projectId],
+                          });
+                        }
+                      }}
+                    >
+                      Reset to calculated
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* Other Costs */}
