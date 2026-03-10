@@ -60,6 +60,7 @@ interface ReferenceItem {
   display_order: number;
   is_active: boolean;
   pl_section?: string | null;
+  phase_type?: string | null;
 }
 
 export function ReferenceDataTable({ tableName, displayName, hasCode = false, hasPlSection = false }: ReferenceDataTableProps) {
