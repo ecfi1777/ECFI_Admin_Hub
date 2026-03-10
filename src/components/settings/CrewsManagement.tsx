@@ -531,10 +531,12 @@ export function CrewsManagement() {
       setEditingMember(member);
       setMemberName(member.name);
       setMemberCrewId(member.crew_id);
+      setMemberRate(member.hourly_rate != null ? String(member.hourly_rate) : "");
     } else {
       setEditingMember(null);
       setMemberName("");
       setMemberCrewId(crewId || null);
+      setMemberRate("");
     }
     setMemberDialogOpen(true);
   };
