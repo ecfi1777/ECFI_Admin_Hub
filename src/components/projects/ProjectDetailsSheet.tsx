@@ -21,6 +21,7 @@ import { Pencil, ExternalLink, MapPin, FileText, Building, Home, Download, Archi
 import { AddEntryDialog, type PrefilledProject } from "@/components/schedule/AddEntryDialog";
 import { ProjectScheduleHistory } from "./ProjectScheduleHistory";
 import { ProjectDocuments } from "./ProjectDocuments";
+import { ProjectLaborTab } from "./ProjectLaborTab";
 import { EditProjectDialog } from "./EditProjectDialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { generateProjectPdf } from "@/lib/generateProjectPdf";
