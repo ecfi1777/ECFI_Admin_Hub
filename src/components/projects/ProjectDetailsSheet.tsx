@@ -459,6 +459,12 @@ export function ProjectDetailsSheet({
                   >
                     P&L
                   </TabsTrigger>
+                  <TabsTrigger
+                    value="commission"
+                    className="data-[state=active]:bg-slate-600 text-slate-300"
+                  >
+                    Commission
+                  </TabsTrigger>
                 </TabsList>
                 <TabsContent value="history" className="mt-4">
                   <ProjectScheduleHistory projectId={projectId} readOnly={!canManage || isDeleted} />
@@ -471,6 +477,12 @@ export function ProjectDetailsSheet({
                 </TabsContent>
                 <TabsContent value="pl" className="mt-4">
                   <ProjectPLTab
+                    projectId={projectId}
+                    readOnly={!canManage || isDeleted}
+                  />
+                </TabsContent>
+                <TabsContent value="commission" className="mt-4">
+                  <ProjectCommissionTab
                     projectId={projectId}
                     readOnly={!canManage || isDeleted}
                   />
