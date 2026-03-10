@@ -331,10 +331,21 @@ function AddLaborDialog({
   const handleModeChange = (mode: string) => {
     setEntryMode(mode);
     if (mode === "by_employee") {
-      // Will populate when crewEmployees loads
       setEmpRows([]);
+      setRateWasAutoFilled(false);
     }
   };
+
+  // Auto-fill rate for crew_total mode
+  useEffect(() => {
+    if (entryMode === "crew_total" && crewEmployees.length > 0 && crewId) {
+      const summedRate = crewEmployees.reduce((sum, emp) => sum + (emp.hourly_rate ?? 0), 0);
+      if (summedRate > 0) {
+        setTotalRate(summedRate.toFixed(2));
+        setRateWasAutoFilled(true);
+      }
+    }
+  }, [crewId, crewEmployees, entryMode]);
 
   // Load employee rows when crewEmployees data arrives
   const prevCrewRef = useState({ crewId: "", loaded: false });
