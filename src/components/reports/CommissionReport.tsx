@@ -608,6 +608,7 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
                         value={r.ftgTotal}
                         onSave={(v) => handleSave(r.projectId, "ftg_total", v, r.crewId, r.ftgEntryId)}
                         prefix=""
+                        decimals={1}
                       />
                     </td>
                     <td className="px-2 py-1.5 whitespace-nowrap">{fmtDate(r.wallDate)}</td>
