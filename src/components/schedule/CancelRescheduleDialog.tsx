@@ -82,6 +82,9 @@ export function CancelRescheduleDialog({ entry, open, onOpenChange, onReschedule
     onSuccess: () => {
       invalidateScheduleQueries(queryClient);
       toast.success("Entry cancelled and rescheduled");
+      if (onRescheduled && newDate) {
+        onRescheduled(format(newDate, "yyyy-MM-dd"));
+      }
       handleClose();
     },
     onError: (error: Error) => {

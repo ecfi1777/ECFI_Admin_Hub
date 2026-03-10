@@ -181,7 +181,7 @@ export const CalendarMonthView = memo(function CalendarMonthView({
                     <button
                       onClick={() => onDayClick(day)}
                       className={`hover:bg-muted/50 transition-colors rounded-full ${
-                        isCurrentDay ? "bg-primary/10" : ""
+                        isCurrentDay ? "bg-primary/20 ring-2 ring-primary ring-inset font-bold" : ""
                       }`}
                     >
                       <span

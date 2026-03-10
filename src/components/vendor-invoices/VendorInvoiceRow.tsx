@@ -276,14 +276,17 @@ export function VendorInvoiceRow({
       {showAmountCol && (
         <TableCell>
           {canEditAmount ? (
-            <Input
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="$"
-              className="h-8 w-24"
-              step="0.01"
-            />
+            <div className="relative flex items-center">
+              <span className="absolute left-2 text-muted-foreground text-sm">$</span>
+              <Input
+                type="number"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="0.00"
+                className="h-8 w-28 pl-5"
+                step="0.01"
+              />
+            </div>
           ) : (
             <span className="text-muted-foreground">-</span>
           )}

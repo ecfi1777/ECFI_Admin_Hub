@@ -565,7 +565,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
                       </div>
                     )}
                   </TableCell>
-                  <TableCell className="text-foreground text-xs py-2">
+                  <TableCell className="text-foreground text-xs py-2 text-center">
                     <button
                       onClick={() => {
                         if (entry.project_id) {
@@ -573,7 +573,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
                           setIsProjectSheetOpen(true);
                         }
                       }}
-                      className={`text-left ${entry.project_id ? "hover:underline hover:text-primary cursor-pointer" : ""}`}
+                      className={`text-center ${entry.project_id ? "hover:underline hover:text-primary cursor-pointer" : ""}`}
                       disabled={!entry.project_id}
                     >
                       {entry.projects?.builders?.code || entry.projects?.builders?.name || "-"}
@@ -593,7 +593,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
                       {entry.projects?.locations?.name || "-"}
                     </button>
                   </TableCell>
-                  <TableCell className="text-xs py-2">
+                  <TableCell className="text-xs py-2 text-center">
                     <button
                       onClick={() => {
                         if (entry.project_id) {
@@ -601,13 +601,13 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
                           setIsProjectSheetOpen(true);
                         }
                       }}
-                      className={`text-left text-primary font-medium ${entry.project_id ? "hover:underline cursor-pointer" : ""}`}
+                      className={`text-center text-primary font-medium ${entry.project_id ? "hover:underline cursor-pointer" : ""}`}
                       disabled={!entry.project_id}
                     >
                       {entry.projects?.lot_number || "-"}
                     </button>
                   </TableCell>
-                  <TableCell className="py-2">
+                  <TableCell className="py-2 text-center">
                     {renderSelectCell(
                       entry,
                       "phase_id",
@@ -616,7 +616,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
                       entry.phases?.name || "-"
                     )}
                   </TableCell>
-                  <TableCell className="py-2">
+                  <TableCell className="py-2 text-center">
                     {renderSelectCellWithQuickEdit(
                       entry,
                       "pump_vendor_id",
@@ -626,7 +626,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
                       "pump"
                     )}
                   </TableCell>
-                  <TableCell className="py-2">
+                  <TableCell className="py-2 text-center">
                     {renderSelectCellWithQuickEdit(
                       entry,
                       "inspection_type_id",
@@ -636,7 +636,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
                       "inspection"
                     )}
                   </TableCell>
-                  <TableCell className="py-2">
+                  <TableCell className="py-2 text-center">
                     {renderSelectCellWithQuickEdit(
                       entry,
                       "inspector_id",
@@ -646,7 +646,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
                       "inspection"
                     )}
                   </TableCell>
-                  <TableCell className="py-2">
+                  <TableCell className="py-2 text-center">
                     {isPrepSlabs(entry)
                       ? renderSelectCellWithQuickEdit(
                           entry,
@@ -665,7 +665,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
                           "concrete"
                         )}
                   </TableCell>
-                  <TableCell className="py-2">
+                  <TableCell className="py-2 text-center">
                     {renderEditableCell(
                       entry,
                       "qty_ordered",
