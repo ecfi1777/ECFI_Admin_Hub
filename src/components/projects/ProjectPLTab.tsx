@@ -321,6 +321,7 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
             hasOverride={overrideEntry != null}
             overrideValue={overrideEntry?.crew_labor_cost_override ?? null}
             scheduleEntries={scheduleEntries}
+            crewMemberRates={crewMemberRates}
           />
         );
       })}
