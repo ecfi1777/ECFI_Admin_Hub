@@ -589,9 +589,21 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
                     <td className="px-2 py-1.5 whitespace-nowrap">{r.subdivision}</td>
                     <td className="px-2 py-1.5 whitespace-nowrap">{r.lotNumber}</td>
                     <td className="px-2 py-1.5 whitespace-nowrap">{fmtDate(r.ftgDate)}</td>
-                    <td className="px-2 py-1.5 text-right whitespace-nowrap">{fmtYards(r.ftgTotal)}</td>
+                    <td className="px-2 py-1.5 text-right whitespace-nowrap">
+                      <EditableCell
+                        value={r.ftgTotal}
+                        onSave={(v) => handleSave(r.projectId, "ftg_total", v, r.crewId, r.ftgEntryId)}
+                        prefix=""
+                      />
+                    </td>
                     <td className="px-2 py-1.5 whitespace-nowrap">{fmtDate(r.wallDate)}</td>
-                    <td className="px-2 py-1.5 text-right whitespace-nowrap">{fmtYards(r.wallTotal)}</td>
+                    <td className="px-2 py-1.5 text-right whitespace-nowrap">
+                      <EditableCell
+                        value={r.wallTotal}
+                        onSave={(v) => handleSave(r.projectId, "wall_total", v, r.crewId, r.wallEntryId)}
+                        prefix=""
+                      />
+                    </td>
                     <td className="px-2 py-1.5 text-right whitespace-nowrap">
                       <EditableCell
                         value={r.baseHouse}
