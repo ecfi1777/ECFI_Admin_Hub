@@ -65,6 +65,7 @@ export function useEntryForm(options: UseEntryFormOptions = {}) {
       inspection_amount: entry.inspection_amount?.toString() || "",
       inspection_notes: (entry as any).inspection_notes || "",
       crew_yards_poured: (entry as any).crew_yards_poured?.toString() || "",
+      crew_hours: (entry as any).crew_hours?.toString() || "",
       crew_notes: (entry as any).crew_notes || "",
       to_be_invoiced: entry.to_be_invoiced,
       did_not_work: (entry as any).did_not_work || false,
