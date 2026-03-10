@@ -1,0 +1,678 @@
+import { useState, useEffect, useCallback } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
+import { getUserFriendlyError } from "@/lib/errorHandler";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { Plus, Trash2, ChevronDown, ChevronRight, AlertTriangle, DollarSign, Check } from "lucide-react";
+import { useOrganization } from "@/hooks/useOrganization";
+import { useNavigate } from "react-router-dom";
+import { cn } from "@/lib/utils";
+
+// ────────────────────────────────────────────────────────────────
+// Types
+// ────────────────────────────────────────────────────────────────
+
+interface ProjectPLTabProps {
+  projectId: string | null;
+  readOnly?: boolean;
+}
+
+interface VendorEntry {
+  pl_section: string | null;
+  ready_mix_invoice_amount: number | null;
+  stone_invoice_amount: number | null;
+  pump_invoice_amount: number | null;
+  inspection_amount: number | null;
+}
+
+interface LaborEntry {
+  pl_section: string;
+  entry_mode: string;
+  total_cost: number | null;
+  project_labor_employees?: { line_cost: number | null; hours: number; hourly_rate: number }[];
+}
+
+interface OtherCost {
+  id: string;
+  pl_section: string;
+  description: string;
+  amount: number;
+  display_order: number;
+}
+
+interface RevenueRow {
+  id: string;
+  section: string;
+  sales_price: number | null;
+  notes: string | null;
+}
+
+type Section = "footings_walls" | "slab";
+
+const SECTION_LABELS: Record<Section, string> = {
+  footings_walls: "Footings & Walls",
+  slab: "Slab",
+};
+
+// ────────────────────────────────────────────────────────────────
+// Helpers
+// ────────────────────────────────────────────────────────────────
+
+const fmt = (n: number | null | undefined): string =>
+  n != null && n !== 0
+    ? `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+    : "—";
+
+const fmtTotal = (n: number): string =>
+  `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+const pct = (profit: number, revenue: number): string =>
+  revenue > 0 ? `${((profit / revenue) * 100).toFixed(1)}%` : "—";
+
+const profitColor = (profit: number | null, hasRevenue: boolean): string => {
+  if (!hasRevenue) return "text-muted-foreground";
+  if (profit == null) return "text-muted-foreground";
+  return profit >= 0 ? "text-green-500" : "text-destructive";
+};
+
+// ────────────────────────────────────────────────────────────────
+// Component
+// ────────────────────────────────────────────────────────────────
+
+export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps) {
+  const { organizationId } = useOrganization();
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+
+  // ── Vendor costs from schedule_entries via phases.pl_section ──
+  const { data: vendorEntries = [] } = useQuery({
+    queryKey: ["pl-vendor-costs", projectId],
+    queryFn: async () => {
+      if (!projectId) return [];
+      const { data, error } = await supabase
+        .from("schedule_entries")
+        .select(`
+          ready_mix_invoice_amount,
+          stone_invoice_amount,
+          pump_invoice_amount,
+          inspection_amount,
+          phases(pl_section)
+        `)
+        .eq("project_id", projectId)
+        .eq("deleted", false);
+      if (error) throw error;
+      return (data || []).map((d: any) => ({
+        pl_section: d.phases?.pl_section ?? null,
+        ready_mix_invoice_amount: d.ready_mix_invoice_amount,
+        stone_invoice_amount: d.stone_invoice_amount,
+        pump_invoice_amount: d.pump_invoice_amount,
+        inspection_amount: d.inspection_amount,
+      })) as VendorEntry[];
+    },
+    enabled: !!projectId,
+  });
+
+  // Also fetch entries with no phase or phase with null pl_section for warning
+  const { data: uncategorizedEntries = [] } = useQuery({
+    queryKey: ["pl-uncategorized", projectId],
+    queryFn: async () => {
+      if (!projectId) return [];
+      // Entries with vendor amounts but phase has no pl_section or no phase
+      const { data, error } = await supabase
+        .from("schedule_entries")
+        .select(`
+          id,
+          ready_mix_invoice_amount,
+          stone_invoice_amount,
+          pump_invoice_amount,
+          inspection_amount,
+          phase_id,
+          phases(pl_section)
+        `)
+        .eq("project_id", projectId)
+        .eq("deleted", false);
+      if (error) throw error;
+      return (data || []).filter((e: any) => {
+        const hasAmount =
+          (e.ready_mix_invoice_amount && e.ready_mix_invoice_amount > 0) ||
+          (e.stone_invoice_amount && e.stone_invoice_amount > 0) ||
+          (e.pump_invoice_amount && e.pump_invoice_amount > 0) ||
+          (e.inspection_amount && e.inspection_amount > 0);
+        const noSection = !e.phases?.pl_section;
+        return hasAmount && noSection;
+      });
+    },
+    enabled: !!projectId,
+  });
+
+  // ── Labor entries ──
+  const { data: laborEntries = [] } = useQuery({
+    queryKey: ["pl-labor", projectId],
+    queryFn: async () => {
+      if (!projectId) return [];
+      const { data, error } = await supabase
+        .from("project_labor_entries")
+        .select(`
+          id, pl_section, entry_mode, total_cost,
+          project_labor_employees(line_cost, hours, hourly_rate)
+        `)
+        .eq("project_id", projectId);
+      if (error) throw error;
+      return (data || []) as any as LaborEntry[];
+    },
+    enabled: !!projectId,
+  });
+
+  // ── Other costs ──
+  const { data: otherCosts = [] } = useQuery({
+    queryKey: ["pl-other-costs", projectId],
+    queryFn: async () => {
+      if (!projectId) return [];
+      const { data, error } = await supabase
+        .from("project_other_costs")
+        .select("*")
+        .eq("project_id", projectId)
+        .order("display_order")
+        .order("created_at");
+      if (error) throw error;
+      return data as OtherCost[];
+    },
+    enabled: !!projectId,
+  });
+
+  // ── Revenue ──
+  const { data: revenueRows = [] } = useQuery({
+    queryKey: ["pl-revenue", projectId],
+    queryFn: async () => {
+      if (!projectId) return [];
+      const { data, error } = await supabase
+        .from("project_pl_revenue")
+        .select("*")
+        .eq("project_id", projectId);
+      if (error) throw error;
+      return data as RevenueRow[];
+    },
+    enabled: !!projectId,
+  });
+
+  // ── Aggregate vendor costs per section ──
+  const aggregateVendor = (section: Section) => {
+    const matching = vendorEntries.filter((e) => {
+      if (!e.pl_section) return false;
+      return e.pl_section === section || e.pl_section === "both";
+    });
+    return {
+      concrete: matching.reduce((s, e) => s + (e.ready_mix_invoice_amount || 0), 0),
+      stone: matching.reduce((s, e) => s + (e.stone_invoice_amount || 0), 0),
+      pump: matching.reduce((s, e) => s + (e.pump_invoice_amount || 0), 0),
+      inspection: matching.reduce((s, e) => s + (e.inspection_amount || 0), 0),
+    };
+  };
+
+  // ── Aggregate labor per section ──
+  const aggregateLabor = (section: Section) => {
+    return laborEntries
+      .filter((e) => e.pl_section === section)
+      .reduce((sum, e) => {
+        if (e.entry_mode === "by_employee" && e.project_labor_employees?.length) {
+          return sum + e.project_labor_employees.reduce(
+            (s, emp) => s + (emp.line_cost ?? emp.hours * emp.hourly_rate), 0
+          );
+        }
+        return sum + (e.total_cost ?? 0);
+      }, 0);
+  };
+
+  const buildSection = (section: Section) => {
+    const vendor = aggregateVendor(section);
+    const labor = aggregateLabor(section);
+    const sectionOther = otherCosts.filter((c) => c.pl_section === section);
+    const otherTotal = sectionOther.reduce((s, c) => s + (c.amount || 0), 0);
+    const totalCosts = vendor.concrete + vendor.stone + vendor.pump + vendor.inspection + labor + otherTotal;
+    const rev = revenueRows.find((r) => r.section === section);
+    const salesPrice = rev?.sales_price ?? null;
+    const grossProfit = salesPrice != null ? salesPrice - totalCosts : null;
+    return { vendor, labor, sectionOther, otherTotal, totalCosts, salesPrice, grossProfit, rev };
+  };
+
+  const fw = buildSection("footings_walls");
+  const slab = buildSection("slab");
+
+  const combinedSales = (fw.salesPrice ?? 0) + (slab.salesPrice ?? 0);
+  const combinedCosts = fw.totalCosts + slab.totalCosts;
+  const combinedProfit = combinedSales - combinedCosts;
+  const hasCombinedRevenue = (fw.salesPrice ?? 0) > 0 || (slab.salesPrice ?? 0) > 0;
+
+  return (
+    <div className="space-y-4">
+      {/* Warning banner */}
+      {uncategorizedEntries.length > 0 && (
+        <button
+          onClick={() => navigate("/settings")}
+          className="w-full flex items-center gap-2 px-3 py-2 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-yellow-600 dark:text-yellow-400 text-sm text-left hover:bg-yellow-500/20 transition-colors"
+        >
+          <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+          <span>
+            ⚠ Some costs could not be categorized because their phases have no P&L section assigned.
+            Go to Settings → Phases to fix this.
+          </span>
+        </button>
+      )}
+
+      {/* Section Cards */}
+      {(["footings_walls", "slab"] as Section[]).map((section) => {
+        const data = section === "footings_walls" ? fw : slab;
+        return (
+          <SectionCard
+            key={section}
+            section={section}
+            data={data}
+            projectId={projectId}
+            organizationId={organizationId}
+            readOnly={readOnly}
+            queryClient={queryClient}
+          />
+        );
+      })}
+
+      {/* Overall Totals */}
+      <div className="bg-card border border-border rounded-lg p-4 space-y-2">
+        <h3 className="font-semibold text-foreground text-sm">Overall Totals</h3>
+        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+          <span className="text-muted-foreground">Combined Sales Price</span>
+          <span className="text-right font-medium text-foreground">{hasCombinedRevenue ? fmtTotal(combinedSales) : "—"}</span>
+          <span className="text-muted-foreground">Combined Total Costs</span>
+          <span className="text-right font-medium text-foreground">{fmtTotal(combinedCosts)}</span>
+          <span className="text-muted-foreground">Combined Gross Profit</span>
+          <span className={cn("text-right font-bold", profitColor(combinedProfit, hasCombinedRevenue))}>
+            {hasCombinedRevenue ? fmtTotal(combinedProfit) : "—"}
+          </span>
+          <span className="text-muted-foreground">Margin</span>
+          <span className={cn("text-right font-bold", profitColor(combinedProfit, hasCombinedRevenue))}>
+            {pct(combinedProfit, combinedSales)}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────
+// Section Card
+// ────────────────────────────────────────────────────────────────
+
+interface SectionData {
+  vendor: { concrete: number; stone: number; pump: number; inspection: number };
+  labor: number;
+  sectionOther: OtherCost[];
+  otherTotal: number;
+  totalCosts: number;
+  salesPrice: number | null;
+  grossProfit: number | null;
+  rev: RevenueRow | undefined;
+}
+
+function SectionCard({
+  section,
+  data,
+  projectId,
+  organizationId,
+  readOnly,
+  queryClient,
+}: {
+  section: Section;
+  data: SectionData;
+  projectId: string | null;
+  organizationId: string | null;
+  readOnly: boolean;
+  queryClient: ReturnType<typeof useQueryClient>;
+}) {
+  const [isOpen, setIsOpen] = useState(true);
+
+  return (
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+      <div className="bg-card border border-border rounded-lg overflow-hidden">
+        <CollapsibleTrigger className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/50">
+          <h3 className="font-semibold text-foreground text-sm">{SECTION_LABELS[section]}</h3>
+          {isOpen ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="px-4 pb-4 space-y-3">
+            {/* Revenue */}
+            <SalesPriceRow
+              section={section}
+              projectId={projectId}
+              organizationId={organizationId}
+              initialValue={data.salesPrice}
+              revenueId={data.rev?.id}
+              readOnly={readOnly}
+              queryClient={queryClient}
+            />
+
+            {/* Vendor Costs */}
+            <div className="space-y-1">
+              <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Costs</h4>
+              <CostLine label="Concrete" amount={data.vendor.concrete} />
+              {data.vendor.stone > 0 && <CostLine label="Stone / Gravel" amount={data.vendor.stone} />}
+              {data.vendor.pump > 0 && <CostLine label="Pump" amount={data.vendor.pump} />}
+              {data.vendor.inspection > 0 && <CostLine label="Inspection" amount={data.vendor.inspection} />}
+              <CostLine label="Labor" amount={data.labor} />
+            </div>
+
+            {/* Other Costs */}
+            <OtherCostsSection
+              section={section}
+              projectId={projectId}
+              organizationId={organizationId}
+              costs={data.sectionOther}
+              readOnly={readOnly}
+              queryClient={queryClient}
+            />
+
+            {/* Totals */}
+            <div className="border-t border-border pt-2 space-y-1">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Total Costs</span>
+                <span className="font-medium text-foreground">{fmtTotal(data.totalCosts)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Gross Profit</span>
+                <span className={cn("font-bold", profitColor(data.grossProfit, data.salesPrice != null && data.salesPrice > 0))}>
+                  {data.grossProfit != null ? fmtTotal(data.grossProfit) : "—"}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Margin</span>
+                <span className={cn("font-bold", profitColor(data.grossProfit, data.salesPrice != null && data.salesPrice > 0))}>
+                  {data.salesPrice && data.salesPrice > 0 ? pct(data.grossProfit ?? 0, data.salesPrice) : "—"}
+                </span>
+              </div>
+            </div>
+          </div>
+        </CollapsibleContent>
+      </div>
+    </Collapsible>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────
+// Cost Line
+// ────────────────────────────────────────────────────────────────
+
+function CostLine({ label, amount }: { label: string; amount: number }) {
+  return (
+    <div className="flex justify-between text-sm">
+      <span className="text-muted-foreground">{label}</span>
+      <span className={amount > 0 ? "text-foreground" : "text-muted-foreground"}>{fmt(amount)}</span>
+    </div>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────
+// Sales Price Row (editable)
+// ────────────────────────────────────────────────────────────────
+
+function SalesPriceRow({
+  section,
+  projectId,
+  organizationId,
+  initialValue,
+  revenueId,
+  readOnly,
+  queryClient,
+}: {
+  section: Section;
+  projectId: string | null;
+  organizationId: string | null;
+  initialValue: number | null;
+  revenueId: string | undefined;
+  readOnly: boolean;
+  queryClient: ReturnType<typeof useQueryClient>;
+}) {
+  const [value, setValue] = useState(initialValue?.toString() ?? "");
+  const [status, setStatus] = useState<"idle" | "unsaved" | "saved">("idle");
+
+  useEffect(() => {
+    setValue(initialValue?.toString() ?? "");
+    setStatus("idle");
+  }, [initialValue]);
+
+  const handleChange = (v: string) => {
+    setValue(v);
+    setStatus("unsaved");
+  };
+
+  const handleBlur = async () => {
+    if (!projectId || !organizationId) return;
+    const num = parseFloat(value) || null;
+    if (num === initialValue) {
+      setStatus("idle");
+      return;
+    }
+    try {
+      if (revenueId) {
+        const { error } = await supabase
+          .from("project_pl_revenue")
+          .update({ sales_price: num } as any)
+          .eq("id", revenueId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("project_pl_revenue")
+          .insert({
+            organization_id: organizationId,
+            project_id: projectId,
+            section,
+            sales_price: num,
+          } as any);
+        if (error) throw error;
+      }
+      queryClient.invalidateQueries({ queryKey: ["pl-revenue", projectId] });
+      setStatus("saved");
+      setTimeout(() => setStatus("idle"), 2000);
+    } catch (e: any) {
+      toast.error(getUserFriendlyError(e));
+      setStatus("unsaved");
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-sm text-muted-foreground flex-1">Sales Price</span>
+      {readOnly ? (
+        <span className="text-sm font-medium text-foreground">
+          {initialValue != null ? fmtTotal(initialValue) : "—"}
+        </span>
+      ) : (
+        <>
+          <div className="relative w-32">
+            <DollarSign className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
+            <Input
+              type="number"
+              step="0.01"
+              min="0"
+              value={value}
+              onChange={(e) => handleChange(e.target.value)}
+              onBlur={handleBlur}
+              className="h-8 text-sm pl-6"
+              placeholder="0.00"
+            />
+          </div>
+          {status === "unsaved" && (
+            <span className="text-xs text-yellow-500">Unsaved</span>
+          )}
+          {status === "saved" && (
+            <span className="text-xs text-green-500 flex items-center gap-0.5">
+              <Check className="w-3 h-3" /> Saved
+            </span>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────
+// Other Costs Section
+// ────────────────────────────────────────────────────────────────
+
+function OtherCostsSection({
+  section,
+  projectId,
+  organizationId,
+  costs,
+  readOnly,
+  queryClient,
+}: {
+  section: Section;
+  projectId: string | null;
+  organizationId: string | null;
+  costs: OtherCost[];
+  readOnly: boolean;
+  queryClient: ReturnType<typeof useQueryClient>;
+}) {
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["pl-other-costs", projectId] });
+
+  const addMutation = useMutation({
+    mutationFn: async () => {
+      if (!projectId || !organizationId) throw new Error("Missing context");
+      const { error } = await supabase.from("project_other_costs").insert({
+        organization_id: organizationId,
+        project_id: projectId,
+        pl_section: section,
+        description: "New cost",
+        amount: 0,
+        display_order: costs.length,
+      } as any);
+      if (error) throw error;
+    },
+    onSuccess: invalidate,
+    onError: (e: Error) => toast.error(getUserFriendlyError(e)),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("project_other_costs").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      invalidate();
+      toast.success("Cost removed");
+    },
+    onError: (e: Error) => toast.error(getUserFriendlyError(e)),
+  });
+
+  const updateCost = async (id: string, updates: Partial<OtherCost>) => {
+    const { error } = await supabase
+      .from("project_other_costs")
+      .update(updates as any)
+      .eq("id", id);
+    if (error) {
+      toast.error(getUserFriendlyError(error));
+    } else {
+      invalidate();
+    }
+  };
+
+  return (
+    <div className="space-y-1">
+      <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Other Costs</h4>
+      {costs.map((cost) => (
+        <OtherCostRow
+          key={cost.id}
+          cost={cost}
+          readOnly={readOnly}
+          onUpdate={updateCost}
+          onDelete={() => deleteMutation.mutate(cost.id)}
+        />
+      ))}
+      {costs.length === 0 && (
+        <p className="text-xs text-muted-foreground">No other costs.</p>
+      )}
+      {!readOnly && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => addMutation.mutate()}
+          disabled={addMutation.isPending}
+          className="text-muted-foreground"
+        >
+          <Plus className="w-3 h-3 mr-1" />
+          Add Cost
+        </Button>
+      )}
+    </div>
+  );
+}
+
+function OtherCostRow({
+  cost,
+  readOnly,
+  onUpdate,
+  onDelete,
+}: {
+  cost: OtherCost;
+  readOnly: boolean;
+  onUpdate: (id: string, updates: Partial<OtherCost>) => void;
+  onDelete: () => void;
+}) {
+  const [desc, setDesc] = useState(cost.description);
+  const [amount, setAmount] = useState(cost.amount?.toString() ?? "0");
+
+  useEffect(() => {
+    setDesc(cost.description);
+    setAmount(cost.amount?.toString() ?? "0");
+  }, [cost]);
+
+  return (
+    <div className="flex items-center gap-2">
+      {readOnly ? (
+        <>
+          <span className="flex-1 text-sm text-muted-foreground">{cost.description}</span>
+          <span className="text-sm text-foreground">{fmt(cost.amount)}</span>
+        </>
+      ) : (
+        <>
+          <Input
+            value={desc}
+            onChange={(e) => setDesc(e.target.value)}
+            onBlur={() => {
+              if (desc !== cost.description) onUpdate(cost.id, { description: desc });
+            }}
+            className="flex-1 h-7 text-sm"
+            placeholder="Description"
+          />
+          <div className="relative w-24">
+            <DollarSign className="absolute left-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
+            <Input
+              type="number"
+              step="0.01"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              onBlur={() => {
+                const n = parseFloat(amount) || 0;
+                if (n !== cost.amount) onUpdate(cost.id, { amount: n });
+              }}
+              className="h-7 text-sm pl-5"
+            />
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-muted-foreground hover:text-destructive"
+            onClick={onDelete}
+          >
+            <Trash2 className="w-3 h-3" />
+          </Button>
+        </>
+      )}
+    </div>
+  );
+}
