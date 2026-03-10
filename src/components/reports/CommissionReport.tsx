@@ -81,10 +81,12 @@ function EditableCell({
   value,
   onSave,
   prefix = "$",
+  decimals = 2,
 }: {
   value: number | null | undefined;
   onSave: (v: number | null) => void;
   prefix?: string;
+  decimals?: number;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value?.toString() ?? "");
@@ -125,8 +127,8 @@ function EditableCell({
       {prefix}
       {value != null
         ? Number(value).toLocaleString("en-US", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
+            minimumFractionDigits: decimals,
+            maximumFractionDigits: decimals,
           })
         : "—"}
     </span>
