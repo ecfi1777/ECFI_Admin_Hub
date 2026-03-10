@@ -231,7 +231,7 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
   // ── Save handlers ──
   const handleSave = async (
     projectId: string,
-    field: "base_house" | "extras" | "other_costs" | "labor_allow",
+    field: "base_house" | "extras" | "other_costs" | "labor_allow" | "ftg_total" | "wall_total",
     value: number | null,
     crewId: string
   ) => {
