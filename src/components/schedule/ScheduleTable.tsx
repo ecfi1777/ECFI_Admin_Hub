@@ -519,11 +519,14 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
                                 .from("schedule_entries")
                                 .delete()
                                 .eq("id", entry.id)
-                                .then(() => {
-                                  queryClient.invalidateQueries({ queryKey: ["schedule-entries"] });
-                                  toast.success("Note deleted");
-                                })
-                                .catch(() => toast.error("Failed to delete note"));
+                                .then(({ error }) => {
+                                  if (error) {
+                                    toast.error("Failed to delete note");
+                                  } else {
+                                    queryClient.invalidateQueries({ queryKey: ["schedule-entries"] });
+                                    toast.success("Note deleted");
+                                  }
+                                });
                             }
                           }}
                         >
