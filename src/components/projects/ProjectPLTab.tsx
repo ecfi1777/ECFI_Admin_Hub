@@ -302,6 +302,11 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
       {/* Section Cards */}
       {(["footings_walls", "slab"] as Section[]).map((section) => {
         const data = section === "footings_walls" ? fw : slab;
+        const { totalHours, count } = getLaborHoursSummary(section);
+        const overrideEntry = scheduleEntries.find((e: any) => {
+          const s = e.phases?.pl_section;
+          return (s === section || s === "both") && e.crew_labor_cost_override != null;
+        });
         return (
           <SectionCard
             key={section}
@@ -311,6 +316,11 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
             organizationId={organizationId}
             readOnly={readOnly}
             queryClient={queryClient}
+            laborHours={totalHours}
+            laborEntryCount={count}
+            hasOverride={overrideEntry != null}
+            overrideValue={overrideEntry?.crew_labor_cost_override ?? null}
+            scheduleEntries={scheduleEntries}
           />
         );
       })}
