@@ -57,8 +57,10 @@ interface ProjectRow {
   lotNumber: string;
   ftgDate: string | null;
   ftgTotal: number | null;
+  ftgEntryId: string | null;
   wallDate: string | null;
   wallTotal: number | null;
+  wallEntryId: string | null;
   baseHouse: number;
   extras: number;
   totalInvoice: number;
@@ -79,10 +81,12 @@ function EditableCell({
   value,
   onSave,
   prefix = "$",
+  decimals = 2,
 }: {
   value: number | null | undefined;
   onSave: (v: number | null) => void;
   prefix?: string;
+  decimals?: number;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value?.toString() ?? "");
@@ -123,8 +127,8 @@ function EditableCell({
       {prefix}
       {value != null
         ? Number(value).toLocaleString("en-US", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
+            minimumFractionDigits: decimals,
+            maximumFractionDigits: decimals,
           })
         : "—"}
     </span>
@@ -140,6 +144,8 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
     extras?: number | null;
     other_costs?: number | null;
     labor_allow?: number | null;
+    ftg_total?: number | null;
+    wall_total?: number | null;
   }>>({});
 
   // ── Step 1: F&W schedule entries ──
@@ -227,9 +233,10 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
   // ── Save handlers ──
   const handleSave = async (
     projectId: string,
-    field: "base_house" | "extras" | "other_costs" | "labor_allow",
+    field: "base_house" | "extras" | "other_costs" | "labor_allow" | "ftg_total" | "wall_total",
     value: number | null,
-    crewId: string
+    crewId: string,
+    entryId?: string | null
   ) => {
     // Update local overrides immediately
     setOverrides((prev) => ({
@@ -303,6 +310,17 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
         );
         if (error) throw error;
         toast.success("Saved");
+      } else if (field === "ftg_total" || field === "wall_total") {
+        if (!entryId) {
+          toast.error("No schedule entry found to update");
+          return;
+        }
+        const { error } = await supabase
+          .from("schedule_entries")
+          .update({ crew_yards_poured: value ?? 0 })
+          .eq("id", entryId);
+        if (error) throw error;
+        toast.success("Saved");
       }
     } catch (e) {
       console.error(e);
@@ -338,11 +356,13 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
       const ftgEntry = entries.find((e: any) => e.phases?.phase_type === "footing");
       const wallEntry = entries.find((e: any) => e.phases?.phase_type === "wall");
 
-      const totalYards = entries.reduce((s: number, e: any) => s + (e.crew_yards_poured ?? 0), 0);
+      const ov = overrides[pid];
+      const ftgYards = ov?.ftg_total ?? ftgEntry?.crew_yards_poured ?? null;
+      const wallYards = ov?.wall_total ?? wallEntry?.crew_yards_poured ?? null;
+      const totalYards = (ftgYards ?? 0) + (wallYards ?? 0);
       const concreteCost = entries.reduce((s: number, e: any) => s + (e.ready_mix_invoice_amount ?? 0), 0);
 
       const rev = revenue.find((r: any) => r.project_id === pid);
-      const ov = overrides[pid];
       const baseHouse = ov?.base_house ?? (rev as any)?.base_house ?? 0;
       const extras = ov?.extras ?? (rev as any)?.extras ?? 0;
       const totalInvoice = baseHouse + extras;
@@ -376,9 +396,11 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
         subdivision: project?.locations?.name || "",
         lotNumber: project?.lot_number || "",
         ftgDate: ftgEntry?.scheduled_date ?? null,
-        ftgTotal: ftgEntry?.crew_yards_poured ?? null,
+        ftgTotal: ftgYards,
+        ftgEntryId: ftgEntry?.id ?? null,
         wallDate: wallEntry?.scheduled_date ?? null,
-        wallTotal: wallEntry?.crew_yards_poured ?? null,
+        wallTotal: wallYards,
+        wallEntryId: wallEntry?.id ?? null,
         baseHouse,
         extras,
         totalInvoice,
@@ -550,7 +572,7 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
       </div>
 
       <p className="text-xs text-muted-foreground mb-2">
-        Click Base House, Extras, Other $, or Labor Allow. cells to edit — changes save automatically.
+        Click Ftg Total, Wall Total, Base House, Extras, Other $, or Labor Allow. cells to edit — changes save automatically.
       </p>
 
       {crewGroups.map((group, gi) => (
@@ -581,9 +603,23 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
                     <td className="px-2 py-1.5 whitespace-nowrap">{r.subdivision}</td>
                     <td className="px-2 py-1.5 whitespace-nowrap">{r.lotNumber}</td>
                     <td className="px-2 py-1.5 whitespace-nowrap">{fmtDate(r.ftgDate)}</td>
-                    <td className="px-2 py-1.5 text-right whitespace-nowrap">{fmtYards(r.ftgTotal)}</td>
+                    <td className="px-2 py-1.5 text-right whitespace-nowrap">
+                      <EditableCell
+                        value={r.ftgTotal}
+                        onSave={(v) => handleSave(r.projectId, "ftg_total", v, r.crewId, r.ftgEntryId)}
+                        prefix=""
+                        decimals={1}
+                      />
+                    </td>
                     <td className="px-2 py-1.5 whitespace-nowrap">{fmtDate(r.wallDate)}</td>
-                    <td className="px-2 py-1.5 text-right whitespace-nowrap">{fmtYards(r.wallTotal)}</td>
+                    <td className="px-2 py-1.5 text-right whitespace-nowrap">
+                      <EditableCell
+                        value={r.wallTotal}
+                        onSave={(v) => handleSave(r.projectId, "wall_total", v, r.crewId, r.wallEntryId)}
+                        prefix=""
+                        decimals={1}
+                      />
+                    </td>
                     <td className="px-2 py-1.5 text-right whitespace-nowrap">
                       <EditableCell
                         value={r.baseHouse}
