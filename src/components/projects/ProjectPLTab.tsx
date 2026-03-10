@@ -103,7 +103,7 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
           stone_invoice_amount,
           pump_invoice_amount,
           inspection_amount,
-          phases!inner(pl_section)
+          phases(pl_section)
         `)
         .eq("project_id", projectId)
         .eq("deleted", false);
