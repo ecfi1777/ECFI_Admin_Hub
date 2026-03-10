@@ -134,11 +134,14 @@ export function SortableReferenceRow({
             {item.code}
           </Badge>
         )}
-        {hasPlSection && (
-          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-            plConfig ? plConfig.variant : "bg-muted text-muted-foreground"
-          }`}>
-            {plConfig ? plConfig.badge : "Unset"}
+        {hasPlSection && plConfig && (
+          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${plConfig.variant}`}>
+            {plConfig.badge}
+          </span>
+        )}
+        {hasPlSection && ptConfig && (
+          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${ptConfig.variant}`}>
+            {ptConfig.badge}
           </span>
         )}
       </div>
