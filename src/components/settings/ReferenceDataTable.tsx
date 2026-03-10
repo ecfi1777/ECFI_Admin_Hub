@@ -50,6 +50,7 @@ interface ReferenceDataTableProps {
   tableName: TableName;
   displayName: string;
   hasCode?: boolean;
+  hasPlSection?: boolean;
 }
 
 interface ReferenceItem {
@@ -58,9 +59,10 @@ interface ReferenceItem {
   code?: string | null;
   display_order: number;
   is_active: boolean;
+  pl_section?: string | null;
 }
 
-export function ReferenceDataTable({ tableName, displayName, hasCode = false }: ReferenceDataTableProps) {
+export function ReferenceDataTable({ tableName, displayName, hasCode = false, hasPlSection = false }: ReferenceDataTableProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ReferenceItem | null>(null);
   const [name, setName] = useState("");
@@ -268,6 +270,11 @@ export function ReferenceDataTable({ tableName, displayName, hasCode = false }: 
         </div>
       </CardHeader>
       <CardContent className="p-0">
+        {hasPlSection && (
+          <p className="text-sm text-muted-foreground px-4 pt-3 pb-1">
+            Tag each phase so labor and vendor costs are automatically assigned to the correct P&L section.
+          </p>
+        )}
         {isLoading ? (
           <div className="text-muted-foreground text-center py-8">Loading...</div>
         ) : displayItems.length === 0 ? (
@@ -290,6 +297,8 @@ export function ReferenceDataTable({ tableName, displayName, hasCode = false }: 
                   item={item}
                   index={index}
                   hasCode={hasCode}
+                  hasPlSection={hasPlSection}
+                  tableName={tableName}
                   onEdit={openDialog}
                   onToggleActive={(id, isActive) =>
                     toggleActiveMutation.mutate({ id, is_active: isActive })

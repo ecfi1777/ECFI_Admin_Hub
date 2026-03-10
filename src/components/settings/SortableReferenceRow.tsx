@@ -4,6 +4,10 @@ import { GripVertical, Pencil } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 interface ReferenceItem {
   id: string;
@@ -11,12 +15,22 @@ interface ReferenceItem {
   code?: string | null;
   display_order: number;
   is_active: boolean;
+  pl_section?: string | null;
 }
+
+const PL_SECTION_CONFIG: Record<string, { label: string; badge: string; variant: string }> = {
+  footings_walls: { label: "Footings & Walls", badge: "F&W", variant: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200" },
+  slab: { label: "Slab", badge: "Slab", variant: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" },
+  both: { label: "Both", badge: "Both", variant: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200" },
+  overhead: { label: "Overhead / Other", badge: "OH", variant: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200" },
+};
 
 interface SortableReferenceRowProps {
   item: ReferenceItem;
   index: number;
   hasCode: boolean;
+  hasPlSection?: boolean;
+  tableName?: string;
   onEdit: (item: ReferenceItem) => void;
   onToggleActive: (id: string, isActive: boolean) => void;
 }
@@ -25,9 +39,12 @@ export function SortableReferenceRow({
   item,
   index,
   hasCode,
+  hasPlSection = false,
+  tableName,
   onEdit,
   onToggleActive,
 }: SortableReferenceRowProps) {
+  const queryClient = useQueryClient();
   const {
     attributes,
     listeners,
@@ -41,6 +58,22 @@ export function SortableReferenceRow({
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
+  };
+
+  const plConfig = item.pl_section ? PL_SECTION_CONFIG[item.pl_section] : null;
+
+  const handlePlSectionChange = async (value: string) => {
+    const newValue = value === "__unset__" ? null : value;
+    const { error } = await supabase
+      .from("phases")
+      .update({ pl_section: newValue } as any)
+      .eq("id", item.id);
+    if (error) {
+      toast.error("Failed to update phase");
+    } else {
+      toast.success("Phase updated");
+      queryClient.invalidateQueries({ queryKey: [tableName] });
+    }
   };
 
   return (
@@ -65,7 +98,7 @@ export function SortableReferenceRow({
         {index + 1}
       </span>
 
-      {/* Name & Code */}
+      {/* Name & Code & PL Badge */}
       <div className="flex items-center gap-2 flex-1">
         <span className="font-medium text-foreground">
           {item.name}
@@ -78,7 +111,33 @@ export function SortableReferenceRow({
             {item.code}
           </Badge>
         )}
+        {hasPlSection && (
+          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+            plConfig ? plConfig.variant : "bg-muted text-muted-foreground"
+          }`}>
+            {plConfig ? plConfig.badge : "Unset"}
+          </span>
+        )}
       </div>
+
+      {/* P&L Section Select */}
+      {hasPlSection && (
+        <Select
+          value={item.pl_section || "__unset__"}
+          onValueChange={handlePlSectionChange}
+        >
+          <SelectTrigger className="w-[160px] h-8 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__unset__">— Not set —</SelectItem>
+            <SelectItem value="footings_walls">Footings & Walls</SelectItem>
+            <SelectItem value="slab">Slab</SelectItem>
+            <SelectItem value="both">Both</SelectItem>
+            <SelectItem value="overhead">Overhead / Other</SelectItem>
+          </SelectContent>
+        </Select>
+      )}
 
       {/* Active Toggle */}
       <Switch
