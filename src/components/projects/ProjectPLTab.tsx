@@ -390,6 +390,7 @@ function SectionCard({
   hasOverride,
   overrideValue,
   scheduleEntries,
+  crewMemberRates,
 }: SectionCardProps) {
   const [isOpen, setIsOpen] = useState(true);
 
