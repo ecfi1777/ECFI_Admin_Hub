@@ -233,7 +233,8 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
     projectId: string,
     field: "base_house" | "extras" | "other_costs" | "labor_allow" | "ftg_total" | "wall_total",
     value: number | null,
-    crewId: string
+    crewId: string,
+    entryId?: string | null
   ) => {
     // Update local overrides immediately
     setOverrides((prev) => ({
