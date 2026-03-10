@@ -458,6 +458,12 @@ export function ProjectDetailsSheet({
                   >
                     Labor
                   </TabsTrigger>
+                  <TabsTrigger
+                    value="pl"
+                    className="data-[state=active]:bg-slate-600 text-slate-300"
+                  >
+                    P&L
+                  </TabsTrigger>
                 </TabsList>
                 <TabsContent value="history" className="mt-4">
                   <ProjectScheduleHistory projectId={projectId} readOnly={!canManage || isDeleted} />
@@ -470,6 +476,12 @@ export function ProjectDetailsSheet({
                 </TabsContent>
                 <TabsContent value="labor" className="mt-4">
                   <ProjectLaborTab
+                    projectId={projectId}
+                    readOnly={!canManage || isDeleted}
+                  />
+                </TabsContent>
+                <TabsContent value="pl" className="mt-4">
+                  <ProjectPLTab
                     projectId={projectId}
                     readOnly={!canManage || isDeleted}
                   />
