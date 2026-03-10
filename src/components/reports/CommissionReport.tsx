@@ -329,6 +329,16 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
   };
 
   // ── Build rows ──
+  // Build lookup: projectId → array of other cost rows (for multi-row detection)
+  const otherCostRows = useMemo(() => {
+    const map: Record<string, any[]> = {};
+    (otherCostsData || []).forEach((c: any) => {
+      if (!map[c.project_id]) map[c.project_id] = [];
+      map[c.project_id].push(c);
+    });
+    return map;
+  }, [otherCostsData]);
+
   const { crewGroups } = useMemo(() => {
     if (!fwEntries.length) return { crewGroups: [] };
 
