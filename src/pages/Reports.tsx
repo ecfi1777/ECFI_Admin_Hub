@@ -6,11 +6,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { generateScheduleExcel } from "@/lib/generateScheduleExcel";
-import { Download, FileSpreadsheet, Loader2, UserX } from "lucide-react";
+import { Download, FileSpreadsheet, Loader2, UserX, DollarSign } from "lucide-react";
 import { toast } from "sonner";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { useOrganization } from "@/hooks/useOrganization";
 import { CrewDaysNotWorkedReport } from "@/components/reports/CrewDaysNotWorkedReport";
+import { CommissionReport } from "@/components/reports/CommissionReport";
 
 const months = [
   { value: "1", label: "January" },
@@ -39,6 +40,9 @@ export default function Reports() {
   const [selectedYear, setSelectedYear] = useState(String(currentYear));
   const [isExporting, setIsExporting] = useState(false);
   const [showCrewDaysReport, setShowCrewDaysReport] = useState(false);
+  const [showCommissionReport, setShowCommissionReport] = useState(false);
+  const [commissionMonth, setCommissionMonth] = useState(String(new Date().getMonth() + 1));
+  const [commissionYear, setCommissionYear] = useState(String(currentYear));
   const { organizationId } = useOrganization();
 
   const handleExport = async () => {
@@ -194,6 +198,7 @@ export default function Reports() {
               </Button>
             </CardContent>
           </Card>
+
           {/* Crew Days Not Worked Card */}
           <Card
             className="cursor-pointer hover:border-primary/50 transition-colors"
@@ -211,12 +216,79 @@ export default function Reports() {
               </div>
             </CardHeader>
           </Card>
+
+          {/* Commission Report Card */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-amber-500/10 rounded-lg flex items-center justify-center">
+                  <DollarSign className="w-5 h-5 text-amber-500" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg">Commission Report</CardTitle>
+                  <CardDescription>Monthly crew allowance report — Footings & Walls</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Month</Label>
+                  <Select value={commissionMonth} onValueChange={setCommissionMonth}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {months.map((month) => (
+                        <SelectItem key={month.value} value={month.value}>
+                          {month.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Year</Label>
+                  <Select value={commissionYear} onValueChange={setCommissionYear}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {years.map((year) => (
+                        <SelectItem key={year.value} value={year.value}>
+                          {year.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <Button
+                onClick={() => setShowCommissionReport(true)}
+                className="w-full"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Generate Report
+              </Button>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Inline Crew Days Not Worked Report */}
         {showCrewDaysReport && (
           <div className="mt-6">
             <CrewDaysNotWorkedReport />
+          </div>
+        )}
+
+        {/* Inline Commission Report */}
+        {showCommissionReport && organizationId && (
+          <div className="mt-6">
+            <CommissionReport
+              month={parseInt(commissionMonth)}
+              year={parseInt(commissionYear)}
+              organizationId={organizationId}
+            />
           </div>
         )}
       </div>
