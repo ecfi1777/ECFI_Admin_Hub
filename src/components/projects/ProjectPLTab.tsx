@@ -32,12 +32,8 @@ interface VendorEntry {
   inspection_amount: number | null;
 }
 
-interface LaborEntry {
-  pl_section: string;
-  entry_mode: string;
-  total_cost: number | null;
-  project_labor_employees?: { line_cost: number | null; hours: number; hourly_rate: number }[];
-}
+
+
 
 interface OtherCost {
   id: string;
