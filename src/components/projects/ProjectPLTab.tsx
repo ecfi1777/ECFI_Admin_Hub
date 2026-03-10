@@ -235,18 +235,36 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
     };
   };
 
-  // ── Aggregate labor per section ──
+  // ── Aggregate labor per section from schedule entry hours ──
+  const getCrewRate = (crewId: string | null) => {
+    if (!crewId) return 0;
+    return crewMemberRates
+      .filter((m: any) => m.crew_id === crewId)
+      .reduce((sum: number, m: any) => sum + (m.hourly_rate ?? 0), 0);
+  };
+
   const aggregateLabor = (section: Section) => {
-    return laborEntries
-      .filter((e) => e.pl_section === section)
-      .reduce((sum, e) => {
-        if (e.entry_mode === "by_employee" && e.project_labor_employees?.length) {
-          return sum + e.project_labor_employees.reduce(
-            (s, emp) => s + (emp.line_cost ?? emp.hours * emp.hourly_rate), 0
-          );
+    return scheduleEntries
+      .filter((e: any) => {
+        const s = e.phases?.pl_section;
+        return s === section || s === "both";
+      })
+      .reduce((sum: number, e: any) => {
+        if (e.crew_labor_cost_override != null) {
+          return sum + e.crew_labor_cost_override;
         }
-        return sum + (e.total_cost ?? 0);
+        return sum + (e.crew_hours ?? 0) * getCrewRate(e.crew_id);
       }, 0);
+  };
+
+  const getLaborHoursSummary = (section: string) => {
+    const sectionEntries = scheduleEntries.filter((e: any) => {
+      const s = e.phases?.pl_section;
+      return s === section || s === "both";
+    });
+    const totalHours = sectionEntries.reduce((s: number, e: any) => s + (e.crew_hours ?? 0), 0);
+    const count = sectionEntries.length;
+    return { totalHours, count };
   };
 
   const buildSection = (section: Section) => {
