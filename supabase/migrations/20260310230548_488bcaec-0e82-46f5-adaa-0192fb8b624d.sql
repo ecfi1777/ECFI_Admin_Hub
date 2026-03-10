@@ -1,0 +1,1 @@
+ALTER TABLE project_pl_revenue ADD CONSTRAINT project_pl_revenue_project_section_unique UNIQUE (project_id, section);
