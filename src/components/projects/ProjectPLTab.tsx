@@ -374,6 +374,7 @@ interface SectionCardProps {
   hasOverride: boolean;
   overrideValue: number | null;
   scheduleEntries: any[];
+  crewMemberRates: any[];
 }
 
 function SectionCard({
