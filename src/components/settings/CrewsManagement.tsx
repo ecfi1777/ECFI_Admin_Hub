@@ -331,7 +331,7 @@ export function CrewsManagement() {
       if (!organizationId) return [];
       const { data, error } = await supabase
         .from("crew_members")
-        .select("id, name, crew_id, is_active")
+        .select("id, name, crew_id, is_active, hourly_rate")
         .eq("organization_id", organizationId)
         .order("name");
       if (error) throw error;
