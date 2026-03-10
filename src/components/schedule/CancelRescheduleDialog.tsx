@@ -26,9 +26,10 @@ interface CancelRescheduleDialogProps {
   entry: ScheduleEntry | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onRescheduled?: (newDate: string) => void;
 }
 
-export function CancelRescheduleDialog({ entry, open, onOpenChange }: CancelRescheduleDialogProps) {
+export function CancelRescheduleDialog({ entry, open, onOpenChange, onRescheduled }: CancelRescheduleDialogProps) {
   const [reason, setReason] = useState("");
   const [newDate, setNewDate] = useState<Date | undefined>(undefined);
   const queryClient = useQueryClient();
