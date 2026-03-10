@@ -187,14 +187,17 @@ export function VendorInvoiceRow({
                 />
               )}
               {canEditAmount && (
-                <Input
-                  type="number"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder="Amount $"
-                  className="h-9 w-28"
-                  step="0.01"
-                />
+                <div className="relative flex items-center">
+                  <span className="absolute left-2 text-muted-foreground text-sm">$</span>
+                  <Input
+                    type="number"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    placeholder="0.00"
+                    className="h-9 w-28 pl-5"
+                    step="0.01"
+                  />
+                </div>
               )}
               <Button
                 size="sm"
