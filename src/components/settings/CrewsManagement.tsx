@@ -63,6 +63,7 @@ interface CrewMember {
   name: string;
   crew_id: string | null;
   is_active: boolean;
+  hourly_rate: number | null;
 }
 
 function SortableCrewRow({
