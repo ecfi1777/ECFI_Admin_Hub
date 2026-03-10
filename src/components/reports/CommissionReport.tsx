@@ -57,8 +57,10 @@ interface ProjectRow {
   lotNumber: string;
   ftgDate: string | null;
   ftgTotal: number | null;
+  ftgEntryId: string | null;
   wallDate: string | null;
   wallTotal: number | null;
+  wallEntryId: string | null;
   baseHouse: number;
   extras: number;
   totalInvoice: number;
