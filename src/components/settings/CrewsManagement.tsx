@@ -551,10 +551,11 @@ export function CrewsManagement() {
 
   const handleMemberSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const rateValue = memberRate.trim() ? parseFloat(memberRate) : null;
     if (editingMember) {
-      updateMemberMutation.mutate({ id: editingMember.id, name: memberName });
+      updateMemberMutation.mutate({ id: editingMember.id, name: memberName, hourly_rate: rateValue });
     } else {
-      createMemberMutation.mutate({ name: memberName, crew_id: memberCrewId });
+      createMemberMutation.mutate({ name: memberName, crew_id: memberCrewId, hourly_rate: rateValue });
     }
   };
 
