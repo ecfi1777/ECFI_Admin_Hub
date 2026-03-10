@@ -66,9 +66,10 @@ import type { ScheduleEntry } from "@/types/schedule";
 interface ScheduleTableProps {
   entries: ScheduleEntry[];
   readOnly?: boolean;
+  onRescheduled?: (newDate: string) => void;
 }
 
-export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps) {
+export function ScheduleTable({ entries, readOnly = false, onRescheduled }: ScheduleTableProps) {
   const [editingCell, setEditingCell] = useState<{ entryId: string; field: string } | null>(null);
   const [editValue, setEditValue] = useState<string>("");
   const [deleteEntryId, setDeleteEntryId] = useState<string | null>(null);
