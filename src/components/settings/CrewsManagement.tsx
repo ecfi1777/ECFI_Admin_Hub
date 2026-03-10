@@ -195,10 +195,15 @@ function SortableCrewRow({
                     !member.is_active ? "opacity-60" : ""
                   }`}
                 >
-                  <span className="flex-1 text-sm text-foreground">
+                  <span className="flex-1 text-sm text-foreground flex items-center gap-2">
                     {member.name}
+                    {member.hourly_rate != null ? (
+                      <span className="text-xs text-muted-foreground">${Number(member.hourly_rate).toFixed(2)}/hr</span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground italic">No rate</span>
+                    )}
                     {!member.is_active && (
-                      <span className="ml-2 text-xs text-muted-foreground">
+                      <span className="text-xs text-muted-foreground">
                         (Inactive)
                       </span>
                     )}
