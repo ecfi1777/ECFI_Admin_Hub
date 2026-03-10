@@ -459,6 +459,7 @@ function AddLaborDialog({
     setTotalHours("");
     setTotalRate("");
     setEmpRows([]);
+    setRateWasAutoFilled(false);
   };
 
   return (
