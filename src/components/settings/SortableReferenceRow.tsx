@@ -16,6 +16,7 @@ interface ReferenceItem {
   display_order: number;
   is_active: boolean;
   pl_section?: string | null;
+  phase_type?: string | null;
 }
 
 const PL_SECTION_CONFIG: Record<string, { label: string; badge: string; variant: string }> = {
