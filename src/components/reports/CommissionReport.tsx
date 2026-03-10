@@ -343,13 +343,13 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
       const ftgEntry = entries.find((e: any) => e.phases?.phase_type === "footing");
       const wallEntry = entries.find((e: any) => e.phases?.phase_type === "wall");
 
+      const ov = overrides[pid];
       const ftgYards = ov?.ftg_total ?? ftgEntry?.crew_yards_poured ?? null;
       const wallYards = ov?.wall_total ?? wallEntry?.crew_yards_poured ?? null;
       const totalYards = (ftgYards ?? 0) + (wallYards ?? 0);
       const concreteCost = entries.reduce((s: number, e: any) => s + (e.ready_mix_invoice_amount ?? 0), 0);
 
       const rev = revenue.find((r: any) => r.project_id === pid);
-      const ov = overrides[pid];
       const baseHouse = ov?.base_house ?? (rev as any)?.base_house ?? 0;
       const extras = ov?.extras ?? (rev as any)?.extras ?? 0;
       const totalInvoice = baseHouse + extras;
