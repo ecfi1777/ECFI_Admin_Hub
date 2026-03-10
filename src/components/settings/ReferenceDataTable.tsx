@@ -62,7 +62,7 @@ interface ReferenceItem {
   pl_section?: string | null;
 }
 
-export function ReferenceDataTable({ tableName, displayName, hasCode = false }: ReferenceDataTableProps) {
+export function ReferenceDataTable({ tableName, displayName, hasCode = false, hasPlSection = false }: ReferenceDataTableProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ReferenceItem | null>(null);
   const [name, setName] = useState("");
