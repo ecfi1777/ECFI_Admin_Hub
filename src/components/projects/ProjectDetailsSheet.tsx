@@ -23,6 +23,7 @@ import { ProjectScheduleHistory } from "./ProjectScheduleHistory";
 import { ProjectDocuments } from "./ProjectDocuments";
 
 import { ProjectPLTab } from "./ProjectPLTab";
+import { ProjectCommissionTab } from "./ProjectCommissionTab";
 import { EditProjectDialog } from "./EditProjectDialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { generateProjectPdf } from "@/lib/generateProjectPdf";
@@ -37,7 +38,7 @@ interface ProjectDetailsSheetProps {
   projectId: string | null;
   isOpen: boolean;
   onClose: () => void;
-  initialTab?: "history" | "documents" | "pl";
+  initialTab?: "history" | "documents" | "pl" | "commission";
 }
 
 const KANBAN_STATUSES = ["Upcoming", "Ready to Start", "In Progress", "Complete"];
@@ -458,6 +459,12 @@ export function ProjectDetailsSheet({
                   >
                     P&L
                   </TabsTrigger>
+                  <TabsTrigger
+                    value="commission"
+                    className="data-[state=active]:bg-slate-600 text-slate-300"
+                  >
+                    Commission
+                  </TabsTrigger>
                 </TabsList>
                 <TabsContent value="history" className="mt-4">
                   <ProjectScheduleHistory projectId={projectId} readOnly={!canManage || isDeleted} />
@@ -470,6 +477,12 @@ export function ProjectDetailsSheet({
                 </TabsContent>
                 <TabsContent value="pl" className="mt-4">
                   <ProjectPLTab
+                    projectId={projectId}
+                    readOnly={!canManage || isDeleted}
+                  />
+                </TabsContent>
+                <TabsContent value="commission" className="mt-4">
+                  <ProjectCommissionTab
                     projectId={projectId}
                     readOnly={!canManage || isDeleted}
                   />
