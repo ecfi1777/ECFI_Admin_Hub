@@ -46,6 +46,7 @@ export interface EntryFormValues {
   
   // Crew tab
   crew_yards_poured: string;
+  crew_hours: string;
   crew_notes: string;
   
   // Invoicing tab
