@@ -271,6 +271,7 @@ export function CrewsManagement() {
   const [editingMember, setEditingMember] = useState<CrewMember | null>(null);
   const [memberName, setMemberName] = useState("");
   const [memberCrewId, setMemberCrewId] = useState<string | null>(null);
+  const [memberRate, setMemberRate] = useState("");
 
   // Delete confirmation state
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
