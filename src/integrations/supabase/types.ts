@@ -143,6 +143,57 @@ export type Database = {
           },
         ]
       }
+      crew_employees: {
+        Row: {
+          created_at: string | null
+          crew_id: string
+          display_order: number | null
+          hourly_rate: number | null
+          id: string
+          is_active: boolean | null
+          name: string
+          organization_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          crew_id: string
+          display_order?: number | null
+          hourly_rate?: number | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          organization_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          crew_id?: string
+          display_order?: number | null
+          hourly_rate?: number | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          organization_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crew_employees_crew_id_fkey"
+            columns: ["crew_id"]
+            isOneToOne: false
+            referencedRelation: "crews"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crew_employees_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crew_members: {
         Row: {
           created_at: string
@@ -454,6 +505,7 @@ export type Database = {
           is_active: boolean
           name: string
           organization_id: string
+          pl_section: string | null
           updated_at: string
         }
         Insert: {
@@ -463,6 +515,7 @@ export type Database = {
           is_active?: boolean
           name: string
           organization_id: string
+          pl_section?: string | null
           updated_at?: string
         }
         Update: {
@@ -472,6 +525,7 @@ export type Database = {
           is_active?: boolean
           name?: string
           organization_id?: string
+          pl_section?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -626,6 +680,223 @@ export type Database = {
           },
           {
             foreignKeyName: "project_drive_folders_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_labor_employees: {
+        Row: {
+          created_at: string | null
+          crew_employee_id: string | null
+          employee_name: string
+          hourly_rate: number
+          hours: number
+          id: string
+          labor_entry_id: string
+          line_cost: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          crew_employee_id?: string | null
+          employee_name: string
+          hourly_rate?: number
+          hours?: number
+          id?: string
+          labor_entry_id: string
+          line_cost?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          crew_employee_id?: string | null
+          employee_name?: string
+          hourly_rate?: number
+          hours?: number
+          id?: string
+          labor_entry_id?: string
+          line_cost?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_labor_employees_crew_employee_id_fkey"
+            columns: ["crew_employee_id"]
+            isOneToOne: false
+            referencedRelation: "crew_employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_labor_employees_labor_entry_id_fkey"
+            columns: ["labor_entry_id"]
+            isOneToOne: false
+            referencedRelation: "project_labor_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_labor_entries: {
+        Row: {
+          created_at: string | null
+          crew_id: string | null
+          entry_date: string
+          entry_mode: string
+          id: string
+          notes: string | null
+          organization_id: string
+          pl_section: string
+          project_id: string
+          total_cost: number | null
+          total_hours: number | null
+          total_rate: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          crew_id?: string | null
+          entry_date: string
+          entry_mode: string
+          id?: string
+          notes?: string | null
+          organization_id: string
+          pl_section: string
+          project_id: string
+          total_cost?: number | null
+          total_hours?: number | null
+          total_rate?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          crew_id?: string | null
+          entry_date?: string
+          entry_mode?: string
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          pl_section?: string
+          project_id?: string
+          total_cost?: number | null
+          total_hours?: number | null
+          total_rate?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_labor_entries_crew_id_fkey"
+            columns: ["crew_id"]
+            isOneToOne: false
+            referencedRelation: "crews"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_labor_entries_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_labor_entries_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_other_costs: {
+        Row: {
+          amount: number
+          created_at: string | null
+          description: string
+          display_order: number | null
+          id: string
+          organization_id: string
+          pl_section: string
+          project_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          amount?: number
+          created_at?: string | null
+          description: string
+          display_order?: number | null
+          id?: string
+          organization_id: string
+          pl_section: string
+          project_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          description?: string
+          display_order?: number | null
+          id?: string
+          organization_id?: string
+          pl_section?: string
+          project_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_other_costs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_other_costs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_pl_revenue: {
+        Row: {
+          created_at: string | null
+          id: string
+          notes: string | null
+          organization_id: string
+          project_id: string
+          sales_price: number | null
+          section: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          organization_id: string
+          project_id: string
+          sales_price?: number | null
+          section: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          project_id?: string
+          sales_price?: number | null
+          section?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_pl_revenue_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_pl_revenue_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
