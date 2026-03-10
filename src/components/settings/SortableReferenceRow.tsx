@@ -69,6 +69,7 @@ export function SortableReferenceRow({
   };
 
   const plConfig = item.pl_section ? PL_SECTION_CONFIG[item.pl_section] : null;
+  const ptConfig = item.phase_type ? PHASE_TYPE_CONFIG[item.phase_type] : null;
 
   const handlePlSectionChange = async (value: string) => {
     const newValue = value === "__unset__" ? null : value;
