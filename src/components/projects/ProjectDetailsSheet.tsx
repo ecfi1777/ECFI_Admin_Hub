@@ -451,12 +451,24 @@ export function ProjectDetailsSheet({
                   >
                     Documents
                   </TabsTrigger>
+                  <TabsTrigger
+                    value="labor"
+                    className="data-[state=active]:bg-slate-600 text-slate-300"
+                  >
+                    Labor
+                  </TabsTrigger>
                 </TabsList>
                 <TabsContent value="history" className="mt-4">
                   <ProjectScheduleHistory projectId={projectId} readOnly={!canManage || isDeleted} />
                 </TabsContent>
                 <TabsContent value="documents" className="mt-4">
                   <ProjectDocuments
+                    projectId={projectId}
+                    readOnly={!canManage || isDeleted}
+                  />
+                </TabsContent>
+                <TabsContent value="labor" className="mt-4">
+                  <ProjectLaborTab
                     projectId={projectId}
                     readOnly={!canManage || isDeleted}
                   />
