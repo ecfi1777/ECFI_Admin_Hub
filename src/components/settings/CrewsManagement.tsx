@@ -247,8 +247,6 @@ function SortableCrewRow({
               </Button>
             </div>
 
-            {/* Employees (P&L rates) Section */}
-            <CrewEmployeesSection crewId={crew.id} />
           </div>
         </CollapsibleContent>
       </Collapsible>
