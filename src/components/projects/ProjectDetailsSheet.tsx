@@ -23,6 +23,7 @@ import { ProjectScheduleHistory } from "./ProjectScheduleHistory";
 import { ProjectDocuments } from "./ProjectDocuments";
 
 import { ProjectPLTab } from "./ProjectPLTab";
+import { ProjectCommissionTab } from "./ProjectCommissionTab";
 import { EditProjectDialog } from "./EditProjectDialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { generateProjectPdf } from "@/lib/generateProjectPdf";
