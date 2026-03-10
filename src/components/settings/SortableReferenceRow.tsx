@@ -85,6 +85,20 @@ export function SortableReferenceRow({
     }
   };
 
+  const handlePhaseTypeChange = async (value: string) => {
+    const newValue = value === "__unset__" ? null : value;
+    const { error } = await supabase
+      .from("phases")
+      .update({ phase_type: newValue } as any)
+      .eq("id", item.id);
+    if (error) {
+      toast.error("Failed to update phase");
+    } else {
+      toast.success("Phase updated");
+      queryClient.invalidateQueries({ queryKey: [tableName] });
+    }
+  };
+
   return (
     <div
       ref={setNodeRef}
