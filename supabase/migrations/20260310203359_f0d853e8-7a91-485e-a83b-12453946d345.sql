@@ -1,0 +1,1 @@
+ALTER TABLE crew_members ADD COLUMN IF NOT EXISTS hourly_rate numeric(8,2) DEFAULT NULL;

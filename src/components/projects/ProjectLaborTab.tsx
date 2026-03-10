@@ -292,17 +292,17 @@ function AddLaborDialog({
     enabled: !!organizationId && open,
   });
 
-  // Fetch employees for selected crew
+  // Fetch crew members for selected crew
   const { data: crewEmployees = [] } = useQuery({
-    queryKey: ["crew-employees-active", crewId],
+    queryKey: ["crew-members-for-labor", crewId],
     queryFn: async () => {
       if (!crewId) return [];
       const { data, error } = await supabase
-        .from("crew_employees")
+        .from("crew_members")
         .select("id, name, hourly_rate, is_active")
         .eq("crew_id", crewId)
         .eq("is_active", true)
-        .order("display_order");
+        .order("name");
       if (error) throw error;
       return data as CrewEmployee[];
     },

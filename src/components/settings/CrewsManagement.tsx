@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { CrewEmployeesSection } from "./CrewEmployeesSection";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -64,6 +63,7 @@ interface CrewMember {
   name: string;
   crew_id: string | null;
   is_active: boolean;
+  hourly_rate: number | null;
 }
 
 function SortableCrewRow({
@@ -195,10 +195,15 @@ function SortableCrewRow({
                     !member.is_active ? "opacity-60" : ""
                   }`}
                 >
-                  <span className="flex-1 text-sm text-foreground">
+                  <span className="flex-1 text-sm text-foreground flex items-center gap-2">
                     {member.name}
+                    {member.hourly_rate != null ? (
+                      <span className="text-xs text-muted-foreground">${Number(member.hourly_rate).toFixed(2)}/hr</span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground italic">No rate</span>
+                    )}
                     {!member.is_active && (
-                      <span className="ml-2 text-xs text-muted-foreground">
+                      <span className="text-xs text-muted-foreground">
                         (Inactive)
                       </span>
                     )}
@@ -242,8 +247,6 @@ function SortableCrewRow({
               </Button>
             </div>
 
-            {/* Employees (P&L rates) Section */}
-            <CrewEmployeesSection crewId={crew.id} />
           </div>
         </CollapsibleContent>
       </Collapsible>
@@ -268,6 +271,7 @@ export function CrewsManagement() {
   const [editingMember, setEditingMember] = useState<CrewMember | null>(null);
   const [memberName, setMemberName] = useState("");
   const [memberCrewId, setMemberCrewId] = useState<string | null>(null);
+  const [memberRate, setMemberRate] = useState("");
 
   // Delete confirmation state
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -328,7 +332,7 @@ export function CrewsManagement() {
       if (!organizationId) return [];
       const { data, error } = await supabase
         .from("crew_members")
-        .select("id, name, crew_id, is_active")
+        .select("id, name, crew_id, is_active, hourly_rate")
         .eq("organization_id", organizationId)
         .order("name");
       if (error) throw error;
@@ -412,9 +416,9 @@ export function CrewsManagement() {
   });
 
   const createMemberMutation = useMutation({
-    mutationFn: async ({ name, crew_id }: { name: string; crew_id: string | null }) => {
+    mutationFn: async ({ name, crew_id, hourly_rate }: { name: string; crew_id: string | null; hourly_rate: number | null }) => {
       if (!organizationId) throw new Error("No organization found");
-      const { error } = await supabase.from("crew_members").insert({ organization_id: organizationId, name, crew_id });
+      const { error } = await supabase.from("crew_members").insert({ organization_id: organizationId, name, crew_id, hourly_rate } as any);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -428,8 +432,8 @@ export function CrewsManagement() {
   });
 
   const updateMemberMutation = useMutation({
-    mutationFn: async ({ id, name }: { id: string; name: string }) => {
-      const { error } = await supabase.from("crew_members").update({ name }).eq("id", id);
+    mutationFn: async ({ id, name, hourly_rate }: { id: string; name: string; hourly_rate: number | null }) => {
+      const { error } = await supabase.from("crew_members").update({ name, hourly_rate } as any).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -527,10 +531,12 @@ export function CrewsManagement() {
       setEditingMember(member);
       setMemberName(member.name);
       setMemberCrewId(member.crew_id);
+      setMemberRate(member.hourly_rate != null ? String(member.hourly_rate) : "");
     } else {
       setEditingMember(null);
       setMemberName("");
       setMemberCrewId(crewId || null);
+      setMemberRate("");
     }
     setMemberDialogOpen(true);
   };
@@ -540,14 +546,16 @@ export function CrewsManagement() {
     setEditingMember(null);
     setMemberName("");
     setMemberCrewId(null);
+    setMemberRate("");
   };
 
   const handleMemberSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const rateValue = memberRate.trim() ? parseFloat(memberRate) : null;
     if (editingMember) {
-      updateMemberMutation.mutate({ id: editingMember.id, name: memberName });
+      updateMemberMutation.mutate({ id: editingMember.id, name: memberName, hourly_rate: rateValue });
     } else {
-      createMemberMutation.mutate({ name: memberName, crew_id: memberCrewId });
+      createMemberMutation.mutate({ name: memberName, crew_id: memberCrewId, hourly_rate: rateValue });
     }
   };
 
@@ -730,6 +738,21 @@ export function CrewsManagement() {
                 required
                 placeholder="Enter member name"
               />
+            </div>
+            <div className="space-y-2">
+              <Label>Hourly Rate ($)</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                <Input
+                  type="number"
+                  value={memberRate}
+                  onChange={(e) => setMemberRate(e.target.value)}
+                  placeholder="0.00"
+                  step="0.01"
+                  min="0"
+                  className="pl-7"
+                />
+              </div>
             </div>
             <Button
               type="submit"
