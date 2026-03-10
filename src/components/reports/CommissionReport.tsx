@@ -142,6 +142,8 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
     extras?: number | null;
     other_costs?: number | null;
     labor_allow?: number | null;
+    ftg_total?: number | null;
+    wall_total?: number | null;
   }>>({});
 
   // ── Step 1: F&W schedule entries ──
