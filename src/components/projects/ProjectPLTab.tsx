@@ -418,7 +418,90 @@ function SectionCard({
               {data.vendor.stone > 0 && <CostLine label="Stone / Gravel" amount={data.vendor.stone} />}
               {data.vendor.pump > 0 && <CostLine label="Pump" amount={data.vendor.pump} />}
               {data.vendor.inspection > 0 && <CostLine label="Inspection" amount={data.vendor.inspection} />}
-              <CostLine label="Labor" amount={data.labor} />
+              {/* Labor */}
+              <div className="flex items-start justify-between py-1 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Labor</span>
+                  {laborEntryCount > 0 && (
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      {laborHours.toFixed(1)} hrs across {laborEntryCount} entries
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-col items-end gap-1">
+                  <div className="flex items-center gap-2">
+                    {hasOverride && (
+                      <span className="text-xs text-muted-foreground line-through">
+                        {fmtTotal(data.labor)}
+                      </span>
+                    )}
+                    {readOnly ? (
+                      <span className={data.labor > 0 ? "text-foreground" : "text-muted-foreground"}>
+                        {fmt(hasOverride ? (overrideValue ?? 0) : data.labor)}
+                      </span>
+                    ) : (
+                      <div className="relative w-32">
+                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          defaultValue={hasOverride ? (overrideValue ?? 0) : data.labor.toFixed(2)}
+                          key={`${section}-${hasOverride}-${overrideValue}-${data.labor}`}
+                          onBlur={async (e) => {
+                            const val = parseFloat(e.target.value);
+                            if (isNaN(val)) return;
+                            const sectionIds = scheduleEntries
+                              .filter((se: any) => {
+                                const s = se.phases?.pl_section;
+                                return s === section || s === "both";
+                              })
+                              .map((se: any) => se.id);
+                            if (sectionIds.length > 0) {
+                              await supabase
+                                .from("schedule_entries")
+                                .update({ crew_labor_cost_override: null } as any)
+                                .in("id", sectionIds);
+                              await supabase
+                                .from("schedule_entries")
+                                .update({ crew_labor_cost_override: val } as any)
+                                .eq("id", sectionIds[0]);
+                              queryClient.invalidateQueries({
+                                queryKey: ["pl-schedule-hours", projectId],
+                              });
+                            }
+                          }}
+                          className="h-7 text-sm pl-5 pr-2 text-right w-32 border border-input rounded-md bg-background"
+                        />
+                      </div>
+                    )}
+                  </div>
+                  {hasOverride && !readOnly && (
+                    <button
+                      className="text-xs text-muted-foreground hover:text-foreground underline"
+                      onClick={async () => {
+                        const sectionIds = scheduleEntries
+                          .filter((se: any) => {
+                            const s = se.phases?.pl_section;
+                            return s === section || s === "both";
+                          })
+                          .map((se: any) => se.id);
+                        if (sectionIds.length > 0) {
+                          await supabase
+                            .from("schedule_entries")
+                            .update({ crew_labor_cost_override: null } as any)
+                            .in("id", sectionIds);
+                          queryClient.invalidateQueries({
+                            queryKey: ["pl-schedule-hours", projectId],
+                          });
+                        }
+                      }}
+                    >
+                      Reset to calculated
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* Other Costs */}
