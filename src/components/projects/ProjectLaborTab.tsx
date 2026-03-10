@@ -307,7 +307,7 @@ function AddLaborDialog({
       if (error) throw error;
       return data as CrewEmployee[];
     },
-    enabled: !!crewId && entryMode === "by_employee" && open,
+    enabled: !!crewId && open,
   });
 
   // When crew changes and mode is by_employee, populate rows
