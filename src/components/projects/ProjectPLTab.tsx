@@ -152,22 +152,41 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
     enabled: !!projectId,
   });
 
-  // ── Labor entries ──
-  const { data: laborEntries = [] } = useQuery({
-    queryKey: ["pl-labor", projectId],
+  // ── Schedule entry hours for labor ──
+  const { data: scheduleEntries = [] } = useQuery({
+    queryKey: ["pl-schedule-hours", projectId],
     queryFn: async () => {
       if (!projectId) return [];
       const { data, error } = await supabase
-        .from("project_labor_entries")
+        .from("schedule_entries")
         .select(`
-          id, pl_section, entry_mode, total_cost,
-          project_labor_employees(line_cost, hours, hourly_rate)
+          id, crew_hours, crew_labor_cost_override, crew_id,
+          phases(pl_section),
+          crews(id, name)
         `)
-        .eq("project_id", projectId);
+        .eq("project_id", projectId)
+        .eq("deleted", false)
+        .not("crew_hours", "is", null);
       if (error) throw error;
-      return (data || []) as any as LaborEntry[];
+      return data || [];
     },
     enabled: !!projectId,
+  });
+
+  const { data: crewMemberRates = [] } = useQuery({
+    queryKey: ["crew-member-rates", organizationId],
+    queryFn: async () => {
+      if (!organizationId) return [];
+      const { data, error } = await supabase
+        .from("crew_members")
+        .select("crew_id, hourly_rate")
+        .eq("organization_id", organizationId)
+        .eq("is_active", true)
+        .not("hourly_rate", "is", null);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!organizationId,
   });
 
   // ── Other costs ──
