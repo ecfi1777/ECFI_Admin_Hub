@@ -50,6 +50,7 @@ interface ReferenceDataTableProps {
   tableName: TableName;
   displayName: string;
   hasCode?: boolean;
+  hasPlSection?: boolean;
 }
 
 interface ReferenceItem {
@@ -58,6 +59,7 @@ interface ReferenceItem {
   code?: string | null;
   display_order: number;
   is_active: boolean;
+  pl_section?: string | null;
 }
 
 export function ReferenceDataTable({ tableName, displayName, hasCode = false }: ReferenceDataTableProps) {
