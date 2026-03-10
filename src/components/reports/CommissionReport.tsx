@@ -572,7 +572,7 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
       </div>
 
       <p className="text-xs text-muted-foreground mb-2">
-        Click Base House, Extras, Other $, or Labor Allow. cells to edit — changes save automatically.
+        Click Ftg Total, Wall Total, Base House, Extras, Other $, or Labor Allow. cells to edit — changes save automatically.
       </p>
 
       {crewGroups.map((group, gi) => (
