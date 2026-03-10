@@ -432,8 +432,8 @@ export function CrewsManagement() {
   });
 
   const updateMemberMutation = useMutation({
-    mutationFn: async ({ id, name }: { id: string; name: string }) => {
-      const { error } = await supabase.from("crew_members").update({ name }).eq("id", id);
+    mutationFn: async ({ id, name, hourly_rate }: { id: string; name: string; hourly_rate: number | null }) => {
+      const { error } = await supabase.from("crew_members").update({ name, hourly_rate } as any).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
