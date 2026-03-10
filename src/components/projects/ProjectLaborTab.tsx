@@ -563,16 +563,24 @@ function AddLaborDialog({
                   <Label>Hourly Rate</Label>
                   <div className="relative">
                     <DollarSign className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
+                     <Input
                       type="number"
                       step="0.01"
                       min="0"
                       value={totalRate}
-                      onChange={(e) => setTotalRate(e.target.value)}
+                      onChange={(e) => {
+                        setTotalRate(e.target.value);
+                        setRateWasAutoFilled(false);
+                      }}
                       className="pl-7"
                       placeholder="0.00"
                     />
                   </div>
+                  {rateWasAutoFilled && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Auto-filled from {crewEmployees.filter(e => e.hourly_rate != null && e.hourly_rate > 0).length} employee rates
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="text-right text-sm font-medium text-foreground">
