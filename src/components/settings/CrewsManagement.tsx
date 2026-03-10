@@ -546,6 +546,7 @@ export function CrewsManagement() {
     setEditingMember(null);
     setMemberName("");
     setMemberCrewId(null);
+    setMemberRate("");
   };
 
   const handleMemberSubmit = (e: React.FormEvent) => {
