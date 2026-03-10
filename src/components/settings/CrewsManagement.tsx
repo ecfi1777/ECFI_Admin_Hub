@@ -739,6 +739,21 @@ export function CrewsManagement() {
                 placeholder="Enter member name"
               />
             </div>
+            <div className="space-y-2">
+              <Label>Hourly Rate ($)</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                <Input
+                  type="number"
+                  value={memberRate}
+                  onChange={(e) => setMemberRate(e.target.value)}
+                  placeholder="0.00"
+                  step="0.01"
+                  min="0"
+                  className="pl-7"
+                />
+              </div>
+            </div>
             <Button
               type="submit"
               className="w-full"
