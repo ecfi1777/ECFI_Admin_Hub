@@ -22,6 +22,7 @@ import { AddEntryDialog, type PrefilledProject } from "@/components/schedule/Add
 import { ProjectScheduleHistory } from "./ProjectScheduleHistory";
 import { ProjectDocuments } from "./ProjectDocuments";
 import { ProjectLaborTab } from "./ProjectLaborTab";
+import { ProjectPLTab } from "./ProjectPLTab";
 import { EditProjectDialog } from "./EditProjectDialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { generateProjectPdf } from "@/lib/generateProjectPdf";
