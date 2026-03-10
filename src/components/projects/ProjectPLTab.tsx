@@ -47,6 +47,8 @@ interface RevenueRow {
   id: string;
   section: string;
   sales_price: number | null;
+  base_house: number | null;
+  extras: number | null;
   notes: string | null;
 }
 
@@ -412,6 +414,7 @@ function SectionCard({
               revenueId={data.rev?.id}
               readOnly={readOnly}
               queryClient={queryClient}
+              rev={data.rev}
             />
 
             {/* Vendor Costs */}
@@ -591,6 +594,7 @@ function SalesPriceRow({
   revenueId,
   readOnly,
   queryClient,
+  rev,
 }: {
   section: Section;
   projectId: string | null;
@@ -599,45 +603,42 @@ function SalesPriceRow({
   revenueId: string | undefined;
   readOnly: boolean;
   queryClient: ReturnType<typeof useQueryClient>;
+  rev: RevenueRow | undefined;
 }) {
-  const [value, setValue] = useState(initialValue?.toString() ?? "");
+  const [baseHouse, setBaseHouse] = useState("");
+  const [extras, setExtras] = useState("");
   const [status, setStatus] = useState<"idle" | "unsaved" | "saved">("idle");
 
   useEffect(() => {
-    setValue(initialValue?.toString() ?? "");
+    setBaseHouse((rev?.base_house ?? rev?.sales_price)?.toString() ?? "");
+    setExtras(rev?.extras?.toString() ?? "");
     setStatus("idle");
-  }, [initialValue]);
+  }, [rev]);
 
-  const handleChange = (v: string) => {
-    setValue(v);
-    setStatus("unsaved");
-  };
+  const baseNum = parseFloat(baseHouse) || 0;
+  const extrasNum = parseFloat(extras) || 0;
+  const totalInvoice = baseNum + extrasNum;
 
-  const handleBlur = async () => {
+  const handleSave = async () => {
     if (!projectId || !organizationId) return;
-    const num = parseFloat(value) || null;
-    if (num === initialValue) {
-      setStatus("idle");
-      return;
-    }
+    const bh = parseFloat(baseHouse) || null;
+    const ex = parseFloat(extras) || null;
+    const sp = (bh ?? 0) + (ex ?? 0);
+
     try {
-      if (revenueId) {
-        const { error } = await supabase
-          .from("project_pl_revenue")
-          .update({ sales_price: num } as any)
-          .eq("id", revenueId);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from("project_pl_revenue")
-          .insert({
-            organization_id: organizationId,
-            project_id: projectId,
-            section,
-            sales_price: num,
-          } as any);
-        if (error) throw error;
-      }
+      const { error } = await supabase
+        .from("project_pl_revenue")
+        .upsert({
+          ...(revenueId ? { id: revenueId } : {}),
+          organization_id: organizationId,
+          project_id: projectId,
+          section,
+          base_house: bh,
+          extras: ex,
+          sales_price: sp > 0 ? sp : null,
+          updated_at: new Date().toISOString(),
+        } as any, { onConflict: "project_id,section" });
+      if (error) throw error;
       queryClient.invalidateQueries({ queryKey: ["pl-revenue", projectId] });
       setStatus("saved");
       setTimeout(() => setStatus("idle"), 2000);
@@ -647,38 +648,73 @@ function SalesPriceRow({
     }
   };
 
+  if (readOnly) {
+    return (
+      <div className="space-y-1">
+        <div className="flex justify-between text-sm">
+          <span className="text-muted-foreground">Base House</span>
+          <span className="text-foreground">{rev?.base_house != null ? fmtTotal(rev.base_house) : "—"}</span>
+        </div>
+        <div className="flex justify-between text-sm">
+          <span className="text-muted-foreground">Extras</span>
+          <span className="text-foreground">{rev?.extras != null ? fmtTotal(rev.extras) : "—"}</span>
+        </div>
+        <div className="flex justify-between text-sm">
+          <span className="text-muted-foreground">Total Invoice</span>
+          <span className="font-semibold text-foreground">{initialValue != null ? fmtTotal(initialValue) : "—"}</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-sm text-muted-foreground flex-1">Sales Price</span>
-      {readOnly ? (
-        <span className="text-sm font-medium text-foreground">
-          {initialValue != null ? fmtTotal(initialValue) : "—"}
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-muted-foreground w-24">Base House</span>
+        <div className="relative w-32">
+          <DollarSign className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
+          <Input
+            type="number"
+            step="0.01"
+            min="0"
+            value={baseHouse}
+            onChange={(e) => { setBaseHouse(e.target.value); setStatus("unsaved"); }}
+            onBlur={handleSave}
+            className="h-8 text-sm pl-6"
+            placeholder="0.00"
+          />
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-muted-foreground w-24">Extras</span>
+        <div className="relative w-32">
+          <DollarSign className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
+          <Input
+            type="number"
+            step="0.01"
+            min="0"
+            value={extras}
+            onChange={(e) => { setExtras(e.target.value); setStatus("unsaved"); }}
+            onBlur={handleSave}
+            className="h-8 text-sm pl-6"
+            placeholder="0.00"
+          />
+        </div>
+        {status === "unsaved" && (
+          <span className="text-xs text-yellow-500">Unsaved</span>
+        )}
+        {status === "saved" && (
+          <span className="text-xs text-green-500 flex items-center gap-0.5">
+            <Check className="w-3 h-3" /> Saved
+          </span>
+        )}
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-muted-foreground w-24">Total Invoice</span>
+        <span className="text-sm font-semibold text-foreground">
+          {totalInvoice > 0 ? fmtTotal(totalInvoice) : "—"}
         </span>
-      ) : (
-        <>
-          <div className="relative w-32">
-            <DollarSign className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
-            <Input
-              type="number"
-              step="0.01"
-              min="0"
-              value={value}
-              onChange={(e) => handleChange(e.target.value)}
-              onBlur={handleBlur}
-              className="h-8 text-sm pl-6"
-              placeholder="0.00"
-            />
-          </div>
-          {status === "unsaved" && (
-            <span className="text-xs text-yellow-500">Unsaved</span>
-          )}
-          {status === "saved" && (
-            <span className="text-xs text-green-500 flex items-center gap-0.5">
-              <Check className="w-3 h-3" /> Saved
-            </span>
-          )}
-        </>
-      )}
+      </div>
     </div>
   );
 }

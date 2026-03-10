@@ -16,6 +16,7 @@ interface ReferenceItem {
   display_order: number;
   is_active: boolean;
   pl_section?: string | null;
+  phase_type?: string | null;
 }
 
 const PL_SECTION_CONFIG: Record<string, { label: string; badge: string; variant: string }> = {
@@ -23,6 +24,13 @@ const PL_SECTION_CONFIG: Record<string, { label: string; badge: string; variant:
   slab: { label: "Slab", badge: "Slab", variant: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" },
   both: { label: "Both", badge: "Both", variant: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200" },
   overhead: { label: "Overhead / Other", badge: "OH", variant: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200" },
+};
+
+const PHASE_TYPE_CONFIG: Record<string, { label: string; badge: string; variant: string }> = {
+  footing: { label: "Footing Pour", badge: "FTG", variant: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200" },
+  wall: { label: "Wall Pour", badge: "WALL", variant: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200" },
+  slab: { label: "Slab Pour", badge: "SLAB", variant: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" },
+  other: { label: "Other", badge: "OTHER", variant: "bg-muted text-muted-foreground" },
 };
 
 interface SortableReferenceRowProps {
@@ -61,12 +69,27 @@ export function SortableReferenceRow({
   };
 
   const plConfig = item.pl_section ? PL_SECTION_CONFIG[item.pl_section] : null;
+  const ptConfig = item.phase_type ? PHASE_TYPE_CONFIG[item.phase_type] : null;
 
   const handlePlSectionChange = async (value: string) => {
     const newValue = value === "__unset__" ? null : value;
     const { error } = await supabase
       .from("phases")
       .update({ pl_section: newValue } as any)
+      .eq("id", item.id);
+    if (error) {
+      toast.error("Failed to update phase");
+    } else {
+      toast.success("Phase updated");
+      queryClient.invalidateQueries({ queryKey: [tableName] });
+    }
+  };
+
+  const handlePhaseTypeChange = async (value: string) => {
+    const newValue = value === "__unset__" ? null : value;
+    const { error } = await supabase
+      .from("phases")
+      .update({ phase_type: newValue } as any)
       .eq("id", item.id);
     if (error) {
       toast.error("Failed to update phase");
@@ -111,11 +134,14 @@ export function SortableReferenceRow({
             {item.code}
           </Badge>
         )}
-        {hasPlSection && (
-          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-            plConfig ? plConfig.variant : "bg-muted text-muted-foreground"
-          }`}>
-            {plConfig ? plConfig.badge : "Unset"}
+        {hasPlSection && plConfig && (
+          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${plConfig.variant}`}>
+            {plConfig.badge}
+          </span>
+        )}
+        {hasPlSection && ptConfig && (
+          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${ptConfig.variant}`}>
+            {ptConfig.badge}
           </span>
         )}
       </div>
@@ -135,6 +161,25 @@ export function SortableReferenceRow({
             <SelectItem value="slab">Slab</SelectItem>
             <SelectItem value="both">Both</SelectItem>
             <SelectItem value="overhead">Overhead / Other</SelectItem>
+          </SelectContent>
+        </Select>
+      )}
+
+      {/* Phase Type Select */}
+      {hasPlSection && (
+        <Select
+          value={item.phase_type || "__unset__"}
+          onValueChange={handlePhaseTypeChange}
+        >
+          <SelectTrigger className="w-[140px] h-8 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__unset__">— Type —</SelectItem>
+            <SelectItem value="footing">Footing Pour</SelectItem>
+            <SelectItem value="wall">Wall Pour</SelectItem>
+            <SelectItem value="slab">Slab Pour</SelectItem>
+            <SelectItem value="other">Other</SelectItem>
           </SelectContent>
         </Select>
       )}

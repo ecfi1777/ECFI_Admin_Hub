@@ -60,6 +60,7 @@ interface ReferenceItem {
   display_order: number;
   is_active: boolean;
   pl_section?: string | null;
+  phase_type?: string | null;
 }
 
 export function ReferenceDataTable({ tableName, displayName, hasCode = false, hasPlSection = false }: ReferenceDataTableProps) {
@@ -272,7 +273,7 @@ export function ReferenceDataTable({ tableName, displayName, hasCode = false, ha
       <CardContent className="p-0">
         {hasPlSection && (
           <p className="text-sm text-muted-foreground px-4 pt-3 pb-1">
-            Tag each phase so labor and vendor costs are automatically assigned to the correct P&L section.
+            Set both P&L Section and Phase Type on each phase. Phase Type is required for the Commission Report to identify footing and wall pour dates correctly.
           </p>
         )}
         {isLoading ? (
