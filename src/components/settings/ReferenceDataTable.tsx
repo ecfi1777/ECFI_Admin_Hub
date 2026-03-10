@@ -270,6 +270,11 @@ export function ReferenceDataTable({ tableName, displayName, hasCode = false, ha
         </div>
       </CardHeader>
       <CardContent className="p-0">
+        {hasPlSection && (
+          <p className="text-sm text-muted-foreground px-4 pt-3 pb-1">
+            Tag each phase so labor and vendor costs are automatically assigned to the correct P&L section.
+          </p>
+        )}
         {isLoading ? (
           <div className="text-muted-foreground text-center py-8">Loading...</div>
         ) : displayItems.length === 0 ? (
