@@ -308,6 +308,17 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
         );
         if (error) throw error;
         toast.success("Saved");
+      } else if (field === "ftg_total" || field === "wall_total") {
+        if (!entryId) {
+          toast.error("No schedule entry found to update");
+          return;
+        }
+        const { error } = await supabase
+          .from("schedule_entries")
+          .update({ crew_yards_poured: value ?? 0 })
+          .eq("id", entryId);
+        if (error) throw error;
+        toast.success("Saved");
       }
     } catch (e) {
       console.error(e);
