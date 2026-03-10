@@ -21,6 +21,16 @@ interface VendorInvoiceRowProps {
   showCheckboxCol: boolean;
 }
 
+const formatCurrency = (val: string | number | null | undefined) => {
+  const num = typeof val === "string" ? parseFloat(val) : val;
+  if (num == null || isNaN(num)) return "—";
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+  }).format(num);
+};
+
 const TYPE_BADGE_STYLES: Record<string, string> = {
   concrete: "bg-blue-500/10 text-blue-500 border-blue-500/20",
   stone: "bg-amber-500/10 text-amber-500 border-amber-500/20",
