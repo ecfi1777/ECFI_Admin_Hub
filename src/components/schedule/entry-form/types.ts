@@ -90,6 +90,7 @@ export const DEFAULT_ENTRY_FORM_VALUES: EntryFormValues = {
   inspection_amount: "",
   inspection_notes: "",
   crew_yards_poured: "",
+  crew_hours: "",
   crew_notes: "",
   to_be_invoiced: false,
   did_not_work: false,

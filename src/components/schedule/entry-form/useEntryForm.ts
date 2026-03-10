@@ -107,6 +107,7 @@ export function useEntryForm(options: UseEntryFormOptions = {}) {
       inspection_amount: formData.inspection_amount ? parseFloat(formData.inspection_amount) : null,
       inspection_notes: formData.inspection_notes || null,
       crew_yards_poured: formData.crew_yards_poured ? parseFloat(formData.crew_yards_poured) : null,
+      crew_hours: formData.crew_hours ? parseFloat(formData.crew_hours) : null,
       crew_notes: formData.crew_notes || null,
       to_be_invoiced: formData.to_be_invoiced,
       did_not_work: formData.did_not_work,

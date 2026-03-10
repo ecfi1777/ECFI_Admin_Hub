@@ -468,12 +468,6 @@ export function ProjectDetailsSheet({
                     readOnly={!canManage || isDeleted}
                   />
                 </TabsContent>
-                <TabsContent value="labor" className="mt-4">
-                  <ProjectLaborTab
-                    projectId={projectId}
-                    readOnly={!canManage || isDeleted}
-                  />
-                </TabsContent>
                 <TabsContent value="pl" className="mt-4">
                   <ProjectPLTab
                     projectId={projectId}
