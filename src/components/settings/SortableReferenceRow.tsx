@@ -165,6 +165,25 @@ export function SortableReferenceRow({
         </Select>
       )}
 
+      {/* Phase Type Select */}
+      {hasPlSection && (
+        <Select
+          value={item.phase_type || "__unset__"}
+          onValueChange={handlePhaseTypeChange}
+        >
+          <SelectTrigger className="w-[140px] h-8 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__unset__">— Type —</SelectItem>
+            <SelectItem value="footing">Footing Pour</SelectItem>
+            <SelectItem value="wall">Wall Pour</SelectItem>
+            <SelectItem value="slab">Slab Pour</SelectItem>
+            <SelectItem value="other">Other</SelectItem>
+          </SelectContent>
+        </Select>
+      )}
+
       {/* Active Toggle */}
       <Switch
         checked={item.is_active}
