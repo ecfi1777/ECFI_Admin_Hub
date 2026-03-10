@@ -861,6 +861,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
         entry={cancelRescheduleEntry}
         open={!!cancelRescheduleEntry}
         onOpenChange={(open) => !open && setCancelRescheduleEntry(null)}
+        onRescheduled={onRescheduled}
       />
 
       {/* Cancel Job Dialog */}
