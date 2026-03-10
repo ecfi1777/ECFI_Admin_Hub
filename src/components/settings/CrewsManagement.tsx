@@ -234,6 +234,31 @@ function SortableCrewRow({
               ))
             )}
 
+            {/* Crew Total Rate Summary */}
+            {crewMembers.length > 0 && (() => {
+              const activeWithRate = crewMembers.filter(m => m.is_active && m.hourly_rate != null);
+              const totalRate = activeWithRate.reduce((sum, m) => sum + (m.hourly_rate ?? 0), 0);
+              const membersWithRate = activeWithRate.length;
+              return (
+                <div className="px-12 py-2 flex items-center justify-between border-t border-border/50">
+                  {membersWithRate > 0 ? (
+                    <>
+                      <span className="text-xs text-muted-foreground">
+                        Crew Total Rate ({membersWithRate} members with rates)
+                      </span>
+                      <span className="text-sm font-semibold text-foreground">
+                        ${totalRate.toFixed(2)}/hr
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-xs text-muted-foreground italic">
+                      No rates set — add hourly rates to members to enable P&L labor calculations
+                    </span>
+                  )}
+                </div>
+              );
+            })()}
+
             {/* Add Member Button */}
             <div className="px-12 py-2">
               <Button

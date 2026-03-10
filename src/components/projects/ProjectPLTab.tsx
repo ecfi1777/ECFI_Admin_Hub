@@ -427,6 +427,29 @@ function SectionCard({
                       {laborHours.toFixed(1)} hrs across {laborEntryCount} entries
                     </div>
                   )}
+                  {(() => {
+                    const sectionEntries = scheduleEntries.filter((e: any) => {
+                      const s = e.phases?.pl_section;
+                      return s === section || s === "both";
+                    });
+                    const crewMap = new Map<string, { name: string; rate: number }>();
+                    sectionEntries.forEach((e: any) => {
+                      if (e.crew_id && e.crews?.name && !crewMap.has(e.crew_id)) {
+                        const rate = crewMemberRates
+                          .filter((m: any) => m.crew_id === e.crew_id)
+                          .reduce((sum: number, m: any) => sum + (m.hourly_rate ?? 0), 0);
+                        if (rate > 0) {
+                          crewMap.set(e.crew_id, { name: e.crews.name, rate });
+                        }
+                      }
+                    });
+                    if (crewMap.size === 0) return null;
+                    return Array.from(crewMap.values()).map((c, i) => (
+                      <div key={i} className="text-xs text-muted-foreground">
+                        @ ${c.rate.toFixed(2)}/hr ({c.name})
+                      </div>
+                    ));
+                  })()}
                 </div>
                 <div className="flex flex-col items-end gap-1">
                   <div className="flex items-center gap-2">
