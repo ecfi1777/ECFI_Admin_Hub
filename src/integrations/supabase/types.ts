@@ -508,6 +508,7 @@ export type Database = {
           is_active: boolean
           name: string
           organization_id: string
+          phase_type: string | null
           pl_section: string | null
           updated_at: string
         }
@@ -518,6 +519,7 @@ export type Database = {
           is_active?: boolean
           name: string
           organization_id: string
+          phase_type?: string | null
           pl_section?: string | null
           updated_at?: string
         }
@@ -528,6 +530,7 @@ export type Database = {
           is_active?: boolean
           name?: string
           organization_id?: string
+          phase_type?: string | null
           pl_section?: string | null
           updated_at?: string
         }
@@ -578,6 +581,70 @@ export type Database = {
             columns: ["default_organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_commissions: {
+        Row: {
+          calc_method: string
+          created_at: string | null
+          crew_id: string
+          id: string
+          notes: string | null
+          organization_id: string
+          override_amount: number | null
+          pct_of_invoice: number | null
+          project_id: string
+          rate_per_cy: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          calc_method?: string
+          created_at?: string | null
+          crew_id: string
+          id?: string
+          notes?: string | null
+          organization_id: string
+          override_amount?: number | null
+          pct_of_invoice?: number | null
+          project_id: string
+          rate_per_cy?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          calc_method?: string
+          created_at?: string | null
+          crew_id?: string
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          override_amount?: number | null
+          pct_of_invoice?: number | null
+          project_id?: string
+          rate_per_cy?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_commissions_crew_id_fkey"
+            columns: ["crew_id"]
+            isOneToOne: false
+            referencedRelation: "crews"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_commissions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_commissions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
@@ -861,7 +928,9 @@ export type Database = {
       }
       project_pl_revenue: {
         Row: {
+          base_house: number | null
           created_at: string | null
+          extras: number | null
           id: string
           notes: string | null
           organization_id: string
@@ -871,7 +940,9 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          base_house?: number | null
           created_at?: string | null
+          extras?: number | null
           id?: string
           notes?: string | null
           organization_id: string
@@ -881,7 +952,9 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          base_house?: number | null
           created_at?: string | null
+          extras?: number | null
           id?: string
           notes?: string | null
           organization_id?: string
