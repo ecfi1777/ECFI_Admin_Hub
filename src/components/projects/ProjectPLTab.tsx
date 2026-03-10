@@ -414,6 +414,7 @@ function SectionCard({
               revenueId={data.rev?.id}
               readOnly={readOnly}
               queryClient={queryClient}
+              rev={data.rev}
             />
 
             {/* Vendor Costs */}
