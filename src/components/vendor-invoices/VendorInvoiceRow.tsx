@@ -21,6 +21,16 @@ interface VendorInvoiceRowProps {
   showCheckboxCol: boolean;
 }
 
+const formatCurrency = (val: string | number | null | undefined) => {
+  const num = typeof val === "string" ? parseFloat(val) : val;
+  if (num == null || isNaN(num)) return "—";
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+  }).format(num);
+};
+
 const TYPE_BADGE_STYLES: Record<string, string> = {
   concrete: "bg-blue-500/10 text-blue-500 border-blue-500/20",
   stone: "bg-amber-500/10 text-amber-500 border-amber-500/20",
@@ -177,14 +187,17 @@ export function VendorInvoiceRow({
                 />
               )}
               {canEditAmount && (
-                <Input
-                  type="number"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder="Amount $"
-                  className="h-9 w-28"
-                  step="0.01"
-                />
+                <div className="relative flex items-center">
+                  <span className="absolute left-2 text-muted-foreground text-sm">$</span>
+                  <Input
+                    type="number"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    placeholder="0.00"
+                    className="h-9 w-28 pl-5"
+                    step="0.01"
+                  />
+                </div>
               )}
               <Button
                 size="sm"
@@ -263,14 +276,17 @@ export function VendorInvoiceRow({
       {showAmountCol && (
         <TableCell>
           {canEditAmount ? (
-            <Input
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="$"
-              className="h-8 w-24"
-              step="0.01"
-            />
+            <div className="relative flex items-center">
+              <span className="absolute left-2 text-muted-foreground text-sm">$</span>
+              <Input
+                type="number"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="0.00"
+                className="h-8 w-28 pl-5"
+                step="0.01"
+              />
+            </div>
           ) : (
             <span className="text-muted-foreground">-</span>
           )}

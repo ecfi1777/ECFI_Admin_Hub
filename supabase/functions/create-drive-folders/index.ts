@@ -128,7 +128,10 @@ Deno.serve(async (req) => {
     }
 
     // Build project folder name
-    const parts = [builder_code, location_name, lot_number].filter(Boolean);
+    const truncatedLocation = location_name
+      ? location_name.substring(0, 5).trim()
+      : null;
+    const parts = [builder_code, truncatedLocation, lot_number].filter(Boolean);
     let folderName = parts.join("_");
     if (!folderName) folderName = "Unnamed Project";
 

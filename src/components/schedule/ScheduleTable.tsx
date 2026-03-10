@@ -66,9 +66,10 @@ import type { ScheduleEntry } from "@/types/schedule";
 interface ScheduleTableProps {
   entries: ScheduleEntry[];
   readOnly?: boolean;
+  onRescheduled?: (newDate: string) => void;
 }
 
-export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps) {
+export function ScheduleTable({ entries, readOnly = false, onRescheduled }: ScheduleTableProps) {
   const [editingCell, setEditingCell] = useState<{ entryId: string; field: string } | null>(null);
   const [editValue, setEditValue] = useState<string>("");
   const [deleteEntryId, setDeleteEntryId] = useState<string | null>(null);
@@ -394,16 +395,16 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
         <Table>
           <TableHeader>
             <TableRow className="border-border">
-              <TableHead className="text-muted-foreground w-20">Crew</TableHead>
-              <TableHead className="text-muted-foreground w-[4.25rem]">Builder</TableHead>
+              <TableHead className="text-muted-foreground w-20 text-center">Crew</TableHead>
+              <TableHead className="text-muted-foreground w-[4.25rem] text-center">Builder</TableHead>
               <TableHead className="text-muted-foreground w-20">Location</TableHead>
-              <TableHead className="text-muted-foreground w-14">Lot #</TableHead>
-              <TableHead className="text-muted-foreground w-[4.25rem]">Phase</TableHead>
-              <TableHead className="text-muted-foreground w-[4.25rem]">Pump Co.</TableHead>
-              <TableHead className="text-muted-foreground w-20">Insp. Type</TableHead>
-              <TableHead className="text-muted-foreground w-20">Inspector</TableHead>
-              <TableHead className="text-muted-foreground w-[4.25rem]">Supplier</TableHead>
-              <TableHead className="text-muted-foreground w-14">Qty Ord</TableHead>
+              <TableHead className="text-muted-foreground w-14 text-center">Lot #</TableHead>
+              <TableHead className="text-muted-foreground w-[4.25rem] text-center">Phase</TableHead>
+              <TableHead className="text-muted-foreground w-[4.25rem] text-center">Pump Co.</TableHead>
+              <TableHead className="text-muted-foreground w-20 text-center">Insp. Type</TableHead>
+              <TableHead className="text-muted-foreground w-20 text-center">Inspector</TableHead>
+              <TableHead className="text-muted-foreground w-[4.25rem] text-center">Supplier</TableHead>
+              <TableHead className="text-muted-foreground w-14 text-center">Qty Ord</TableHead>
               {!readOnly && <TableHead className="text-muted-foreground w-14 text-center">Need to Inv.</TableHead>}
               {!readOnly && <TableHead className="text-muted-foreground w-24">Actions</TableHead>}
             </TableRow>
@@ -541,7 +542,7 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
               // Normal row (active entry)
               return (
                 <TableRow key={entry.id} className="border-border hover:bg-muted/50">
-                  <TableCell className="text-foreground text-xs py-2">
+                  <TableCell className="text-foreground text-xs py-2 text-center">
                     {readOnly ? (
                       <span className="truncate block">{entry.crews?.name || "-"}</span>
                     ) : (
@@ -564,7 +565,7 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
                       </div>
                     )}
                   </TableCell>
-                  <TableCell className="text-foreground text-xs py-2">
+                  <TableCell className="text-foreground text-xs py-2 text-center">
                     <button
                       onClick={() => {
                         if (entry.project_id) {
@@ -572,7 +573,7 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
                           setIsProjectSheetOpen(true);
                         }
                       }}
-                      className={`text-left ${entry.project_id ? "hover:underline hover:text-primary cursor-pointer" : ""}`}
+                      className={`text-center ${entry.project_id ? "hover:underline hover:text-primary cursor-pointer" : ""}`}
                       disabled={!entry.project_id}
                     >
                       {entry.projects?.builders?.code || entry.projects?.builders?.name || "-"}
@@ -592,7 +593,7 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
                       {entry.projects?.locations?.name || "-"}
                     </button>
                   </TableCell>
-                  <TableCell className="text-xs py-2">
+                  <TableCell className="text-xs py-2 text-center">
                     <button
                       onClick={() => {
                         if (entry.project_id) {
@@ -600,13 +601,13 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
                           setIsProjectSheetOpen(true);
                         }
                       }}
-                      className={`text-left text-primary font-medium ${entry.project_id ? "hover:underline cursor-pointer" : ""}`}
+                      className={`text-center text-primary font-medium ${entry.project_id ? "hover:underline cursor-pointer" : ""}`}
                       disabled={!entry.project_id}
                     >
                       {entry.projects?.lot_number || "-"}
                     </button>
                   </TableCell>
-                  <TableCell className="py-2">
+                  <TableCell className="py-2 text-center">
                     {renderSelectCell(
                       entry,
                       "phase_id",
@@ -615,7 +616,7 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
                       entry.phases?.name || "-"
                     )}
                   </TableCell>
-                  <TableCell className="py-2">
+                  <TableCell className="py-2 text-center">
                     {renderSelectCellWithQuickEdit(
                       entry,
                       "pump_vendor_id",
@@ -625,7 +626,7 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
                       "pump"
                     )}
                   </TableCell>
-                  <TableCell className="py-2">
+                  <TableCell className="py-2 text-center">
                     {renderSelectCellWithQuickEdit(
                       entry,
                       "inspection_type_id",
@@ -635,7 +636,7 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
                       "inspection"
                     )}
                   </TableCell>
-                  <TableCell className="py-2">
+                  <TableCell className="py-2 text-center">
                     {renderSelectCellWithQuickEdit(
                       entry,
                       "inspector_id",
@@ -645,7 +646,7 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
                       "inspection"
                     )}
                   </TableCell>
-                  <TableCell className="py-2">
+                  <TableCell className="py-2 text-center">
                     {isPrepSlabs(entry)
                       ? renderSelectCellWithQuickEdit(
                           entry,
@@ -664,7 +665,7 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
                           "concrete"
                         )}
                   </TableCell>
-                  <TableCell className="py-2">
+                  <TableCell className="py-2 text-center">
                     {renderEditableCell(
                       entry,
                       "qty_ordered",
@@ -860,6 +861,7 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
         entry={cancelRescheduleEntry}
         open={!!cancelRescheduleEntry}
         onOpenChange={(open) => !open && setCancelRescheduleEntry(null)}
+        onRescheduled={onRescheduled}
       />
 
       {/* Cancel Job Dialog */}
