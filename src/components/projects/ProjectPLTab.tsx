@@ -375,13 +375,6 @@ interface SectionCardProps {
   overrideValue: number | null;
   scheduleEntries: any[];
 }
-  sectionOther: OtherCost[];
-  otherTotal: number;
-  totalCosts: number;
-  salesPrice: number | null;
-  grossProfit: number | null;
-  rev: RevenueRow | undefined;
-}
 
 function SectionCard({
   section,
@@ -390,14 +383,12 @@ function SectionCard({
   organizationId,
   readOnly,
   queryClient,
-}: {
-  section: Section;
-  data: SectionData;
-  projectId: string | null;
-  organizationId: string | null;
-  readOnly: boolean;
-  queryClient: ReturnType<typeof useQueryClient>;
-}) {
+  laborHours,
+  laborEntryCount,
+  hasOverride,
+  overrideValue,
+  scheduleEntries,
+}: SectionCardProps) {
   const [isOpen, setIsOpen] = useState(true);
 
   return (
