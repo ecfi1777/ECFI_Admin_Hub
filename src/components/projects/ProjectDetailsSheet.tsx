@@ -453,12 +453,6 @@ export function ProjectDetailsSheet({
                     Documents
                   </TabsTrigger>
                   <TabsTrigger
-                    value="labor"
-                    className="data-[state=active]:bg-slate-600 text-slate-300"
-                  >
-                    Labor
-                  </TabsTrigger>
-                  <TabsTrigger
                     value="pl"
                     className="data-[state=active]:bg-slate-600 text-slate-300"
                   >
