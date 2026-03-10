@@ -1097,7 +1097,9 @@ export type Database = {
           concrete_notes: string | null
           created_at: string
           created_by: string | null
+          crew_hours: number | null
           crew_id: string | null
+          crew_labor_cost_override: number | null
           crew_notes: string | null
           crew_yards_poured: number | null
           deleted: boolean
@@ -1153,7 +1155,9 @@ export type Database = {
           concrete_notes?: string | null
           created_at?: string
           created_by?: string | null
+          crew_hours?: number | null
           crew_id?: string | null
+          crew_labor_cost_override?: number | null
           crew_notes?: string | null
           crew_yards_poured?: number | null
           deleted?: boolean
@@ -1209,7 +1213,9 @@ export type Database = {
           concrete_notes?: string | null
           created_at?: string
           created_by?: string | null
+          crew_hours?: number | null
           crew_id?: string | null
+          crew_labor_cost_override?: number | null
           crew_notes?: string | null
           crew_yards_poured?: number | null
           deleted?: boolean

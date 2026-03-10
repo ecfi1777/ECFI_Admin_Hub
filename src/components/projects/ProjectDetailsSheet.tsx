@@ -21,7 +21,7 @@ import { Pencil, ExternalLink, MapPin, FileText, Building, Home, Download, Archi
 import { AddEntryDialog, type PrefilledProject } from "@/components/schedule/AddEntryDialog";
 import { ProjectScheduleHistory } from "./ProjectScheduleHistory";
 import { ProjectDocuments } from "./ProjectDocuments";
-import { ProjectLaborTab } from "./ProjectLaborTab";
+
 import { ProjectPLTab } from "./ProjectPLTab";
 import { EditProjectDialog } from "./EditProjectDialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -37,7 +37,7 @@ interface ProjectDetailsSheetProps {
   projectId: string | null;
   isOpen: boolean;
   onClose: () => void;
-  initialTab?: "history" | "documents" | "labor" | "pl";
+  initialTab?: "history" | "documents" | "pl";
 }
 
 const KANBAN_STATUSES = ["Upcoming", "Ready to Start", "In Progress", "Complete"];
@@ -453,12 +453,6 @@ export function ProjectDetailsSheet({
                     Documents
                   </TabsTrigger>
                   <TabsTrigger
-                    value="labor"
-                    className="data-[state=active]:bg-slate-600 text-slate-300"
-                  >
-                    Labor
-                  </TabsTrigger>
-                  <TabsTrigger
                     value="pl"
                     className="data-[state=active]:bg-slate-600 text-slate-300"
                   >
@@ -470,12 +464,6 @@ export function ProjectDetailsSheet({
                 </TabsContent>
                 <TabsContent value="documents" className="mt-4">
                   <ProjectDocuments
-                    projectId={projectId}
-                    readOnly={!canManage || isDeleted}
-                  />
-                </TabsContent>
-                <TabsContent value="labor" className="mt-4">
-                  <ProjectLaborTab
                     projectId={projectId}
                     readOnly={!canManage || isDeleted}
                   />

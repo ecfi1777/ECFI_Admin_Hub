@@ -64,6 +64,18 @@ export function CrewTab({ formData, updateField, currentCrewId }: CrewTabProps) 
       </div>
 
       <div className="space-y-2">
+        <Label>Crew Hours Worked</Label>
+        <Input
+          type="number"
+          step="0.25"
+          min="0"
+          value={formData.crew_hours}
+          onChange={(e) => updateField("crew_hours", e.target.value)}
+          placeholder="0"
+        />
+      </div>
+
+      <div className="space-y-2">
         <Label>Crew Notes</Label>
         <Textarea
           value={formData.crew_notes}
