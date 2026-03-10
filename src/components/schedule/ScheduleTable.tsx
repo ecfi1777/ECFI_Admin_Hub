@@ -507,6 +507,28 @@ export function ScheduleTable({ entries, readOnly = false }: ScheduleTableProps)
                         >
                           <Pencil className="w-3.5 h-3.5" />
                         </Button>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                          title="Delete note"
+                          onClick={() => {
+                            if (window.confirm("Delete this note entry?")) {
+                              supabase
+                                .from("schedule_entries")
+                                .delete()
+                                .eq("id", entry.id)
+                                .then(() => {
+                                  queryClient.invalidateQueries({ queryKey: ["schedule-entries"] });
+                                  toast.success("Note deleted");
+                                })
+                                .catch(() => toast.error("Failed to delete note"));
+                            }
+                          }}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
                       </TableCell>
                     )}
                   </TableRow>
