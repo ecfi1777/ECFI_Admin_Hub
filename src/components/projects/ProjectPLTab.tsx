@@ -362,6 +362,27 @@ interface SectionData {
   rev: RevenueRow | undefined;
 }
 
+interface SectionCardProps {
+  section: Section;
+  data: SectionData;
+  projectId: string | null;
+  organizationId: string | null;
+  readOnly: boolean;
+  queryClient: ReturnType<typeof useQueryClient>;
+  laborHours: number;
+  laborEntryCount: number;
+  hasOverride: boolean;
+  overrideValue: number | null;
+  scheduleEntries: any[];
+}
+  sectionOther: OtherCost[];
+  otherTotal: number;
+  totalCosts: number;
+  salesPrice: number | null;
+  grossProfit: number | null;
+  rev: RevenueRow | undefined;
+}
+
 function SectionCard({
   section,
   data,
