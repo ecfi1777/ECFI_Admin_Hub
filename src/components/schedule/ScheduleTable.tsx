@@ -395,16 +395,16 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
         <Table>
           <TableHeader>
             <TableRow className="border-border">
-              <TableHead className="text-muted-foreground w-20">Crew</TableHead>
-              <TableHead className="text-muted-foreground w-[4.25rem]">Builder</TableHead>
+              <TableHead className="text-muted-foreground w-20 text-center">Crew</TableHead>
+              <TableHead className="text-muted-foreground w-[4.25rem] text-center">Builder</TableHead>
               <TableHead className="text-muted-foreground w-20">Location</TableHead>
-              <TableHead className="text-muted-foreground w-14">Lot #</TableHead>
-              <TableHead className="text-muted-foreground w-[4.25rem]">Phase</TableHead>
-              <TableHead className="text-muted-foreground w-[4.25rem]">Pump Co.</TableHead>
-              <TableHead className="text-muted-foreground w-20">Insp. Type</TableHead>
-              <TableHead className="text-muted-foreground w-20">Inspector</TableHead>
-              <TableHead className="text-muted-foreground w-[4.25rem]">Supplier</TableHead>
-              <TableHead className="text-muted-foreground w-14">Qty Ord</TableHead>
+              <TableHead className="text-muted-foreground w-14 text-center">Lot #</TableHead>
+              <TableHead className="text-muted-foreground w-[4.25rem] text-center">Phase</TableHead>
+              <TableHead className="text-muted-foreground w-[4.25rem] text-center">Pump Co.</TableHead>
+              <TableHead className="text-muted-foreground w-20 text-center">Insp. Type</TableHead>
+              <TableHead className="text-muted-foreground w-20 text-center">Inspector</TableHead>
+              <TableHead className="text-muted-foreground w-[4.25rem] text-center">Supplier</TableHead>
+              <TableHead className="text-muted-foreground w-14 text-center">Qty Ord</TableHead>
               {!readOnly && <TableHead className="text-muted-foreground w-14 text-center">Need to Inv.</TableHead>}
               {!readOnly && <TableHead className="text-muted-foreground w-24">Actions</TableHead>}
             </TableRow>
