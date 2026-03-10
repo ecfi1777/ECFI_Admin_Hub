@@ -297,6 +297,8 @@ export function ReferenceDataTable({ tableName, displayName, hasCode = false, ha
                   item={item}
                   index={index}
                   hasCode={hasCode}
+                  hasPlSection={hasPlSection}
+                  tableName={tableName}
                   onEdit={openDialog}
                   onToggleActive={(id, isActive) =>
                     toggleActiveMutation.mutate({ id, is_active: isActive })
