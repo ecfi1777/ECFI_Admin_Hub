@@ -292,7 +292,7 @@ export function DailySchedule() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                <ScheduleTable entries={unassignedEntries} readOnly={!canManage} />
+                <ScheduleTable entries={unassignedEntries} readOnly={!canManage} onRescheduled={(newDate) => setSelectedDate(new Date(newDate + "T12:00:00"))} />
               </CardContent>
             </Card>
           )}
