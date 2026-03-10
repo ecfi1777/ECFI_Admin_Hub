@@ -329,6 +329,16 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
   };
 
   // ── Build rows ──
+  // Build lookup: projectId → array of other cost rows (for multi-row detection)
+  const otherCostRows = useMemo(() => {
+    const map: Record<string, any[]> = {};
+    (otherCostsData || []).forEach((c: any) => {
+      if (!map[c.project_id]) map[c.project_id] = [];
+      map[c.project_id].push(c);
+    });
+    return map;
+  }, [otherCostsData]);
+
   const { crewGroups } = useMemo(() => {
     if (!fwEntries.length) return { crewGroups: [] };
 
@@ -636,10 +646,19 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
                     <td className="px-2 py-1.5 text-right whitespace-nowrap">{fmtYards(r.totalYards)}</td>
                     <td className="px-2 py-1.5 text-right whitespace-nowrap">{fmtCurrency(r.concreteCost)}</td>
                     <td className="px-2 py-1.5 text-right whitespace-nowrap">
-                      <EditableCell
-                        value={r.otherCosts}
-                        onSave={(v) => handleSave(r.projectId, "other_costs", v, r.crewId)}
-                      />
+                      {(otherCostRows[r.projectId]?.length ?? 0) > 1 ? (
+                        <span
+                          title="Multiple itemized costs exist — edit on Commission tab"
+                          className="text-muted-foreground cursor-help border-b border-dashed border-muted-foreground"
+                        >
+                          {fmtCurrency(r.otherCosts)}
+                        </span>
+                      ) : (
+                        <EditableCell
+                          value={r.otherCosts}
+                          onSave={(v) => handleSave(r.projectId, "other_costs", v, r.crewId)}
+                        />
+                      )}
                     </td>
                     <td className="px-2 py-1.5 text-right whitespace-nowrap">{fmtPct(r.otherPct)}</td>
                     <td className="px-2 py-1.5 text-right whitespace-nowrap">
