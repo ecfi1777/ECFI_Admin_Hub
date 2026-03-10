@@ -77,6 +77,7 @@ export default function Settings() {
                   tableName={tab.table as any} 
                   displayName={tab.label}
                   hasCode={["builders", "suppliers", "pump_vendors", "stone_suppliers"].includes(tab.table || "")}
+                  hasPlSection={tab.table === "phases"}
                 />
               )}
             </TabsContent>
