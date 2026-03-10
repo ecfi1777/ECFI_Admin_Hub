@@ -47,6 +47,8 @@ interface RevenueRow {
   id: string;
   section: string;
   sales_price: number | null;
+  base_house: number | null;
+  extras: number | null;
   notes: string | null;
 }
 
