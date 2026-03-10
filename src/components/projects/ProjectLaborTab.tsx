@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -274,6 +274,7 @@ function AddLaborDialog({
   const [totalRate, setTotalRate] = useState("");
   const [empRows, setEmpRows] = useState<EmployeeRow[]>([]);
   const [saving, setSaving] = useState(false);
+  const [rateWasAutoFilled, setRateWasAutoFilled] = useState(false);
 
   // Fetch active crews
   const { data: crews = [] } = useQuery({
@@ -306,7 +307,7 @@ function AddLaborDialog({
       if (error) throw error;
       return data as CrewEmployee[];
     },
-    enabled: !!crewId && entryMode === "by_employee" && open,
+    enabled: !!crewId && open,
   });
 
   // When crew changes and mode is by_employee, populate rows
@@ -330,10 +331,21 @@ function AddLaborDialog({
   const handleModeChange = (mode: string) => {
     setEntryMode(mode);
     if (mode === "by_employee") {
-      // Will populate when crewEmployees loads
       setEmpRows([]);
+      setRateWasAutoFilled(false);
     }
   };
+
+  // Auto-fill rate for crew_total mode
+  useEffect(() => {
+    if (entryMode === "crew_total" && crewEmployees.length > 0 && crewId) {
+      const summedRate = crewEmployees.reduce((sum, emp) => sum + (emp.hourly_rate ?? 0), 0);
+      if (summedRate > 0) {
+        setTotalRate(summedRate.toFixed(2));
+        setRateWasAutoFilled(true);
+      }
+    }
+  }, [crewId, crewEmployees, entryMode]);
 
   // Load employee rows when crewEmployees data arrives
   const prevCrewRef = useState({ crewId: "", loaded: false });
@@ -447,6 +459,7 @@ function AddLaborDialog({
     setTotalHours("");
     setTotalRate("");
     setEmpRows([]);
+    setRateWasAutoFilled(false);
   };
 
   return (
@@ -551,16 +564,24 @@ function AddLaborDialog({
                   <Label>Hourly Rate</Label>
                   <div className="relative">
                     <DollarSign className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
+                     <Input
                       type="number"
                       step="0.01"
                       min="0"
                       value={totalRate}
-                      onChange={(e) => setTotalRate(e.target.value)}
+                      onChange={(e) => {
+                        setTotalRate(e.target.value);
+                        setRateWasAutoFilled(false);
+                      }}
                       className="pl-7"
                       placeholder="0.00"
                     />
                   </div>
+                  {rateWasAutoFilled && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Auto-filled from {crewEmployees.filter(e => e.hourly_rate != null && e.hourly_rate > 0).length} employee rates
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="text-right text-sm font-medium text-foreground">
