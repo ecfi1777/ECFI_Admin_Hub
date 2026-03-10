@@ -342,7 +342,9 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
       const ftgEntry = entries.find((e: any) => e.phases?.phase_type === "footing");
       const wallEntry = entries.find((e: any) => e.phases?.phase_type === "wall");
 
-      const totalYards = entries.reduce((s: number, e: any) => s + (e.crew_yards_poured ?? 0), 0);
+      const ftgYards = ov?.ftg_total ?? ftgEntry?.crew_yards_poured ?? null;
+      const wallYards = ov?.wall_total ?? wallEntry?.crew_yards_poured ?? null;
+      const totalYards = (ftgYards ?? 0) + (wallYards ?? 0);
       const concreteCost = entries.reduce((s: number, e: any) => s + (e.ready_mix_invoice_amount ?? 0), 0);
 
       const rev = revenue.find((r: any) => r.project_id === pid);
