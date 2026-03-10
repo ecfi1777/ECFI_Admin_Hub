@@ -656,8 +656,3 @@ function AddLaborDialog({
     </Dialog>
   );
 }
-
-const fmtCurrency = (n: number | null | undefined) =>
-  n != null
-    ? `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-    : "$0.00";
