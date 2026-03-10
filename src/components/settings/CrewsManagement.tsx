@@ -416,9 +416,9 @@ export function CrewsManagement() {
   });
 
   const createMemberMutation = useMutation({
-    mutationFn: async ({ name, crew_id }: { name: string; crew_id: string | null }) => {
+    mutationFn: async ({ name, crew_id, hourly_rate }: { name: string; crew_id: string | null; hourly_rate: number | null }) => {
       if (!organizationId) throw new Error("No organization found");
-      const { error } = await supabase.from("crew_members").insert({ organization_id: organizationId, name, crew_id });
+      const { error } = await supabase.from("crew_members").insert({ organization_id: organizationId, name, crew_id, hourly_rate } as any);
       if (error) throw error;
     },
     onSuccess: () => {
