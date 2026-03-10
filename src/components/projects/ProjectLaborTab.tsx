@@ -274,6 +274,7 @@ function AddLaborDialog({
   const [totalRate, setTotalRate] = useState("");
   const [empRows, setEmpRows] = useState<EmployeeRow[]>([]);
   const [saving, setSaving] = useState(false);
+  const [rateWasAutoFilled, setRateWasAutoFilled] = useState(false);
 
   // Fetch active crews
   const { data: crews = [] } = useQuery({
