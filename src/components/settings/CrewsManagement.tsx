@@ -182,7 +182,7 @@ function SortableCrewRow({
 
         <CollapsibleContent>
           <div className="bg-muted/30 border-b border-border">
-            {/* Members List */}
+            {/* Crew Members List */}
             {crewMembers.length === 0 ? (
               <div className="px-12 py-3 text-sm text-muted-foreground">
                 No members in this crew
@@ -241,6 +241,9 @@ function SortableCrewRow({
                 Add Member
               </Button>
             </div>
+
+            {/* Employees (P&L rates) Section */}
+            <CrewEmployeesSection crewId={crew.id} />
           </div>
         </CollapsibleContent>
       </Collapsible>
