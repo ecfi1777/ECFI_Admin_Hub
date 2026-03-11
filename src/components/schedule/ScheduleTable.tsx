@@ -580,7 +580,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
               // No-project crew note row
               if (!entry.project_id && !isDidNotWork) {
                 return (
-                  <TableRow key={entry.id} className="border-border hover:bg-muted/50">
+                  <SortableRow key={entry.id} id={entry.id} showGrip={!readOnly} className="border-border hover:bg-muted/50">
                     <TableCell className="text-foreground text-xs py-2">
                       <span className="truncate block">{entry.crews?.name || "-"}</span>
                     </TableCell>
@@ -634,7 +634,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
                         </Button>
                       </TableCell>
                     )}
-                  </TableRow>
+                  </SortableRow>
                 );
               }
 
