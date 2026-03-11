@@ -185,6 +185,20 @@ export function CancelRescheduleDialog({ entry, open, onOpenChange, onReschedule
                   onSelect={setNewDate}
                   initialFocus
                   className={cn("p-3 pointer-events-auto")}
+                  modifiers={{
+                    currentDate: currentScheduledDate ? [currentScheduledDate] : []
+                  }}
+                  modifiersClassNames={{
+                    currentDate: "border-b-2 border-primary font-semibold text-primary"
+                  }}
+                  disabled={(date) => {
+                    if (!currentScheduledDate) return false;
+                    return (
+                      date.getFullYear() === currentScheduledDate.getFullYear() &&
+                      date.getMonth() === currentScheduledDate.getMonth() &&
+                      date.getDate() === currentScheduledDate.getDate()
+                    );
+                  }}
                 />
               </PopoverContent>
             </Popover>
