@@ -104,6 +104,46 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
   
   const queryClient = useQueryClient();
 
+  // dnd-kit sensors for drag-and-drop reordering
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const reorderMutation = useMutation({
+    mutationFn: async (reorderedEntries: { id: string; display_order: number }[]) => {
+      const updates = reorderedEntries.map(({ id, display_order }) =>
+        supabase.from("schedule_entries").update({ display_order }).eq("id", id)
+      );
+      const results = await Promise.all(updates);
+      const failed = results.find(r => r.error);
+      if (failed?.error) throw failed.error;
+    },
+    onSuccess: () => {
+      invalidateScheduleQueries(queryClient);
+    },
+    onError: (error: Error) => {
+      toast.error(getUserFriendlyError(error));
+    },
+  });
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = entries.findIndex(e => e.id === active.id);
+    const newIndex = entries.findIndex(e => e.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = arrayMove(entries, oldIndex, newIndex);
+    const updates = reordered.map((entry, idx) => ({
+      id: entry.id,
+      display_order: idx,
+    }));
+    reorderMutation.mutate(updates);
+  };
+
+
   // Fetch reference data for dropdowns using shared hooks
   const { data: phases = [] } = usePhases();
   const { data: suppliers = [] } = useSuppliers();
