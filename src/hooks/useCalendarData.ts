@@ -51,6 +51,7 @@ export function useCalendarEntries(startDate: string, endDate: string) {
         .gte("scheduled_date", startDate)
         .lte("scheduled_date", endDate)
         .eq("deleted", false)
+        .order("display_order", { ascending: true })
         .order("start_time", { ascending: true, nullsFirst: false });
       if (error) throw error;
       return data as ScheduleEntry[];
