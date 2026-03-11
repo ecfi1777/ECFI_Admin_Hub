@@ -106,6 +106,10 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate,
     });
   }, [projects, projectSearch]);
 
+  const effectiveDate = showDatePicker && selectedDate
+    ? format(selectedDate, "yyyy-MM-dd")
+    : defaultDate;
+
   const createMutation = useMutation({
     mutationFn: async () => {
       if (!organizationId) throw new Error("No organization found");
@@ -113,7 +117,7 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate,
       const payload = getInsertPayload();
       const { error } = await supabase.from("schedule_entries").insert({
         organization_id: organizationId,
-        scheduled_date: defaultDate,
+        scheduled_date: effectiveDate,
         project_id: formData.did_not_work ? null : (projectId || null),
         ...payload,
       });
