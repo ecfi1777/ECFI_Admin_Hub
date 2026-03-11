@@ -863,8 +863,10 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
               );
             })}
           </TableBody>
+          </SortableContext>
         </Table>
       </div>
+      </DndContext>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deleteEntryId} onOpenChange={() => setDeleteEntryId(null)}>
