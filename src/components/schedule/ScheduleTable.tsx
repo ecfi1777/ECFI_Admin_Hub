@@ -451,10 +451,12 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
 
   return (
     <>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow className="border-border">
+              {!readOnly && <TableHead className="text-muted-foreground w-8"></TableHead>}
               <TableHead className="text-muted-foreground w-20 text-center">Crew</TableHead>
               <TableHead className="text-muted-foreground w-[4.25rem] text-center">Builder</TableHead>
               <TableHead className="text-muted-foreground w-20">Location</TableHead>
@@ -469,6 +471,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
               {!readOnly && <TableHead className="text-muted-foreground w-24">Actions</TableHead>}
             </TableRow>
           </TableHeader>
+          <SortableContext items={entries.map(e => e.id)} strategy={verticalListSortingStrategy}>
           <TableBody>
             {entries.map((entry) => {
               const isDidNotWork = entry.did_not_work === true;
