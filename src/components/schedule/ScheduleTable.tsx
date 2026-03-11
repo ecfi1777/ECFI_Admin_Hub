@@ -141,12 +141,14 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
         .update({ scheduled_date: newDate })
         .eq("id", id);
       if (error) throw error;
+      return newDate;
     },
-    onSuccess: () => {
+    onSuccess: (newDate) => {
       invalidateScheduleQueries(queryClient);
       toast.success("Entry moved to new date");
       setMoveEntryId(null);
       setMoveDate(undefined);
+      if (onRescheduled && newDate) onRescheduled(newDate);
     },
     onError: (error: Error) => {
       toast.error(getUserFriendlyError(error));
