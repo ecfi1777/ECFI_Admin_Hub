@@ -895,7 +895,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
                       </div>
                     </TableCell>
                   )}
-                </TableRow>
+                </SortableRow>
               );
             })}
           </TableBody>
