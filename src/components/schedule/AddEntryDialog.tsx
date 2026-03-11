@@ -143,6 +143,10 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate,
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (showDatePicker && !selectedDate) {
+      toast.error("Please select a scheduled date");
+      return;
+    }
     if (formData.did_not_work) {
       if (!formData.not_working_reason.trim()) {
         toast.error("Please enter a reason why the crew did not work");
