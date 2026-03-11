@@ -44,12 +44,23 @@ interface AddEntryDialogProps {
   defaultCrewId?: string | null;
   defaultDate: string;
   prefilledProject?: PrefilledProject | null;
+  showDatePicker?: boolean;
   onSuccess?: () => void;
 }
 
-export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate, prefilledProject, onSuccess }: AddEntryDialogProps) {
+export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate, prefilledProject, showDatePicker, onSuccess }: AddEntryDialogProps) {
   const [projectId, setProjectId] = useState("");
   const [projectSearch, setProjectSearch] = useState("");
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(
+    defaultDate ? new Date(defaultDate + "T12:00:00") : undefined
+  );
+
+  // Reset selected date when dialog opens
+  useEffect(() => {
+    if (open) {
+      setSelectedDate(defaultDate ? new Date(defaultDate + "T12:00:00") : undefined);
+    }
+  }, [open, defaultDate]);
   
   const queryClient = useQueryClient();
   const { organizationId } = useOrganization();
