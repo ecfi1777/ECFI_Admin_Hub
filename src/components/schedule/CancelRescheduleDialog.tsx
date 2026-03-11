@@ -107,8 +107,24 @@ export function CancelRescheduleDialog({ entry, open, onOpenChange, onReschedule
       toast.error("Please select a new date");
       return;
     }
+    if (
+      currentScheduledDate &&
+      newDate &&
+      newDate.getFullYear() === currentScheduledDate.getFullYear() &&
+      newDate.getMonth() === currentScheduledDate.getMonth() &&
+      newDate.getDate() === currentScheduledDate.getDate()
+    ) {
+      toast.error(
+        "Please select a different date — this job is already scheduled for that day"
+      );
+      return;
+    }
     mutation.mutate();
   };
+
+  const currentScheduledDate = entry?.scheduled_date
+    ? new Date(entry.scheduled_date + "T12:00:00")
+    : null;
 
   if (!entry) return null;
 
@@ -141,6 +157,14 @@ export function CancelRescheduleDialog({ entry, open, onOpenChange, onReschedule
 
           <div className="space-y-2">
             <Label>Reschedule to <span className="text-destructive">*</span></Label>
+            {currentScheduledDate && (
+              <p className="text-xs text-muted-foreground">
+                Currently scheduled:{" "}
+                <span className="font-semibold text-foreground">
+                  {format(currentScheduledDate, "EEEE, MMMM d, yyyy")}
+                </span>
+              </p>
+            )}
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -161,6 +185,20 @@ export function CancelRescheduleDialog({ entry, open, onOpenChange, onReschedule
                   onSelect={setNewDate}
                   initialFocus
                   className={cn("p-3 pointer-events-auto")}
+                  modifiers={{
+                    currentDate: currentScheduledDate ? [currentScheduledDate] : []
+                  }}
+                  modifiersClassNames={{
+                    currentDate: "border-b-2 border-primary font-semibold text-primary"
+                  }}
+                  disabled={(date) => {
+                    if (!currentScheduledDate) return false;
+                    return (
+                      date.getFullYear() === currentScheduledDate.getFullYear() &&
+                      date.getMonth() === currentScheduledDate.getMonth() &&
+                      date.getDate() === currentScheduledDate.getDate()
+                    );
+                  }}
                 />
               </PopoverContent>
             </Popover>

@@ -16,6 +16,7 @@ interface CalendarWeekViewProps {
   onShowDayDetail: (date: Date, entries: ScheduleEntry[]) => void;
   onAddEntry: (date: Date) => void;
   isMobile?: boolean;
+  onRescheduled?: (newDate: string) => void;
 }
 
 const MAX_VISIBLE_ENTRIES = 6;
@@ -31,6 +32,7 @@ export const CalendarWeekView = memo(function CalendarWeekView({
   onShowDayDetail,
   onAddEntry,
   isMobile = false,
+  onRescheduled,
 }: CalendarWeekViewProps) {
   const [hoveredDay, setHoveredDay] = useState<string | null>(null);
   const [activeDayIndex, setActiveDayIndex] = useState(() => {
