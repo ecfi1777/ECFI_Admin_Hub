@@ -26,6 +26,7 @@ interface CalendarMonthViewProps {
   onShowDayDetail: (date: Date, entries: ScheduleEntry[]) => void;
   onAddEntry: (date: Date) => void;
   isMobile?: boolean;
+  onRescheduled?: (newDate: string) => void;
 }
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
