@@ -238,6 +238,9 @@ export default function CalendarView() {
             onShowDayDetail={handleShowDayDetail}
             onAddEntry={canManage ? handleAddEntry : undefined}
             isMobile={isMobile}
+            onRescheduled={(newDateStr) =>
+              setCurrentDate(new Date(newDateStr + "T12:00:00"))
+            }
           />
         )}
 

@@ -42,6 +42,7 @@ export const CalendarMonthView = memo(function CalendarMonthView({
   onShowDayDetail,
   onAddEntry,
   isMobile = false,
+  onRescheduled,
 }: CalendarMonthViewProps) {
   const [hoveredDay, setHoveredDay] = useState<string | null>(null);
 

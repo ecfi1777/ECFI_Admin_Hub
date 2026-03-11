@@ -32,6 +32,7 @@ export const CalendarWeekView = memo(function CalendarWeekView({
   onShowDayDetail,
   onAddEntry,
   isMobile = false,
+  onRescheduled,
 }: CalendarWeekViewProps) {
   const [hoveredDay, setHoveredDay] = useState<string | null>(null);
   const [activeDayIndex, setActiveDayIndex] = useState(() => {
