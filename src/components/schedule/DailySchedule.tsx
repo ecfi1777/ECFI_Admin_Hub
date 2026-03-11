@@ -115,6 +115,7 @@ export function DailySchedule() {
         .eq("organization_id", organizationId)
         .eq("scheduled_date", dateStr)
         .eq("deleted", false)
+        .order("display_order", { ascending: true })
         .order("start_time", { ascending: true, nullsFirst: false });
       if (error) throw error;
       return data as ScheduleEntry[];
