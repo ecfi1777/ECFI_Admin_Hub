@@ -875,63 +875,114 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
       />
 
       {/* Move to Another Day Dialog */}
-      <Dialog open={!!moveEntryId} onOpenChange={(open) => { if (!open) { setMoveEntryId(null); setMoveDate(undefined); } }}>
-        <DialogContent className="bg-card border-border sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-foreground">Move to Another Day</DialogTitle>
-          </DialogHeader>
-          <div className="flex justify-center">
-            <Calendar
-              mode="single"
-              selected={moveDate}
-              onSelect={setMoveDate}
-              initialFocus
-              className="pointer-events-auto"
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setMoveEntryId(null); setMoveDate(undefined); }}>
-              Cancel
-            </Button>
-            <Button onClick={confirmMove} disabled={!moveDate}>
-              Move
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {(() => {
+        const moveEntry = entries.find(e => e.id === moveEntryId);
+        const moveCurrentDate = moveEntry?.scheduled_date
+          ? new Date(moveEntry.scheduled_date + "T12:00:00")
+          : null;
+        return (
+          <Dialog open={!!moveEntryId} onOpenChange={(open) => { if (!open) { setMoveEntryId(null); setMoveDate(undefined); } }}>
+            <DialogContent className="bg-card border-border sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="text-foreground">Move to Another Day</DialogTitle>
+              </DialogHeader>
+              {moveCurrentDate && (
+                <p className="text-xs text-muted-foreground">
+                  Currently scheduled:{" "}
+                  <span className="font-semibold text-foreground">
+                    {format(moveCurrentDate, "EEEE, MMMM d, yyyy")}
+                  </span>
+                </p>
+              )}
+              <div className="flex justify-center">
+                <Calendar
+                  mode="single"
+                  selected={moveDate}
+                  onSelect={setMoveDate}
+                  initialFocus
+                  className="pointer-events-auto"
+                  modifiers={{
+                    currentDate: moveCurrentDate ? [moveCurrentDate] : []
+                  }}
+                  modifiersClassNames={{
+                    currentDate: "border-b-2 border-primary font-semibold text-primary"
+                  }}
+                  disabled={(date) => {
+                    if (!moveCurrentDate) return false;
+                    return (
+                      date.getFullYear() === moveCurrentDate.getFullYear() &&
+                      date.getMonth() === moveCurrentDate.getMonth() &&
+                      date.getDate() === moveCurrentDate.getDate()
+                    );
+                  }}
+                />
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => { setMoveEntryId(null); setMoveDate(undefined); }}>
+                  Cancel
+                </Button>
+                <Button onClick={confirmMove} disabled={!moveDate}>
+                  Move
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        );
+      })()}
 
       {/* Copy to Another Day Dialog */}
-      <Dialog open={!!copyEntry} onOpenChange={(open) => { if (!open) { setCopyEntry(null); setCopyDate(undefined); } }}>
-        <DialogContent className="bg-card border-border sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-foreground">Copy to Another Day</DialogTitle>
-          </DialogHeader>
-          <div className="flex justify-center">
-            <Calendar
-              mode="single"
-              selected={copyDate}
-              onSelect={setCopyDate}
-              initialFocus
-              className="pointer-events-auto"
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setCopyEntry(null); setCopyDate(undefined); }}>
-              Cancel
-            </Button>
-            <Button
-              onClick={() => {
-                if (copyEntry && copyDate) {
-                  copyMutation.mutate({ entry: copyEntry, newDate: format(copyDate, "yyyy-MM-dd") });
-                }
-              }}
-              disabled={!copyDate || copyMutation.isPending}
-            >
-              {copyMutation.isPending ? "Copying..." : "Confirm"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {(() => {
+        const copyCurrentDate = copyEntry?.scheduled_date
+          ? new Date(copyEntry.scheduled_date + "T12:00:00")
+          : null;
+        return (
+          <Dialog open={!!copyEntry} onOpenChange={(open) => { if (!open) { setCopyEntry(null); setCopyDate(undefined); } }}>
+            <DialogContent className="bg-card border-border sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="text-foreground">Copy to Another Day</DialogTitle>
+              </DialogHeader>
+              {copyCurrentDate && (
+                <p className="text-xs text-muted-foreground">
+                  Currently scheduled:{" "}
+                  <span className="font-semibold text-foreground">
+                    {format(copyCurrentDate, "EEEE, MMMM d, yyyy")}
+                  </span>
+                </p>
+              )}
+              <div className="flex justify-center">
+                <Calendar
+                  mode="single"
+                  selected={copyDate}
+                  onSelect={setCopyDate}
+                  initialFocus
+                  className="pointer-events-auto"
+                  modifiers={{
+                    currentDate: copyCurrentDate ? [copyCurrentDate] : []
+                  }}
+                  modifiersClassNames={{
+                    currentDate: "border-b-2 border-primary font-semibold text-primary"
+                  }}
+                />
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => { setCopyEntry(null); setCopyDate(undefined); }}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (copyEntry && copyDate) {
+                      copyMutation.mutate({ entry: copyEntry, newDate: format(copyDate, "yyyy-MM-dd") });
+                    }
+                  }}
+                  disabled={!copyDate || copyMutation.isPending}
+                >
+                  {copyMutation.isPending ? "Copying..." : "Confirm"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        );
+      })()}
 
       {/* Project Details Sheet */}
       <ProjectDetailsSheet
