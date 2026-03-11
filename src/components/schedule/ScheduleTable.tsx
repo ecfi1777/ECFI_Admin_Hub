@@ -6,7 +6,24 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { getUserFriendlyError } from "@/lib/errorHandler";
 import { invalidateScheduleQueries } from "@/lib/queryHelpers";
-import { Trash2, CalendarIcon, MoreVertical, Pencil, CalendarX2, Undo2, ArrowRight, Copy, StickyNote, Ban } from "lucide-react";
+import { Trash2, CalendarIcon, MoreVertical, Pencil, CalendarX2, Undo2, ArrowRight, Copy, StickyNote, Ban, GripVertical } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import {
   DropdownMenu,
   DropdownMenuContent,
