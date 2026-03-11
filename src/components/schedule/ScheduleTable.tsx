@@ -521,7 +521,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
                   ? format(new Date(entry.rescheduled_to_date! + "T00:00:00"), "MMM d")
                   : null;
                 return (
-                  <TableRow key={entry.id} className="border-border bg-destructive/5">
+                  <SortableRow key={entry.id} id={entry.id} showGrip={!readOnly} className="border-border bg-destructive/5">
                     <TableCell className="text-xs py-2">
                       <span className="text-destructive line-through decoration-destructive truncate block">{entry.crews?.name || "-"}</span>
                     </TableCell>
@@ -542,7 +542,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
                         </span>
                       )}
                     </TableCell>
-                  </TableRow>
+                  </SortableRow>
                 );
               }
 
