@@ -16,6 +16,7 @@ interface CalendarWeekViewProps {
   onShowDayDetail: (date: Date, entries: ScheduleEntry[]) => void;
   onAddEntry: (date: Date) => void;
   isMobile?: boolean;
+  onRescheduled?: (newDate: string) => void;
 }
 
 const MAX_VISIBLE_ENTRIES = 6;
