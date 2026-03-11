@@ -220,6 +220,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
       toast.success(`Entry copied to ${format(new Date(newDate + "T00:00:00"), "MMM d, yyyy")}`);
       setCopyEntry(null);
       setCopyDate(undefined);
+      if (onRescheduled && newDate) onRescheduled(newDate);
     },
     onError: (error: Error) => {
       toast.error(getUserFriendlyError(error));
