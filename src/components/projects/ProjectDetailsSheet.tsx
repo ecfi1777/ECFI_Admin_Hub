@@ -550,6 +550,7 @@ export function ProjectDetailsSheet({
           open={showAddEntry}
           onOpenChange={setShowAddEntry}
           defaultDate={new Date().toISOString().split("T")[0]}
+          showDatePicker
           prefilledProject={{
             id: project.id,
             builder: project.builders?.code || project.builders?.name || undefined,

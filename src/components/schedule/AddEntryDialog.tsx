@@ -178,6 +178,37 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate,
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Date picker when opened from Project Details */}
+          {showDatePicker && (
+            <div className="space-y-2">
+              <Label>Scheduled Date <span className="text-destructive">*</span></Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !selectedDate && "text-muted-foreground"
+                    )}
+                    type="button"
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {selectedDate ? format(selectedDate, "EEEE, MMMM d, yyyy") : "Select a date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={setSelectedDate}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          )}
+
           {/* Did not work checkbox */}
           <div className="flex items-center space-x-2 p-3 rounded-md border border-border bg-muted/30">
             <Checkbox
