@@ -122,6 +122,10 @@ export function CancelRescheduleDialog({ entry, open, onOpenChange, onReschedule
     mutation.mutate();
   };
 
+  const currentScheduledDate = entry?.scheduled_date
+    ? new Date(entry.scheduled_date + "T12:00:00")
+    : null;
+
   if (!entry) return null;
 
   const projectLabel = [
