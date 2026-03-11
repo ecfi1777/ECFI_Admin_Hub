@@ -80,7 +80,7 @@ import {
 } from "@/hooks/useReferenceData";
 import type { ScheduleEntry } from "@/types/schedule";
 
-function SortableRow({ id, className, children }: { id: string; className?: string; children: React.ReactNode }) {
+function SortableRow({ id, className, showGrip, children }: { id: string; className?: string; showGrip: boolean; children: React.ReactNode }) {
   const {
     attributes,
     listeners,
@@ -98,16 +98,18 @@ function SortableRow({ id, className, children }: { id: string; className?: stri
 
   return (
     <TableRow ref={setNodeRef} style={style} className={className}>
-      <TableCell className="py-2 w-8 px-1">
-        <button
-          {...attributes}
-          {...listeners}
-          className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground touch-none"
-          tabIndex={-1}
-        >
-          <GripVertical className="w-4 h-4" />
-        </button>
-      </TableCell>
+      {showGrip && (
+        <TableCell className="py-2 w-8 px-1">
+          <button
+            {...attributes}
+            {...listeners}
+            className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground touch-none"
+            tabIndex={-1}
+          >
+            <GripVertical className="w-4 h-4" />
+          </button>
+        </TableCell>
+      )}
       {children}
     </TableRow>
   );
