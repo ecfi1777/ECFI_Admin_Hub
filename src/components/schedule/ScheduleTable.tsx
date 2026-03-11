@@ -80,6 +80,39 @@ import {
 } from "@/hooks/useReferenceData";
 import type { ScheduleEntry } from "@/types/schedule";
 
+function SortableRow({ id, className, children }: { id: string; className?: string; children: React.ReactNode }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <TableRow ref={setNodeRef} style={style} className={className}>
+      <TableCell className="py-2 w-8 px-1">
+        <button
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground touch-none"
+          tabIndex={-1}
+        >
+          <GripVertical className="w-4 h-4" />
+        </button>
+      </TableCell>
+      {children}
+    </TableRow>
+  );
+}
+
 interface ScheduleTableProps {
   entries: ScheduleEntry[];
   readOnly?: boolean;
