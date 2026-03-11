@@ -310,6 +310,14 @@ export function generateProjectPdf(project: Project, entries: ScheduleEntry[]) {
         }
       }
 
+      // General Notes
+      if (entry.notes) {
+        checkNewPage(10);
+        const splitNotes = doc.splitTextToSize(`  Notes: ${entry.notes}`, contentWidth - 10);
+        doc.text(splitNotes, margin, y);
+        y += splitNotes.length * 3.5;
+      }
+
       // Invoice Status
       let invoiceStatus = "Not Invoiced";
       if (entry.invoice_complete) {
