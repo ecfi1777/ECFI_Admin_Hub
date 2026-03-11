@@ -143,6 +143,41 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
     reorderMutation.mutate(updates);
   };
 
+function SortableRowWrapper({ id, readOnly, children }: { id: string; readOnly: boolean; children: (dragHandleProps: React.ReactNode) => React.ReactNode }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  const dragHandle = !readOnly ? (
+    <TableCell className="py-2 w-8 px-1">
+      <button
+        {...attributes}
+        {...listeners}
+        className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground touch-none"
+        tabIndex={-1}
+      >
+        <GripVertical className="w-4 h-4" />
+      </button>
+    </TableCell>
+  ) : null;
+
+  return (
+    <TableRow ref={setNodeRef} style={style} className="border-border hover:bg-muted/50">
+      {children(dragHandle)}
+    </TableRow>
+  );
+}
 
   // Fetch reference data for dropdowns using shared hooks
   const { data: phases = [] } = usePhases();
