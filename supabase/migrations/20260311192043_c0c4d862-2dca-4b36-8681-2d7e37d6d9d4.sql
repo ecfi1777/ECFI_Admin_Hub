@@ -1,0 +1,1 @@
+ALTER TABLE public.schedule_entries ADD COLUMN IF NOT EXISTS display_order integer NOT NULL DEFAULT 0;

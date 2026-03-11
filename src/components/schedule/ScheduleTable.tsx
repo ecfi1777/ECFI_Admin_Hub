@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
@@ -6,7 +6,24 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { getUserFriendlyError } from "@/lib/errorHandler";
 import { invalidateScheduleQueries } from "@/lib/queryHelpers";
-import { Trash2, CalendarIcon, MoreVertical, Pencil, CalendarX2, Undo2, ArrowRight, Copy, StickyNote, Ban } from "lucide-react";
+import { Trash2, CalendarIcon, MoreVertical, Pencil, CalendarX2, Undo2, ArrowRight, Copy, StickyNote, Ban, GripVertical } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -63,6 +80,41 @@ import {
 } from "@/hooks/useReferenceData";
 import type { ScheduleEntry } from "@/types/schedule";
 
+function SortableRow({ id, className, showGrip, children }: { id: string; className?: string; showGrip: boolean; children: React.ReactNode }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <TableRow ref={setNodeRef} style={style} className={className}>
+      {showGrip && (
+        <TableCell className="py-2 w-8 px-1">
+          <button
+            {...attributes}
+            {...listeners}
+            className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground touch-none"
+            tabIndex={-1}
+          >
+            <GripVertical className="w-4 h-4" />
+          </button>
+        </TableCell>
+      )}
+      {children}
+    </TableRow>
+  );
+}
+
 interface ScheduleTableProps {
   entries: ScheduleEntry[];
   readOnly?: boolean;
@@ -86,6 +138,47 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
   const [cancelEntry, setCancelEntry] = useState<ScheduleEntry | null>(null);
   
   const queryClient = useQueryClient();
+
+  // dnd-kit sensors for drag-and-drop reordering
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const reorderMutation = useMutation({
+    mutationFn: async (reorderedEntries: { id: string; display_order: number }[]) => {
+      const updates = reorderedEntries.map(({ id, display_order }) =>
+        supabase.from("schedule_entries").update({ display_order }).eq("id", id)
+      );
+      const results = await Promise.all(updates);
+      const failed = results.find(r => r.error);
+      if (failed?.error) throw failed.error;
+    },
+    onSuccess: () => {
+      invalidateScheduleQueries(queryClient);
+    },
+    onError: (error: Error) => {
+      toast.error(getUserFriendlyError(error));
+    },
+  });
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = entries.findIndex(e => e.id === active.id);
+    const newIndex = entries.findIndex(e => e.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = arrayMove(entries, oldIndex, newIndex);
+    const updates = reordered.map((entry, idx) => ({
+      id: entry.id,
+      display_order: idx,
+    }));
+    reorderMutation.mutate(updates);
+  };
+
+
 
   // Fetch reference data for dropdowns using shared hooks
   const { data: phases = [] } = usePhases();
@@ -394,10 +487,12 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
 
   return (
     <>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow className="border-border">
+              {!readOnly && <TableHead className="text-muted-foreground w-8"></TableHead>}
               <TableHead className="text-muted-foreground w-20 text-center">Crew</TableHead>
               <TableHead className="text-muted-foreground w-[4.25rem] text-center">Builder</TableHead>
               <TableHead className="text-muted-foreground w-20">Location</TableHead>
@@ -412,6 +507,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
               {!readOnly && <TableHead className="text-muted-foreground w-24">Actions</TableHead>}
             </TableRow>
           </TableHeader>
+          <SortableContext items={entries.map(e => e.id)} strategy={verticalListSortingStrategy}>
           <TableBody>
             {entries.map((entry) => {
               const isDidNotWork = entry.did_not_work === true;
@@ -425,7 +521,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
                   ? format(new Date(entry.rescheduled_to_date! + "T00:00:00"), "MMM d")
                   : null;
                 return (
-                  <TableRow key={entry.id} className="border-border bg-destructive/5">
+                  <SortableRow key={entry.id} id={entry.id} showGrip={!readOnly} className="border-border bg-destructive/5">
                     <TableCell className="text-xs py-2">
                       <span className="text-destructive line-through decoration-destructive truncate block">{entry.crews?.name || "-"}</span>
                     </TableCell>
@@ -446,13 +542,13 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
                         </span>
                       )}
                     </TableCell>
-                  </TableRow>
+                  </SortableRow>
                 );
               }
 
               if (isDidNotWork) {
                 return (
-                  <TableRow key={entry.id} className="border-border hover:bg-muted/50 bg-destructive/5 opacity-70">
+                  <SortableRow key={entry.id} id={entry.id} showGrip={!readOnly} className="border-border hover:bg-muted/50 bg-destructive/5 opacity-70">
                     <TableCell className="text-foreground text-xs py-2">
                       <span className="truncate block">{entry.crews?.name || "-"}</span>
                     </TableCell>
@@ -477,14 +573,14 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
                         </Button>
                       )}
                     </TableCell>
-                  </TableRow>
+                  </SortableRow>
                 );
               }
 
               // No-project crew note row
               if (!entry.project_id && !isDidNotWork) {
                 return (
-                  <TableRow key={entry.id} className="border-border hover:bg-muted/50">
+                  <SortableRow key={entry.id} id={entry.id} showGrip={!readOnly} className="border-border hover:bg-muted/50">
                     <TableCell className="text-foreground text-xs py-2">
                       <span className="truncate block">{entry.crews?.name || "-"}</span>
                     </TableCell>
@@ -538,13 +634,13 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
                         </Button>
                       </TableCell>
                     )}
-                  </TableRow>
+                  </SortableRow>
                 );
               }
 
               // Normal row (active entry)
               return (
-                <TableRow key={entry.id} className="border-border hover:bg-muted/50">
+                <SortableRow key={entry.id} id={entry.id} showGrip={!readOnly} className="border-border hover:bg-muted/50">
                   <TableCell className="text-foreground text-xs py-2 text-center">
                     {readOnly ? (
                       <span className="truncate block">{entry.crews?.name || "-"}</span>
@@ -799,12 +895,14 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
                       </div>
                     </TableCell>
                   )}
-                </TableRow>
+                </SortableRow>
               );
             })}
           </TableBody>
+          </SortableContext>
         </Table>
       </div>
+      </DndContext>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deleteEntryId} onOpenChange={() => setDeleteEntryId(null)}>

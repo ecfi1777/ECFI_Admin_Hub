@@ -59,6 +59,8 @@ export interface ScheduleEntry {
   stone_invoice_number: string | null;
   stone_invoice_amount: number | null;
   stone_notes: string | null;
+  // Ordering
+  display_order: number;
   // Nested relations
   crews: { name: string } | null;
   phases: { name: string } | null;

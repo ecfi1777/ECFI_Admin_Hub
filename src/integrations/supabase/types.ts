@@ -1179,6 +1179,7 @@ export type Database = {
           deleted_at: string | null
           deleted_by: string | null
           did_not_work: boolean
+          display_order: number
           id: string
           inspection_amount: number | null
           inspection_invoice_number: string | null
@@ -1237,6 +1238,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           did_not_work?: boolean
+          display_order?: number
           id?: string
           inspection_amount?: number | null
           inspection_invoice_number?: string | null
@@ -1295,6 +1297,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           did_not_work?: boolean
+          display_order?: number
           id?: string
           inspection_amount?: number | null
           inspection_invoice_number?: string | null
