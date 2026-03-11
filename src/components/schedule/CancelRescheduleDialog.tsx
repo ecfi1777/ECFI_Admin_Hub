@@ -157,6 +157,14 @@ export function CancelRescheduleDialog({ entry, open, onOpenChange, onReschedule
 
           <div className="space-y-2">
             <Label>Reschedule to <span className="text-destructive">*</span></Label>
+            {currentScheduledDate && (
+              <p className="text-xs text-muted-foreground">
+                Currently scheduled:{" "}
+                <span className="font-semibold text-foreground">
+                  {format(currentScheduledDate, "EEEE, MMMM d, yyyy")}
+                </span>
+              </p>
+            )}
             <Popover>
               <PopoverTrigger asChild>
                 <Button
