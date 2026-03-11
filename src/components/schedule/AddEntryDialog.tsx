@@ -3,11 +3,16 @@
  */
 
 import { useState, useMemo, useEffect } from "react";
+import { format } from "date-fns";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CalendarIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -39,12 +44,23 @@ interface AddEntryDialogProps {
   defaultCrewId?: string | null;
   defaultDate: string;
   prefilledProject?: PrefilledProject | null;
+  showDatePicker?: boolean;
   onSuccess?: () => void;
 }
 
-export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate, prefilledProject, onSuccess }: AddEntryDialogProps) {
+export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate, prefilledProject, showDatePicker, onSuccess }: AddEntryDialogProps) {
   const [projectId, setProjectId] = useState("");
   const [projectSearch, setProjectSearch] = useState("");
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(
+    defaultDate ? new Date(defaultDate + "T12:00:00") : undefined
+  );
+
+  // Reset selected date when dialog opens
+  useEffect(() => {
+    if (open) {
+      setSelectedDate(defaultDate ? new Date(defaultDate + "T12:00:00") : undefined);
+    }
+  }, [open, defaultDate]);
   
   const queryClient = useQueryClient();
   const { organizationId } = useOrganization();
@@ -90,6 +106,10 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate,
     });
   }, [projects, projectSearch]);
 
+  const effectiveDate = showDatePicker && selectedDate
+    ? format(selectedDate, "yyyy-MM-dd")
+    : defaultDate;
+
   const createMutation = useMutation({
     mutationFn: async () => {
       if (!organizationId) throw new Error("No organization found");
@@ -97,7 +117,7 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate,
       const payload = getInsertPayload();
       const { error } = await supabase.from("schedule_entries").insert({
         organization_id: organizationId,
-        scheduled_date: defaultDate,
+        scheduled_date: effectiveDate,
         project_id: formData.did_not_work ? null : (projectId || null),
         ...payload,
       });
@@ -123,6 +143,10 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate,
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (showDatePicker && !selectedDate) {
+      toast.error("Please select a scheduled date");
+      return;
+    }
     if (formData.did_not_work) {
       if (!formData.not_working_reason.trim()) {
         toast.error("Please enter a reason why the crew did not work");
@@ -154,6 +178,37 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate,
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Date picker when opened from Project Details */}
+          {showDatePicker && (
+            <div className="space-y-2">
+              <Label>Scheduled Date <span className="text-destructive">*</span></Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !selectedDate && "text-muted-foreground"
+                    )}
+                    type="button"
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {selectedDate ? format(selectedDate, "EEEE, MMMM d, yyyy") : "Select a date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={setSelectedDate}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          )}
+
           {/* Did not work checkbox */}
           <div className="flex items-center space-x-2 p-3 rounded-md border border-border bg-muted/30">
             <Checkbox
