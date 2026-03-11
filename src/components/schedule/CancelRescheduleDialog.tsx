@@ -107,6 +107,18 @@ export function CancelRescheduleDialog({ entry, open, onOpenChange, onReschedule
       toast.error("Please select a new date");
       return;
     }
+    if (
+      currentScheduledDate &&
+      newDate &&
+      newDate.getFullYear() === currentScheduledDate.getFullYear() &&
+      newDate.getMonth() === currentScheduledDate.getMonth() &&
+      newDate.getDate() === currentScheduledDate.getDate()
+    ) {
+      toast.error(
+        "Please select a different date — this job is already scheduled for that day"
+      );
+      return;
+    }
     mutation.mutate();
   };
 
