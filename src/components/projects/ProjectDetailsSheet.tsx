@@ -295,17 +295,15 @@ export function ProjectDetailsSheet({
                               <Archive className="w-4 h-4" />
                             )}
                           </Button>
-                          {isOwner && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setShowDeleteConfirm(true)}
-                              className="text-slate-400 hover:text-white h-8 w-8 p-0"
-                              title="Delete project"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setShowDeleteConfirm(true)}
+                            className="text-slate-400 hover:text-white h-8 w-8 p-0"
+                            title="Delete project"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
                         </>
                       )}
                     </SheetTitle>
