@@ -990,6 +990,29 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Undo Cancel Confirmation Dialog */}
+      <AlertDialog open={!!undoCancelEntryId} onOpenChange={() => setUndoCancelEntryId(null)}>
+        <AlertDialogContent className="bg-card border-border">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-foreground">Undo Cancellation?</AlertDialogTitle>
+            <AlertDialogDescription className="text-muted-foreground">
+              This will restore the cancelled entry back to an active state.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-muted text-foreground border-border">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (undoCancelEntryId) undoCancelMutation.mutate(undoCancelEntryId);
+              }}
+              className="bg-amber-500 text-black hover:bg-amber-600"
+            >
+              Restore Entry
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Edit Entry Dialog */}
       <EditEntryDialog
         entry={editEntry}
