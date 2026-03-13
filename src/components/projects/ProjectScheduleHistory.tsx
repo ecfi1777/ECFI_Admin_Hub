@@ -246,24 +246,20 @@ export function ProjectScheduleHistory({ projectId, readOnly = false }: ProjectS
     return acc;
   }, {} as Record<string, ScheduleEntry[]>);
 
-  const phaseOrder = [
-    "Footings",
-    "Walls",
-    "Prep Footings",
-    "Strip Walls",
-    "Flatwork",
-    "Porch",
-    "Driveway",
-    "Sidewalk",
-  ];
+  // Build a map of phase_id -> display_order from settings
+  const phaseOrderMap = new Map<string, number>();
+  allPhases.forEach((p) => phaseOrderMap.set(p.id, p.display_order));
 
   const sortedPhases = Object.keys(groupedByPhase).sort((a, b) => {
-    const aIndex = phaseOrder.indexOf(a);
-    const bIndex = phaseOrder.indexOf(b);
-    if (aIndex === -1 && bIndex === -1) return a.localeCompare(b);
-    if (aIndex === -1) return 1;
-    if (bIndex === -1) return -1;
-    return aIndex - bIndex;
+    // Find the phase_id for each phase name by looking at the first entry in the group
+    const aEntry = groupedByPhase[a][0];
+    const bEntry = groupedByPhase[b][0];
+    const aPhaseId = aEntry?.phases?.id;
+    const bPhaseId = bEntry?.phases?.id;
+    const aOrder = aPhaseId ? (phaseOrderMap.get(aPhaseId) ?? 999) : 999;
+    const bOrder = bPhaseId ? (phaseOrderMap.get(bPhaseId) ?? 999) : 999;
+    if (aOrder !== bOrder) return aOrder - bOrder;
+    return a.localeCompare(b);
   });
 
   const formatCurrency = (amount: number | null) => {
