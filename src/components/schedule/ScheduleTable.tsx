@@ -548,7 +548,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
                     <TableCell className="text-xs py-2">
                       <span className="text-destructive line-through decoration-destructive truncate block">{entry.crews?.name || "-"}</span>
                     </TableCell>
-                    <TableCell colSpan={readOnly ? 9 : 11} className="text-xs py-2">
+                    <TableCell colSpan={readOnly ? 9 : 10} className="text-xs py-2">
                       <span className="text-destructive/80 line-through decoration-destructive">
                         {[
                           entry.projects?.builders?.code || entry.projects?.builders?.name,
@@ -565,6 +565,24 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
                         </span>
                       )}
                     </TableCell>
+                    {!readOnly && (
+                      <TableCell className="py-2">
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          onPointerDown={(e) => e.stopPropagation()}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setUndoCancelEntryId(entry.id);
+                          }}
+                          className="h-7 w-7 text-amber-500 hover:text-amber-400"
+                          title="Undo Cancel"
+                        >
+                          <Undo2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </TableCell>
+                    )}
                   </SortableRow>
                 );
               }
