@@ -140,6 +140,7 @@ export function ProjectScheduleHistory({ projectId, readOnly = false }: ProjectS
           rescheduled_to_date,
           rescheduled_from_date,
           rescheduled_from_entry_id,
+          phase_id,
           phases(id, name),
           crews(id, name),
           suppliers(id, name, code),
@@ -151,8 +152,24 @@ export function ProjectScheduleHistory({ projectId, readOnly = false }: ProjectS
         .eq("deleted", false)
         .order("scheduled_date", { ascending: false });
       if (error) throw error;
-      return data as ScheduleEntry[];
+      return data as (ScheduleEntry & { phase_id: string | null })[];
     },
+  });
+
+  // Fetch all phases to get display_order for sorting
+  const { data: allPhases = [] } = useQuery({
+    queryKey: ["phases-all", organizationId],
+    queryFn: async () => {
+      if (!organizationId) return [];
+      const { data, error } = await supabase
+        .from("phases")
+        .select("id, name, display_order")
+        .eq("organization_id", organizationId)
+        .order("display_order", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!organizationId,
   });
 
   // Fetch reference data for edit modal
