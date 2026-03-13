@@ -281,6 +281,28 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
     },
   });
 
+  const undoCancelMutation = useMutation({
+    mutationFn: async (entryId: string) => {
+      const { error } = await supabase
+        .from("schedule_entries")
+        .update({
+          is_cancelled: false,
+          cancellation_reason: null,
+          rescheduled_to_date: null,
+        })
+        .eq("id", entryId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      invalidateScheduleQueries(queryClient);
+      toast.success("Cancellation undone — entry restored");
+      setUndoCancelEntryId(null);
+    },
+    onError: (error: Error) => {
+      toast.error(getUserFriendlyError(error));
+    },
+  });
+
   const copyMutation = useMutation({
     mutationFn: async ({ entry, newDate }: { entry: ScheduleEntry; newDate: string }) => {
       const { error } = await supabase
