@@ -133,6 +133,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [isProjectSheetOpen, setIsProjectSheetOpen] = useState(false);
   const [undoEntryId, setUndoEntryId] = useState<string | null>(null);
+  const [undoCancelEntryId, setUndoCancelEntryId] = useState<string | null>(null);
   const [copyEntry, setCopyEntry] = useState<ScheduleEntry | null>(null);
   const [copyDate, setCopyDate] = useState<Date | undefined>(undefined);
   const [cancelEntry, setCancelEntry] = useState<ScheduleEntry | null>(null);
@@ -274,6 +275,28 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
       invalidateScheduleQueries(queryClient);
       toast.success("Reschedule undone — original entry restored");
       setUndoEntryId(null);
+    },
+    onError: (error: Error) => {
+      toast.error(getUserFriendlyError(error));
+    },
+  });
+
+  const undoCancelMutation = useMutation({
+    mutationFn: async (entryId: string) => {
+      const { error } = await supabase
+        .from("schedule_entries")
+        .update({
+          is_cancelled: false,
+          cancellation_reason: null,
+          rescheduled_to_date: null,
+        })
+        .eq("id", entryId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      invalidateScheduleQueries(queryClient);
+      toast.success("Cancellation undone — entry restored");
+      setUndoCancelEntryId(null);
     },
     onError: (error: Error) => {
       toast.error(getUserFriendlyError(error));
@@ -525,7 +548,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
                     <TableCell className="text-xs py-2">
                       <span className="text-destructive line-through decoration-destructive truncate block">{entry.crews?.name || "-"}</span>
                     </TableCell>
-                    <TableCell colSpan={readOnly ? 9 : 11} className="text-xs py-2">
+                    <TableCell colSpan={readOnly ? 9 : 10} className="text-xs py-2">
                       <span className="text-destructive/80 line-through decoration-destructive">
                         {[
                           entry.projects?.builders?.code || entry.projects?.builders?.name,
@@ -542,6 +565,24 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
                         </span>
                       )}
                     </TableCell>
+                    {!readOnly && (
+                      <TableCell className="py-2">
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          onPointerDown={(e) => e.stopPropagation()}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setUndoCancelEntryId(entry.id);
+                          }}
+                          className="h-7 w-7 text-amber-500 hover:text-amber-400"
+                          title="Undo Cancel"
+                        >
+                          <Undo2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </TableCell>
+                    )}
                   </SortableRow>
                 );
               }
@@ -944,6 +985,29 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
               className="bg-amber-500 text-black hover:bg-amber-600"
             >
               Undo Reschedule
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Undo Cancel Confirmation Dialog */}
+      <AlertDialog open={!!undoCancelEntryId} onOpenChange={() => setUndoCancelEntryId(null)}>
+        <AlertDialogContent className="bg-card border-border">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-foreground">Undo Cancellation?</AlertDialogTitle>
+            <AlertDialogDescription className="text-muted-foreground">
+              This will restore the cancelled entry back to an active state.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-muted text-foreground border-border">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (undoCancelEntryId) undoCancelMutation.mutate(undoCancelEntryId);
+              }}
+              className="bg-amber-500 text-black hover:bg-amber-600"
+            >
+              Restore Entry
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
