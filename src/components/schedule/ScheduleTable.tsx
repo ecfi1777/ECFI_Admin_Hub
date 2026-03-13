@@ -133,6 +133,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [isProjectSheetOpen, setIsProjectSheetOpen] = useState(false);
   const [undoEntryId, setUndoEntryId] = useState<string | null>(null);
+  const [undoCancelEntryId, setUndoCancelEntryId] = useState<string | null>(null);
   const [copyEntry, setCopyEntry] = useState<ScheduleEntry | null>(null);
   const [copyDate, setCopyDate] = useState<Date | undefined>(undefined);
   const [cancelEntry, setCancelEntry] = useState<ScheduleEntry | null>(null);
