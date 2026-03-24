@@ -196,7 +196,7 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
           crews(id, name),
           phases(pl_section, phase_type),
           projects!inner(
-            id, lot_number,
+            id, lot_number, exclude_from_commission,
             builders(name, code),
             locations(name)
           )

@@ -1,0 +1,1 @@
+ALTER TABLE public.projects ADD COLUMN exclude_from_commission boolean NOT NULL DEFAULT false;
