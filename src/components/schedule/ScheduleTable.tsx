@@ -99,15 +99,17 @@ function SortableRow({ id, className, showGrip, children }: { id: string; classN
   return (
     <TableRow ref={setNodeRef} style={style} className={className}>
       {showGrip && (
-        <TableCell className="py-2 w-8 px-1">
-          <button
-            {...attributes}
-            {...listeners}
-            className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground touch-none"
-            tabIndex={-1}
-          >
-            <GripVertical className="w-4 h-4" />
-          </button>
+        <TableCell className="py-2 w-8 px-1 align-middle">
+          <div className="flex items-center justify-center h-full">
+            <button
+              {...attributes}
+              {...listeners}
+              className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground touch-none"
+              tabIndex={-1}
+            >
+              <GripVertical className="w-4 h-4" />
+            </button>
+          </div>
         </TableCell>
       )}
       {children}
@@ -682,7 +684,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
               // Normal row (active entry)
               return (
                 <SortableRow key={entry.id} id={entry.id} showGrip={!readOnly} className="border-border hover:bg-muted/50">
-                  <TableCell className="text-foreground text-xs py-2 text-center">
+                  <TableCell className="text-foreground text-xs py-2 text-center align-middle">
                     {readOnly ? (
                       <span className="truncate block">{entry.crews?.name || "-"}</span>
                     ) : (
@@ -705,7 +707,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
                       </div>
                     )}
                   </TableCell>
-                  <TableCell className="text-foreground text-xs py-2 text-center">
+                  <TableCell className="text-foreground text-xs py-2 text-center align-middle">
                     <button
                       onClick={() => {
                         if (entry.project_id) {
@@ -719,7 +721,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
                       {entry.projects?.builders?.code || entry.projects?.builders?.name || "-"}
                     </button>
                   </TableCell>
-                  <TableCell className="text-foreground text-xs py-2">
+                  <TableCell className="text-foreground text-xs py-2 align-middle">
                     <button
                       onClick={() => {
                         if (entry.project_id) {
@@ -733,7 +735,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
                       {entry.projects?.locations?.name || "-"}
                     </button>
                   </TableCell>
-                  <TableCell className="text-xs py-2 text-center">
+                  <TableCell className="text-xs py-2 text-center align-middle">
                     <button
                       onClick={() => {
                         if (entry.project_id) {
@@ -747,7 +749,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
                       {entry.projects?.lot_number || "-"}
                     </button>
                   </TableCell>
-                  <TableCell className="py-2 text-center">
+                  <TableCell className="py-2 text-center align-middle">
                     {renderSelectCell(
                       entry,
                       "phase_id",
@@ -756,7 +758,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
                       entry.phases?.name || "-"
                     )}
                   </TableCell>
-                  <TableCell className="py-2 text-center">
+                  <TableCell className="py-2 text-center align-middle">
                     {renderSelectCellWithQuickEdit(
                       entry,
                       "pump_vendor_id",
@@ -766,7 +768,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
                       "pump"
                     )}
                   </TableCell>
-                  <TableCell className="py-2 text-center">
+                  <TableCell className="py-2 text-center align-middle">
                     {renderSelectCellWithQuickEdit(
                       entry,
                       "inspection_type_id",
@@ -776,7 +778,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
                       "inspection"
                     )}
                   </TableCell>
-                  <TableCell className="py-2 text-center">
+                  <TableCell className="py-2 text-center align-middle">
                     {renderSelectCellWithQuickEdit(
                       entry,
                       "inspector_id",
@@ -786,7 +788,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
                       "inspection"
                     )}
                   </TableCell>
-                  <TableCell className="py-2 text-center">
+                  <TableCell className="py-2 text-center align-middle">
                     {isPrepSlabs(entry)
                       ? renderSelectCellWithQuickEdit(
                           entry,
@@ -805,7 +807,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
                           "concrete"
                         )}
                   </TableCell>
-                  <TableCell className="py-2 text-center">
+                  <TableCell className="py-2 text-center align-middle">
                     {renderEditableCell(
                       entry,
                       "qty_ordered",
@@ -813,16 +815,18 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
                     )}
                   </TableCell>
                   {!readOnly && (
-                    <TableCell className="py-2 text-center">
-                      <Checkbox
-                        checked={entry.to_be_invoiced}
-                        onCheckedChange={() => handleCheckboxChange(entry.id, entry.to_be_invoiced)}
-                        className="border-muted-foreground data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                      />
+                    <TableCell className="py-2 text-center align-middle">
+                      <div className="flex items-center justify-center h-full">
+                        <Checkbox
+                          checked={entry.to_be_invoiced}
+                          onCheckedChange={() => handleCheckboxChange(entry.id, entry.to_be_invoiced)}
+                          className="border-muted-foreground data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                        />
+                      </div>
                     </TableCell>
                   )}
                   {!readOnly && (
-                    <TableCell className="py-2">
+                    <TableCell className="py-2 align-middle">
                       <div className="flex items-center gap-1">
                         <Button
                           type="button"
