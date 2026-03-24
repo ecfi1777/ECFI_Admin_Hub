@@ -442,9 +442,21 @@ export function VendorInvoiceRow({
                 </Badge>
               </div>
             </div>
-            <div className="text-sm text-muted-foreground">
-              {builderName} · {locationName} · Lot {lotNumber}
-            </div>
+            {entry.projects?.id ? (
+              <div
+                className="text-sm text-primary cursor-pointer hover:underline"
+                onClick={() => {
+                  setSelectedProjectId(entry.projects!.id);
+                  setIsProjectSheetOpen(true);
+                }}
+              >
+                {builderName} · {locationName} · Lot {lotNumber}
+              </div>
+            ) : (
+              <div className="text-sm text-muted-foreground">
+                {builderName} · {locationName} · Lot {lotNumber}
+              </div>
+            )}
             <div className="text-sm text-muted-foreground">
               Phase: {phaseName} · {row.vendorName}
             </div>
@@ -526,7 +538,19 @@ export function VendorInvoiceRow({
         )}
         <TableCell className="text-sm">{dateStr}</TableCell>
         <TableCell className="text-sm">
-          {builderName} · {locationName} · {lotNumber}
+          {entry.projects?.id ? (
+            <span
+              className="text-primary cursor-pointer hover:underline"
+              onClick={() => {
+                setSelectedProjectId(entry.projects!.id);
+                setIsProjectSheetOpen(true);
+              }}
+            >
+              {builderName} · {locationName} · {lotNumber}
+            </span>
+          ) : (
+            <span>{builderName} · {locationName} · {lotNumber}</span>
+          )}
         </TableCell>
         <TableCell className="text-sm text-muted-foreground">{phaseName}</TableCell>
         {showTypeCol && (
