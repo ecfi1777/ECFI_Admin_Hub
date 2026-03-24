@@ -896,6 +896,9 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
                 className="flex items-center justify-between text-sm py-1.5 px-3 rounded bg-muted/30 border border-border"
               >
                 <span className="text-foreground">
+                  {entry.crews?.name && (
+                    <span className="font-medium text-muted-foreground">Crew {entry.crews.name} — </span>
+                  )}
                   {entry.projects?.locations?.name && (
                     <span className="text-muted-foreground">{entry.projects.locations.name} — </span>
                   )}
@@ -917,6 +920,15 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
           </div>
         </div>
       )}
+
+      <ProjectDetailsSheet
+        projectId={selectedProjectId}
+        isOpen={isProjectSheetOpen}
+        onClose={() => {
+          setIsProjectSheetOpen(false);
+          setSelectedProjectId(null);
+        }}
+      />
     </div>
   );
 }
