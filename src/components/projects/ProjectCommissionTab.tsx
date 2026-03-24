@@ -4,9 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { getUserFriendlyError } from "@/lib/errorHandler";
 import { useOrganization } from "@/hooks/useOrganization";
+import { invalidateProjectQueries } from "@/lib/queryHelpers";
 import { Plus, Trash2, Check, DollarSign } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -25,6 +28,40 @@ const pct = (profit: number, revenue: number): string =>
 export function ProjectCommissionTab({ projectId, readOnly = false }: ProjectCommissionTabProps) {
   const { organizationId } = useOrganization();
   const queryClient = useQueryClient();
+
+  // ── Query: Project exclude flag ──
+  const { data: projectData } = useQuery({
+    queryKey: ["project-exclude-commission", projectId],
+    queryFn: async () => {
+      if (!projectId) return null;
+      const { data, error } = await supabase
+        .from("projects")
+        .select("exclude_from_commission")
+        .eq("id", projectId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!projectId,
+  });
+
+  const toggleExcludeMutation = useMutation({
+    mutationFn: async (exclude: boolean) => {
+      if (!projectId) return;
+      const { error } = await supabase
+        .from("projects")
+        .update({ exclude_from_commission: exclude })
+        .eq("id", projectId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["project-exclude-commission", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["commission-report"] });
+      invalidateProjectQueries(queryClient);
+      toast.success("Commission exclusion updated");
+    },
+    onError: (e: Error) => toast.error(getUserFriendlyError(e)),
+  });
 
   // ── Query 1: F&W schedule entries ──
   const { data: fwEntries = [] } = useQuery({
@@ -238,13 +275,27 @@ export function ProjectCommissionTab({ projectId, readOnly = false }: ProjectCom
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div>
-        <h3 className="text-sm font-semibold text-foreground">
-          Footings & Walls Commission — {crewName}
-        </h3>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          Commission is separate from project P&L and gross margin
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">
+            Footings & Walls Commission — {crewName}
+          </h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Commission is separate from project P&L and gross margin
+          </p>
+        </div>
+        {!readOnly && (
+          <div className="flex items-center gap-2">
+            <Switch
+              id="exclude-commission"
+              checked={projectData?.exclude_from_commission ?? false}
+              onCheckedChange={(checked) => toggleExcludeMutation.mutate(checked)}
+            />
+            <Label htmlFor="exclude-commission" className="text-xs text-muted-foreground cursor-pointer">
+              Exclude from report
+            </Label>
+          </div>
+        )}
       </div>
 
       {/* Reference values */}
