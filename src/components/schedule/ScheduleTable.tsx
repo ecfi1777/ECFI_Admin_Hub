@@ -815,12 +815,14 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
                     )}
                   </TableCell>
                   {!readOnly && (
-                    <TableCell className="py-2 text-center">
-                      <Checkbox
-                        checked={entry.to_be_invoiced}
-                        onCheckedChange={() => handleCheckboxChange(entry.id, entry.to_be_invoiced)}
-                        className="border-muted-foreground data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                      />
+                    <TableCell className="py-2 text-center align-middle">
+                      <div className="flex items-center justify-center h-full">
+                        <Checkbox
+                          checked={entry.to_be_invoiced}
+                          onCheckedChange={() => handleCheckboxChange(entry.id, entry.to_be_invoiced)}
+                          className="border-muted-foreground data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                        />
+                      </div>
                     </TableCell>
                   )}
                   {!readOnly && (
