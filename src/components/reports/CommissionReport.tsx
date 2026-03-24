@@ -152,6 +152,7 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["commission-report-wall-anchor"] });
       queryClient.invalidateQueries({ queryKey: ["commission-report-all-entries"] });
+      queryClient.invalidateQueries({ queryKey: ["commission-report-excluded"] });
       toast.success("Project excluded from commission report");
     },
     onError: () => {
