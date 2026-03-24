@@ -679,6 +679,7 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
                         <EyeOff className="w-3.5 h-3.5" />
                       </button>
                     </td>
+                    <td className="px-2 py-1.5 whitespace-nowrap">{r.crewName}</td>
                     <td className="px-2 py-1.5 whitespace-nowrap">{r.builder}</td>
                     <td className="px-2 py-1.5 whitespace-nowrap">{r.subdivision}</td>
                     <td className="px-2 py-1.5 whitespace-nowrap">{r.lotNumber}</td>
