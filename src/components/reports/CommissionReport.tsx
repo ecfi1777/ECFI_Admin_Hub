@@ -372,7 +372,7 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
   }, [otherCostsData]);
 
   const { crewGroups } = useMemo(() => {
-    if (!fwEntries.length) return { crewGroups: [] };
+    if (!allProjectEntries.length) return { crewGroups: [] };
 
     const revenue = revenueData || [];
     const commissions = commissionsData || [];
@@ -380,7 +380,7 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
 
     // Group entries by project
     const projectMap = new Map<string, any[]>();
-    fwEntries.forEach((e: any) => {
+    allProjectEntries.forEach((e: any) => {
       const pid = e.project_id;
       if (!projectMap.has(pid)) projectMap.set(pid, []);
       projectMap.get(pid)!.push(e);
