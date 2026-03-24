@@ -22,10 +22,15 @@ import type {
   VendorTypeFilter,
 } from "@/components/vendor-invoices/types";
 
+type ViewMode = "active" | "all";
+
 export default function VendorInvoices() {
   const { organizationId } = useOrganization();
   const isMobile = useIsMobile();
   const queryClient = useQueryClient();
+
+  // View mode
+  const [viewMode, setViewMode] = useState<ViewMode>("active");
 
   // Filter state
   const [typeFilter, setTypeFilter] = useState<VendorTypeFilter>("all");
@@ -46,7 +51,7 @@ export default function VendorInvoices() {
   // Clear selection when filters change
   useEffect(() => {
     setSelectedIds(new Set());
-  }, [typeFilter, specificVendor, searchQuery, dateFrom, dateTo]);
+  }, [typeFilter, specificVendor, searchQuery, dateFrom, dateTo, viewMode]);
 
   // Reference data
   const { data: suppliers = [] } = useSuppliers();
@@ -115,7 +120,7 @@ export default function VendorInvoices() {
   });
 
 
-  // Transform entries → rows (one per missing vendor type)
+  // Transform entries → rows
   const rows = useMemo(() => {
     let filtered = entries;
 
@@ -137,70 +142,86 @@ export default function VendorInvoices() {
 
     const result: VendorInvoiceRowData[] = [];
 
-    for (const entry of filtered) {
-      // Helper: treat null, undefined, 0, and empty string as "missing"
-      const isMissing = (v: string | number | null | undefined): boolean =>
-        v == null || v === "" || v === 0;
+    const isMissing = (v: string | number | null | undefined): boolean =>
+      v == null || v === "" || v === 0;
 
-      // Concrete: supplier set AND any concrete field missing
+    for (const entry of filtered) {
+      const isAllView = viewMode === "all";
+
+      // Concrete
       if (
         entry.supplier_id &&
-        (entry.ready_mix_invoice_number == null ||
-          isMissing(entry.ready_mix_yards_billed) ||
-          isMissing(entry.ready_mix_invoice_amount)) &&
         (typeFilter === "all" || typeFilter === "concrete")
       ) {
-        result.push({
-          entry,
-          type: "concrete",
-          vendorName: entry.suppliers?.name || "-",
-        });
+        const needsWork =
+          entry.ready_mix_invoice_number == null ||
+          isMissing(entry.ready_mix_yards_billed) ||
+          isMissing(entry.ready_mix_invoice_amount);
+
+        if (isAllView || needsWork) {
+          result.push({
+            entry,
+            type: "concrete",
+            vendorName: entry.suppliers?.name || "-",
+          });
+        }
       }
 
-      // Stone: stone_supplier set AND any stone field missing
+      // Stone
       if (
         entry.stone_supplier_id &&
-        (entry.stone_invoice_number == null ||
-          isMissing(entry.stone_tons_billed) ||
-          isMissing(entry.stone_invoice_amount)) &&
         (typeFilter === "all" || typeFilter === "stone")
       ) {
-        result.push({
-          entry,
-          type: "stone",
-          vendorName: entry.stone_suppliers?.name || "-",
-        });
+        const needsWork =
+          entry.stone_invoice_number == null ||
+          isMissing(entry.stone_tons_billed) ||
+          isMissing(entry.stone_invoice_amount);
+
+        if (isAllView || needsWork) {
+          result.push({
+            entry,
+            type: "stone",
+            vendorName: entry.stone_suppliers?.name || "-",
+          });
+        }
       }
 
       // Pump
       if (
         entry.pump_vendor_id &&
-        (entry.pump_invoice_number == null ||
-          isMissing(entry.pump_invoice_amount)) &&
         (typeFilter === "all" || typeFilter === "pump")
       ) {
-        result.push({
-          entry,
-          type: "pump",
-          vendorName: entry.pump_vendors?.name || "-",
-        });
+        const needsWork =
+          entry.pump_invoice_number == null ||
+          isMissing(entry.pump_invoice_amount);
+
+        if (isAllView || needsWork) {
+          result.push({
+            entry,
+            type: "pump",
+            vendorName: entry.pump_vendors?.name || "-",
+          });
+        }
       }
 
-      // Inspection: normal mode only (showNoCharge handled above)
+      // Inspection
       if (
         entry.inspector_id &&
-        !entry.inspection_no_charge &&
-        (entry.inspection_invoice_number == null ||
-          isMissing(entry.inspection_amount)) &&
         (typeFilter === "all" || typeFilter === "inspection")
       ) {
-        result.push({
-          entry,
-          type: "inspection",
-          vendorName: entry.inspectors?.name || "-",
-        });
-      }
+        const needsWork =
+          !entry.inspection_no_charge &&
+          (entry.inspection_invoice_number == null ||
+            isMissing(entry.inspection_amount));
 
+        if (isAllView || needsWork) {
+          result.push({
+            entry,
+            type: "inspection",
+            vendorName: entry.inspectors?.name || "-",
+          });
+        }
+      }
     }
 
     // Specific vendor filter
@@ -216,7 +237,7 @@ export default function VendorInvoices() {
     }
 
     return result;
-  }, [entries, typeFilter, specificVendor, searchQuery, dateFrom, dateTo]);
+  }, [entries, typeFilter, specificVendor, searchQuery, dateFrom, dateTo, viewMode]);
 
   const hasActiveFilters =
     searchQuery || typeFilter !== "all" || specificVendor !== "all" || dateFrom || dateTo;
@@ -259,8 +280,34 @@ export default function VendorInvoices() {
           <p className="text-muted-foreground">
             {isLoading
               ? "Loading..."
-              : `${rows.length} entr${rows.length === 1 ? "y" : "ies"} need vendor data`}
+              : viewMode === "active"
+                ? `${rows.length} entr${rows.length === 1 ? "y" : "ies"} need vendor data`
+                : `${rows.length} total vendor bill${rows.length === 1 ? "" : "s"}`}
           </p>
+        </div>
+
+        {/* View mode toggle */}
+        <div className="mb-4 flex items-center gap-1 rounded-lg border border-border bg-muted p-1 w-fit">
+          <button
+            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+              viewMode === "active"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+            onClick={() => setViewMode("active")}
+          >
+            Active
+          </button>
+          <button
+            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+              viewMode === "all"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+            onClick={() => setViewMode("all")}
+          >
+            All
+          </button>
         </div>
 
         <VendorInvoiceFilters
