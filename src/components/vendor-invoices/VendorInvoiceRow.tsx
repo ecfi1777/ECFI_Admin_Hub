@@ -137,7 +137,7 @@ export function VendorInvoiceRow({
           .select("id")
           .eq("organization_id", organizationId)
           .eq("deleted", false)
-          .eq(field, trimmed)
+          .eq(field as any, trimmed)
           .neq("id", entry.id)
           .limit(1);
         if (dupError) throw dupError;
