@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Download, Loader2, EyeOff } from "lucide-react";
+import { Download, Loader2, EyeOff, Eye } from "lucide-react";
 import { format, startOfMonth, endOfMonth, parseISO } from "date-fns";
 import { toast } from "sonner";
 import ExcelJS from "exceljs";
