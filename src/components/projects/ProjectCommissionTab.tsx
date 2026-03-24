@@ -275,13 +275,27 @@ export function ProjectCommissionTab({ projectId, readOnly = false }: ProjectCom
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div>
-        <h3 className="text-sm font-semibold text-foreground">
-          Footings & Walls Commission — {crewName}
-        </h3>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          Commission is separate from project P&L and gross margin
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">
+            Footings & Walls Commission — {crewName}
+          </h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Commission is separate from project P&L and gross margin
+          </p>
+        </div>
+        {!readOnly && (
+          <div className="flex items-center gap-2">
+            <Switch
+              id="exclude-commission"
+              checked={projectData?.exclude_from_commission ?? false}
+              onCheckedChange={(checked) => toggleExcludeMutation.mutate(checked)}
+            />
+            <Label htmlFor="exclude-commission" className="text-xs text-muted-foreground cursor-pointer">
+              Exclude from report
+            </Label>
+          </div>
+        )}
       </div>
 
       {/* Reference values */}
