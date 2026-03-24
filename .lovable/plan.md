@@ -1,45 +1,26 @@
 
 
-## Exclude Projects from Commission Report
+## Hide Projects Directly from Commission Report
 
-### Problem
-There is no `exclude_from_commission` field on the `projects` table yet. This requires both a database migration and a code change.
+### What you'll get
+An eye icon button on each project row in the Commission Report. Clicking it sets `exclude_from_commission = true` on that project in the database, immediately removing it from the report and its totals/export. This uses the `exclude_from_commission` column already added to the `projects` table.
 
-### Step 1 — Database Migration
-Add a boolean column to the `projects` table:
-```sql
-ALTER TABLE public.projects
-ADD COLUMN exclude_from_commission boolean NOT NULL DEFAULT false;
-```
+### Changes (CommissionReport.tsx only)
 
-### Step 2 — Update CommissionReport.tsx
+1. **Add imports**: `EyeOff` from lucide-react, `useMutation` and `useQueryClient` from tanstack, plus `supabase` (already imported).
 
-**2a. Add the field to the select queries**
+2. **Add mutation**: A `useMutation` that updates `projects.exclude_from_commission = true` for a given project ID, then invalidates the commission report queries so the row disappears.
 
-In the wall-anchor query (Step 1) and the all-entries query (Step 1b), add `exclude_from_commission` to the `projects!inner(...)` select:
-```
-projects!inner(
-  id, lot_number, exclude_from_commission,
-  builders(name, code),
-  locations(name)
-)
-```
+3. **Add an action column**: Prepend a narrow column (no header label) before "Crew" in the rendered table. Each project row gets an `EyeOff` icon button in that cell. Clicking it fires the mutation.
 
-**2b. Filter excluded projects in `wallAnchorEntries`**
+4. **Update colSpan values**: The crew header row and totals row use `colSpan={COLUMNS.length}` — since this action column is outside the COLUMNS array, bump those colSpans by 1 (e.g., `COLUMNS.length + 1`).
 
-After the existing `.filter()` that keeps only wall phases, add a second filter to remove entries whose project is excluded:
-```typescript
-return (data || []).filter((e: any) => {
-  const s = e.phases?.pl_section;
-  return (s === "footings_walls" || s === "both") && e.phases?.phase_type === "wall";
-}).filter((e: any) => !e.projects?.exclude_from_commission);
-```
+5. **No changes to**: COLUMNS array, editable cells, save handlers, totals calculation logic, or Excel export (the project simply won't be in the data after exclusion).
 
-This means `projectIds` will only contain non-excluded projects, and the downstream all-entries query, row building, totals, and Excel export all naturally exclude them with no additional patches.
+### Technical details
 
-### What does NOT change
-- Column layout, editable cells, save handlers, totals row structure, Excel export structure — all untouched.
-
-### Note on setting the flag
-To mark a project as excluded, you would need a UI control (e.g., a checkbox on the project details or commission tab). If you want that added as well, let me know — but this plan covers the reporting exclusion logic only.
+- The action column is a visual-only column not part of `COLUMNS`, so Excel export is unaffected.
+- After mutation succeeds, invalidating `["commission-report"]` and `["commission-report-all-entries"]` query keys causes the wall-anchor query to re-run, which already filters out `exclude_from_commission = true` projects.
+- A toast confirms the action: "Project excluded from commission report".
+- The `ProjectCommissionTab` toggle (already built) can be used to undo the exclusion if needed.
 
