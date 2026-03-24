@@ -859,6 +859,41 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
           {gi < crewGroups.length - 1 && <div className="py-3" />}
         </div>
       ))}
+
+      {/* Excluded projects section */}
+      {(excludedProjects?.length ?? 0) > 0 && (
+        <div className="mt-6 border border-border rounded-lg p-4">
+          <h3 className="text-sm font-semibold text-muted-foreground mb-3">
+            Excluded Projects ({excludedProjects!.length})
+          </h3>
+          <div className="space-y-2">
+            {excludedProjects!.map((entry: any) => (
+              <div
+                key={entry.project_id}
+                className="flex items-center justify-between text-sm py-1.5 px-3 rounded bg-muted/30 border border-border"
+              >
+                <span className="text-foreground">
+                  {entry.projects?.locations?.name && (
+                    <span className="text-muted-foreground">{entry.projects.locations.name} — </span>
+                  )}
+                  Lot {entry.projects?.lot_number}
+                  {entry.projects?.builders?.name && (
+                    <span className="text-muted-foreground"> ({entry.projects.builders.code || entry.projects.builders.name})</span>
+                  )}
+                </span>
+                <button
+                  onClick={() => restoreMutation.mutate(entry.project_id)}
+                  disabled={restoreMutation.isPending}
+                  className="inline-flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors font-medium"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  Restore
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
