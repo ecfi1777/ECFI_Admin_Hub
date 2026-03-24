@@ -7,6 +7,7 @@ import { format, startOfMonth, endOfMonth, parseISO } from "date-fns";
 import { toast } from "sonner";
 import ExcelJS from "exceljs";
 import { cn } from "@/lib/utils";
+import { ProjectDetailsSheet } from "@/components/projects/ProjectDetailsSheet";
 
 interface CommissionReportProps {
   month: number;
