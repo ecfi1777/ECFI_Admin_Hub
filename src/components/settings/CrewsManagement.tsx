@@ -385,6 +385,7 @@ export function CrewsManagement() {
       queryClient.invalidateQueries({ queryKey: ["crews"] });
       queryClient.invalidateQueries({ queryKey: ["crews-all"] });
       queryClient.invalidateQueries({ queryKey: ["crews-management"] });
+      setLocalOrder(null);
       setHasOrderChanges(false);
       toast.success("Crew order saved");
     },
