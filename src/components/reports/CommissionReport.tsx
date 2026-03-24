@@ -485,7 +485,7 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
     });
 
     return { crewGroups };
-  }, [fwEntries, revenueData, commissionsData, otherCostsData, overrides]);
+  }, [allProjectEntries, revenueData, commissionsData, otherCostsData, overrides]);
 
   // ── Export to Excel ──
   const handleExport = async () => {
