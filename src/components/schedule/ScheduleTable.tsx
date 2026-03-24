@@ -807,7 +807,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
                           "concrete"
                         )}
                   </TableCell>
-                  <TableCell className="py-2 text-center">
+                  <TableCell className="py-2 text-center align-middle">
                     {renderEditableCell(
                       entry,
                       "qty_ordered",
