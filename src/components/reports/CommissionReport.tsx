@@ -752,9 +752,17 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
                       </button>
                     </td>
                     <td className="px-2 py-1.5 whitespace-nowrap">{r.crewName}</td>
-                    <td className="px-2 py-1.5 whitespace-nowrap">{r.builder}</td>
-                    <td className="px-2 py-1.5 whitespace-nowrap">{r.subdivision}</td>
-                    <td className="px-2 py-1.5 whitespace-nowrap">{r.lotNumber}</td>
+                    <td
+                      className="px-2 py-1.5 whitespace-nowrap cursor-pointer hover:text-primary hover:underline"
+                      colSpan={3}
+                      onClick={() => {
+                        setSelectedProjectId(r.projectId);
+                        setIsProjectSheetOpen(true);
+                      }}
+                      title="Open project details"
+                    >
+                      {r.builder} / {r.subdivision} / {r.lotNumber}
+                    </td>
                     <td className="px-2 py-1.5 whitespace-nowrap">{fmtDate(r.ftgDate)}</td>
                     <td className="px-2 py-1.5 text-right whitespace-nowrap">
                       <EditableCell
