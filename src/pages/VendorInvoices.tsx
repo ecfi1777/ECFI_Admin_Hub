@@ -138,12 +138,16 @@ export default function VendorInvoices() {
     const result: VendorInvoiceRowData[] = [];
 
     for (const entry of filtered) {
+      // Helper: treat null, undefined, 0, and empty string as "missing"
+      const isMissing = (v: string | number | null | undefined): boolean =>
+        v == null || v === "" || v === 0;
+
       // Concrete: supplier set AND any concrete field missing
       if (
         entry.supplier_id &&
         (entry.ready_mix_invoice_number == null ||
-          entry.ready_mix_yards_billed == null ||
-          entry.ready_mix_invoice_amount == null) &&
+          isMissing(entry.ready_mix_yards_billed) ||
+          isMissing(entry.ready_mix_invoice_amount)) &&
         (typeFilter === "all" || typeFilter === "concrete")
       ) {
         result.push({
@@ -157,8 +161,8 @@ export default function VendorInvoices() {
       if (
         entry.stone_supplier_id &&
         (entry.stone_invoice_number == null ||
-          entry.stone_tons_billed == null ||
-          entry.stone_invoice_amount == null) &&
+          isMissing(entry.stone_tons_billed) ||
+          isMissing(entry.stone_invoice_amount)) &&
         (typeFilter === "all" || typeFilter === "stone")
       ) {
         result.push({
@@ -172,7 +176,7 @@ export default function VendorInvoices() {
       if (
         entry.pump_vendor_id &&
         (entry.pump_invoice_number == null ||
-          entry.pump_invoice_amount == null) &&
+          isMissing(entry.pump_invoice_amount)) &&
         (typeFilter === "all" || typeFilter === "pump")
       ) {
         result.push({
@@ -187,7 +191,7 @@ export default function VendorInvoices() {
         entry.inspector_id &&
         !entry.inspection_no_charge &&
         (entry.inspection_invoice_number == null ||
-          entry.inspection_amount == null) &&
+          isMissing(entry.inspection_amount)) &&
         (typeFilter === "all" || typeFilter === "inspection")
       ) {
         result.push({
