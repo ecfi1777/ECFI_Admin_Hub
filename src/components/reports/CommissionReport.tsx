@@ -652,7 +652,7 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
               <thead>
                 {/* Crew header */}
                 <tr className="bg-amber-500/20">
-                  <td colSpan={COLUMNS.length} className="px-3 py-2 font-bold text-foreground text-sm">
+                  <td colSpan={COLUMNS.length + 1} className="px-3 py-2 font-bold text-foreground text-sm">
                     Crew {group.crewName}
                   </td>
                 </tr>
