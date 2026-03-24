@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Download, Loader2 } from "lucide-react";
+import { Download, Loader2, EyeOff } from "lucide-react";
 import { format, startOfMonth, endOfMonth, parseISO } from "date-fns";
 import { toast } from "sonner";
 import ExcelJS from "exceljs";
@@ -136,9 +136,28 @@ function EditableCell({
 }
 
 export function CommissionReport({ month, year, organizationId }: CommissionReportProps) {
+  const queryClient = useQueryClient();
   const startDate = format(startOfMonth(new Date(year, month - 1)), "yyyy-MM-dd");
   const endDate = format(endOfMonth(new Date(year, month - 1)), "yyyy-MM-dd");
   const [isExporting, setIsExporting] = useState(false);
+
+  const excludeMutation = useMutation({
+    mutationFn: async (projectId: string) => {
+      const { error } = await supabase
+        .from("projects")
+        .update({ exclude_from_commission: true })
+        .eq("id", projectId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["commission-report-wall-anchor"] });
+      queryClient.invalidateQueries({ queryKey: ["commission-report-all-entries"] });
+      toast.success("Project excluded from commission report");
+    },
+    onError: () => {
+      toast.error("Failed to exclude project");
+    },
+  });
   const [overrides, setOverrides] = useState<Record<string, {
     base_house?: number | null;
     extras?: number | null;
@@ -633,12 +652,13 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
               <thead>
                 {/* Crew header */}
                 <tr className="bg-amber-500/20">
-                  <td colSpan={COLUMNS.length} className="px-3 py-2 font-bold text-foreground text-sm">
+                  <td colSpan={COLUMNS.length + 1} className="px-3 py-2 font-bold text-foreground text-sm">
                     Crew {group.crewName}
                   </td>
                 </tr>
                 {/* Column headers */}
                 <tr className="bg-muted">
+                  <th className="px-1 py-1.5 w-8"></th>
                   {COLUMNS.map((col) => (
                     <th key={col} className="px-2 py-1.5 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">
                       {col}
@@ -649,6 +669,16 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
               <tbody>
                 {group.rows.map((r, ri) => (
                   <tr key={ri} className="border-t border-border hover:bg-muted/30">
+                    <td className="px-1 py-1.5 text-center">
+                      <button
+                        onClick={() => excludeMutation.mutate(r.projectId)}
+                        disabled={excludeMutation.isPending}
+                        title="Exclude from commission report"
+                        className="text-muted-foreground hover:text-destructive transition-colors"
+                      >
+                        <EyeOff className="w-3.5 h-3.5" />
+                      </button>
+                    </td>
                     <td className="px-2 py-1.5 whitespace-nowrap">{r.crewName}</td>
                     <td className="px-2 py-1.5 whitespace-nowrap">{r.builder}</td>
                     <td className="px-2 py-1.5 whitespace-nowrap">{r.subdivision}</td>
@@ -718,7 +748,7 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
 
                 {/* Totals row */}
                 <tr className="border-t-2 border-foreground/20 font-bold bg-muted/50">
-                  <td colSpan={8} className="px-2 py-1.5 whitespace-nowrap">
+                  <td colSpan={9} className="px-2 py-1.5 whitespace-nowrap">
                     Total - Crew {group.crewName}:
                   </td>
                   <td className="px-2 py-1.5 text-right whitespace-nowrap">{fmtCurrency(group.totals.baseHouse)}</td>
@@ -744,7 +774,7 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
 
                 {/* Percentages row */}
                 <tr className="text-muted-foreground italic text-xs">
-                  <td colSpan={8} className="px-2 py-1"></td>
+                  <td colSpan={9} className="px-2 py-1"></td>
                   <td colSpan={2} className="px-2 py-1"></td>
                   <td className="px-2 py-1 text-right">100%</td>
                   <td className="px-2 py-1 text-right">
