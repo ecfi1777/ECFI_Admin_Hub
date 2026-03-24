@@ -684,7 +684,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
               // Normal row (active entry)
               return (
                 <SortableRow key={entry.id} id={entry.id} showGrip={!readOnly} className="border-border hover:bg-muted/50">
-                  <TableCell className="text-foreground text-xs py-2 text-center">
+                  <TableCell className="text-foreground text-xs py-2 text-center align-middle">
                     {readOnly ? (
                       <span className="truncate block">{entry.crews?.name || "-"}</span>
                     ) : (
