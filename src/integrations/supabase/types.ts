@@ -1027,6 +1027,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           deleted_at: string | null
+          exclude_from_commission: boolean
           full_address: string | null
           google_drive_folder_id: string | null
           google_drive_url: string | null
@@ -1050,6 +1051,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          exclude_from_commission?: boolean
           full_address?: string | null
           google_drive_folder_id?: string | null
           google_drive_url?: string | null
@@ -1073,6 +1075,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          exclude_from_commission?: boolean
           full_address?: string | null
           google_drive_folder_id?: string | null
           google_drive_url?: string | null

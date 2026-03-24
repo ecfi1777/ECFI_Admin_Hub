@@ -160,7 +160,7 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
           crews(id, name),
           phases(pl_section, phase_type),
           projects!inner(
-            id, lot_number,
+            id, lot_number, exclude_from_commission,
             builders(name, code),
             locations(name)
           )
@@ -173,7 +173,7 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
       return (data || []).filter((e: any) => {
         const s = e.phases?.pl_section;
         return (s === "footings_walls" || s === "both") && e.phases?.phase_type === "wall";
-      });
+      }).filter((e: any) => !e.projects?.exclude_from_commission);
     },
   });
 
@@ -196,7 +196,7 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
           crews(id, name),
           phases(pl_section, phase_type),
           projects!inner(
-            id, lot_number,
+            id, lot_number, exclude_from_commission,
             builders(name, code),
             locations(name)
           )
