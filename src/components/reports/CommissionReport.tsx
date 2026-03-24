@@ -299,6 +299,43 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
     enabled: projectIds.length > 0,
   });
 
+  // ── Excluded projects for this month (wall entries exist but project is excluded) ──
+  const { data: excludedProjects } = useQuery({
+    queryKey: ["commission-report-excluded", organizationId, startDate, endDate],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("schedule_entries")
+        .select(`
+          project_id,
+          phases(pl_section, phase_type),
+          projects!inner(
+            id, lot_number, exclude_from_commission,
+            builders(name, code),
+            locations(name)
+          )
+        `)
+        .eq("organization_id", organizationId)
+        .eq("deleted", false)
+        .gte("scheduled_date", startDate)
+        .lte("scheduled_date", endDate);
+      if (error) throw error;
+      // Keep only wall entries for excluded projects
+      const wallExcluded = (data || []).filter((e: any) => {
+        const s = e.phases?.pl_section;
+        return (s === "footings_walls" || s === "both") &&
+          e.phases?.phase_type === "wall" &&
+          e.projects?.exclude_from_commission === true;
+      });
+      // Deduplicate by project_id
+      const seen = new Set<string>();
+      return wallExcluded.filter((e: any) => {
+        if (seen.has(e.project_id)) return false;
+        seen.add(e.project_id);
+        return true;
+      });
+    },
+  });
+
   const isLoading = loadingWallEntries || loadingAllEntries || loadingRevenue || loadingCommissions || loadingOther;
 
   // ── Save handlers ──
