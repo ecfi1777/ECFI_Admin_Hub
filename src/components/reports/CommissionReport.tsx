@@ -396,11 +396,20 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
       const crewName = crewEntry?.crews?.name ?? "Unknown";
 
       const ftgEntry = entries.find((e: any) => e.phases?.phase_type === "footing");
-      const wallEntry = entries.find((e: any) => e.phases?.phase_type === "wall");
+
+      // Aggregate all wall entries: use last date, sum yards
+      const wallEntries = entries
+        .filter((e: any) => e.phases?.phase_type === "wall")
+        .sort((a: any, b: any) => (a.scheduled_date ?? "").localeCompare(b.scheduled_date ?? ""));
+      const lastWallEntry = wallEntries.length > 0 ? wallEntries[wallEntries.length - 1] : null;
+      const aggregatedWallYards = wallEntries.reduce(
+        (s: number, e: any) => s + (e.crew_yards_poured ?? 0),
+        0
+      );
 
       const ov = overrides[pid];
       const ftgYards = ov?.ftg_total ?? ftgEntry?.crew_yards_poured ?? null;
-      const wallYards = ov?.wall_total ?? wallEntry?.crew_yards_poured ?? null;
+      const wallYards = ov?.wall_total ?? (wallEntries.length > 0 ? aggregatedWallYards : null);
       const totalYards = (ftgYards ?? 0) + (wallYards ?? 0);
       const concreteCost = entries.reduce((s: number, e: any) => s + (e.ready_mix_invoice_amount ?? 0), 0);
 
@@ -440,9 +449,9 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
         ftgDate: ftgEntry?.scheduled_date ?? null,
         ftgTotal: ftgYards,
         ftgEntryId: ftgEntry?.id ?? null,
-        wallDate: wallEntry?.scheduled_date ?? null,
+        wallDate: lastWallEntry?.scheduled_date ?? null,
         wallTotal: wallYards,
-        wallEntryId: wallEntry?.id ?? null,
+        wallEntryId: lastWallEntry?.id ?? null,
         baseHouse,
         extras,
         totalInvoice,
