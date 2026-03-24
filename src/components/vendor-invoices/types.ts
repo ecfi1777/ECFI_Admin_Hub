@@ -22,6 +22,14 @@ export interface VendorEntry {
   inspection_amount: number | null;
   inspection_no_charge: boolean;
   crew_yards_poured: number | null;
+  // Concrete detail fields
+  concrete_mix_id: string | null;
+  qty_ordered: string | null;
+  order_number: string | null;
+  concrete_notes: string | null;
+  additive_hot_water: boolean;
+  additive_1_percent_he: boolean;
+  additive_2_percent_he: boolean;
   projects: {
     id: string;
     lot_number: string;
@@ -34,6 +42,7 @@ export interface VendorEntry {
   pump_vendors: { name: string; code: string | null } | null;
   inspectors: { name: string } | null;
   phases: { name: string } | null;
+  concrete_mixes: { id: string; name: string } | null;
 }
 
 export interface VendorInvoiceRowData {
