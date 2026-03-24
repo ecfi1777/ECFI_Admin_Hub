@@ -141,6 +141,8 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
   const startDate = format(startOfMonth(new Date(year, month - 1)), "yyyy-MM-dd");
   const endDate = format(endOfMonth(new Date(year, month - 1)), "yyyy-MM-dd");
   const [isExporting, setIsExporting] = useState(false);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [isProjectSheetOpen, setIsProjectSheetOpen] = useState(false);
 
   const excludeMutation = useMutation({
     mutationFn: async (projectId: string) => {
