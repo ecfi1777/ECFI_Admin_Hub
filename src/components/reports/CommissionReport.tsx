@@ -136,9 +136,28 @@ function EditableCell({
 }
 
 export function CommissionReport({ month, year, organizationId }: CommissionReportProps) {
+  const queryClient = useQueryClient();
   const startDate = format(startOfMonth(new Date(year, month - 1)), "yyyy-MM-dd");
   const endDate = format(endOfMonth(new Date(year, month - 1)), "yyyy-MM-dd");
   const [isExporting, setIsExporting] = useState(false);
+
+  const excludeMutation = useMutation({
+    mutationFn: async (projectId: string) => {
+      const { error } = await supabase
+        .from("projects")
+        .update({ exclude_from_commission: true })
+        .eq("id", projectId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["commission-report-wall-anchor"] });
+      queryClient.invalidateQueries({ queryKey: ["commission-report-all-entries"] });
+      toast.success("Project excluded from commission report");
+    },
+    onError: () => {
+      toast.error("Failed to exclude project");
+    },
+  });
   const [overrides, setOverrides] = useState<Record<string, {
     base_house?: number | null;
     extras?: number | null;
