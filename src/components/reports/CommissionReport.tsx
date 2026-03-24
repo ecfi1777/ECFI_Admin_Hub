@@ -589,11 +589,11 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
     );
   }
 
-  if (fwEntries.length === 0) {
+  if (wallAnchorEntries.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground text-sm space-y-2">
-        <p>No Footings & Walls entries found for {MONTH_NAMES[month]} {year}.</p>
-        <p>Make sure schedule entries exist for this month and phases are tagged with Phase Type in Settings → Phases.</p>
+        <p>No wall entries found for {MONTH_NAMES[month]} {year}.</p>
+        <p>Projects appear in the month their wall phase is scheduled. Make sure phases are tagged with Phase Type in Settings → Phases.</p>
       </div>
     );
   }
