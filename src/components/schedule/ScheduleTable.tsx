@@ -758,7 +758,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
                       entry.phases?.name || "-"
                     )}
                   </TableCell>
-                  <TableCell className="py-2 text-center">
+                  <TableCell className="py-2 text-center align-middle">
                     {renderSelectCellWithQuickEdit(
                       entry,
                       "pump_vendor_id",
