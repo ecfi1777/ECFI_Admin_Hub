@@ -788,7 +788,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
                       "inspection"
                     )}
                   </TableCell>
-                  <TableCell className="py-2 text-center">
+                  <TableCell className="py-2 text-center align-middle">
                     {isPrepSlabs(entry)
                       ? renderSelectCellWithQuickEdit(
                           entry,
