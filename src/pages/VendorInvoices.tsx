@@ -71,13 +71,16 @@ export default function VendorInvoices() {
           pump_invoice_number, pump_invoice_amount,
           inspection_invoice_number, inspection_amount, inspection_no_charge,
           crew_yards_poured,
+          concrete_mix_id, qty_ordered, order_number, concrete_notes,
+          additive_hot_water, additive_1_percent_he, additive_2_percent_he,
           projects(id, lot_number, builders(name, code), locations(name)),
           crews(name),
           suppliers(name, code),
           stone_suppliers(name, code),
           pump_vendors(name, code),
           inspectors(name),
-          phases(name)
+          phases(name),
+          concrete_mixes(id, name)
         `
         )
         .eq("organization_id", organizationId)
