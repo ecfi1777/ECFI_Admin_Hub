@@ -80,6 +80,7 @@ export default function Invoices() {
         .eq("to_be_invoiced", true)
         .eq("invoice_complete", false)
         .eq("deleted", false)
+        .eq("is_cancelled", false)
         .order("scheduled_date", { ascending: false });
       if (error) throw error;
       return data as InvoiceEntry[];
@@ -102,6 +103,7 @@ export default function Invoices() {
         .eq("organization_id", organizationId)
         .eq("invoice_complete", true)
         .eq("deleted", false)
+        .eq("is_cancelled", false)
         .order("scheduled_date", { ascending: false })
         .limit(100);
       if (error) throw error;
