@@ -7,6 +7,7 @@ import { format, startOfMonth, endOfMonth, parseISO } from "date-fns";
 import { toast } from "sonner";
 import ExcelJS from "exceljs";
 import { cn } from "@/lib/utils";
+import { ProjectDetailsSheet } from "@/components/projects/ProjectDetailsSheet";
 
 interface CommissionReportProps {
   month: number;
@@ -140,6 +141,8 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
   const startDate = format(startOfMonth(new Date(year, month - 1)), "yyyy-MM-dd");
   const endDate = format(endOfMonth(new Date(year, month - 1)), "yyyy-MM-dd");
   const [isExporting, setIsExporting] = useState(false);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [isProjectSheetOpen, setIsProjectSheetOpen] = useState(false);
 
   const excludeMutation = useMutation({
     mutationFn: async (projectId: string) => {
@@ -307,6 +310,8 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
         .from("schedule_entries")
         .select(`
           project_id,
+          crew_id,
+          crews(id, name),
           phases(pl_section, phase_type),
           projects!inner(
             id, lot_number, exclude_from_commission,
@@ -326,7 +331,7 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
           e.phases?.phase_type === "wall" &&
           e.projects?.exclude_from_commission === true;
       });
-      // Deduplicate by project_id
+      // Deduplicate by project_id, keep crew info
       const seen = new Set<string>();
       return wallExcluded.filter((e: any) => {
         if (seen.has(e.project_id)) return false;
@@ -569,6 +574,16 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
       return { crewId, crewName: g.crewName, rows: g.rows, totals };
     });
 
+    // Sort crew groups: numeric crew names sorted ascending (ensures 800 < 1200)
+    crewGroups.sort((a, b) => {
+      const numA = parseInt(a.crewName, 10);
+      const numB = parseInt(b.crewName, 10);
+      if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+      if (!isNaN(numA)) return -1;
+      if (!isNaN(numB)) return 1;
+      return a.crewName.localeCompare(b.crewName);
+    });
+
     return { crewGroups };
   }, [allProjectEntries, revenueData, commissionsData, otherCostsData, overrides]);
 
@@ -737,9 +752,17 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
                       </button>
                     </td>
                     <td className="px-2 py-1.5 whitespace-nowrap">{r.crewName}</td>
-                    <td className="px-2 py-1.5 whitespace-nowrap">{r.builder}</td>
-                    <td className="px-2 py-1.5 whitespace-nowrap">{r.subdivision}</td>
-                    <td className="px-2 py-1.5 whitespace-nowrap">{r.lotNumber}</td>
+                    <td
+                      className="px-2 py-1.5 whitespace-nowrap cursor-pointer hover:text-primary hover:underline"
+                      colSpan={3}
+                      onClick={() => {
+                        setSelectedProjectId(r.projectId);
+                        setIsProjectSheetOpen(true);
+                      }}
+                      title="Open project details"
+                    >
+                      {r.builder} / {r.subdivision} / {r.lotNumber}
+                    </td>
                     <td className="px-2 py-1.5 whitespace-nowrap">{fmtDate(r.ftgDate)}</td>
                     <td className="px-2 py-1.5 text-right whitespace-nowrap">
                       <EditableCell
@@ -873,6 +896,9 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
                 className="flex items-center justify-between text-sm py-1.5 px-3 rounded bg-muted/30 border border-border"
               >
                 <span className="text-foreground">
+                  {entry.crews?.name && (
+                    <span className="font-medium text-muted-foreground">Crew {entry.crews.name} — </span>
+                  )}
                   {entry.projects?.locations?.name && (
                     <span className="text-muted-foreground">{entry.projects.locations.name} — </span>
                   )}
@@ -894,6 +920,15 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
           </div>
         </div>
       )}
+
+      <ProjectDetailsSheet
+        projectId={selectedProjectId}
+        isOpen={isProjectSheetOpen}
+        onClose={() => {
+          setIsProjectSheetOpen(false);
+          setSelectedProjectId(null);
+        }}
+      />
     </div>
   );
 }
