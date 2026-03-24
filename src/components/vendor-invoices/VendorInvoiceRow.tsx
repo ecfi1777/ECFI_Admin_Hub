@@ -132,14 +132,16 @@ export function VendorInvoiceRow({
       const trimmed = invoiceNumber.trim();
       if (trimmed && organizationId) {
         const field = INVOICE_NUMBER_FIELD[type];
-        const { data: duplicates, error: dupError } = await supabase
+        let query = supabase
           .from("schedule_entries")
           .select("id")
           .eq("organization_id", organizationId)
           .eq("deleted", false)
-          .eq(field as any, trimmed)
           .neq("id", entry.id)
           .limit(1);
+        // Use filter() to avoid deep type instantiation with dynamic column
+        query = query.filter(field, "eq", trimmed);
+        const { data: duplicates, error: dupError } = await query;
         if (dupError) throw dupError;
         if (duplicates && duplicates.length > 0) {
           // Signal duplicate found — mutation will be aborted
