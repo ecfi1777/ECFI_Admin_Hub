@@ -442,9 +442,21 @@ export function VendorInvoiceRow({
                 </Badge>
               </div>
             </div>
-            <div className="text-sm text-muted-foreground">
-              {builderName} · {locationName} · Lot {lotNumber}
-            </div>
+            {entry.projects?.id ? (
+              <div
+                className="text-sm text-primary cursor-pointer hover:underline"
+                onClick={() => {
+                  setSelectedProjectId(entry.projects!.id);
+                  setIsProjectSheetOpen(true);
+                }}
+              >
+                {builderName} · {locationName} · Lot {lotNumber}
+              </div>
+            ) : (
+              <div className="text-sm text-muted-foreground">
+                {builderName} · {locationName} · Lot {lotNumber}
+              </div>
+            )}
             <div className="text-sm text-muted-foreground">
               Phase: {phaseName} · {row.vendorName}
             </div>
