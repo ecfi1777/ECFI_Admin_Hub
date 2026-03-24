@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { TableRow, TableCell } from "@/components/ui/table";
 import {
   AlertDialog,
@@ -18,10 +20,26 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Save } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Save, FlaskConical } from "lucide-react";
 import { toast } from "sonner";
 import { VendorInvoiceRowData, VendorTypeFilter } from "./types";
 import { useOrganization } from "@/hooks/useOrganization";
+import { useSuppliers, useConcreteMixes } from "@/hooks/useReferenceData";
+import { ProjectDetailsSheet } from "@/components/projects/ProjectDetailsSheet";
 
 interface VendorInvoiceRowProps {
   row: VendorInvoiceRowData;
@@ -32,22 +50,11 @@ interface VendorInvoiceRowProps {
   showCheckboxCol: boolean;
 }
 
-const formatCurrency = (val: string | number | null | undefined) => {
-  const num = typeof val === "string" ? parseFloat(val) : val;
-  if (num == null || isNaN(num)) return "—";
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-  }).format(num);
-};
-
 const TYPE_BADGE_STYLES: Record<string, string> = {
   concrete: "bg-blue-500/10 text-blue-500 border-blue-500/20",
   stone: "bg-amber-500/10 text-amber-500 border-amber-500/20",
   pump: "bg-purple-500/10 text-purple-500 border-purple-500/20",
   inspection: "bg-orange-500/10 text-orange-500 border-orange-500/20",
-  
 };
 
 // Map vendor type to the invoice number column name on schedule_entries
@@ -102,6 +109,23 @@ export function VendorInvoiceRow({
 
   const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
 
+  // Concrete Details dialog state
+  const [showConcreteDetails, setShowConcreteDetails] = useState(false);
+  const [cdMixId, setCdMixId] = useState(entry.concrete_mix_id ?? "");
+  const [cdSupplierId, setCdSupplierId] = useState(entry.supplier_id ?? "");
+  const [cdQtyOrdered, setCdQtyOrdered] = useState(entry.qty_ordered ?? "");
+  const [cdNotes, setCdNotes] = useState(entry.concrete_notes ?? "");
+  const [cdHotWater, setCdHotWater] = useState(entry.additive_hot_water);
+  const [cd1He, setCd1He] = useState(entry.additive_1_percent_he);
+  const [cd2He, setCd2He] = useState(entry.additive_2_percent_he);
+
+  // Project details sheet
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [isProjectSheetOpen, setIsProjectSheetOpen] = useState(false);
+
+  const { data: suppliers = [] } = useSuppliers();
+  const { data: concreteMixes = [] } = useConcreteMixes();
+
   const doSave = useCallback(async () => {
     const updates: Record<string, string | number | null> = {};
     if (type === "concrete") {
@@ -128,7 +152,6 @@ export function VendorInvoiceRow({
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      // Check for duplicate invoice number before saving
       const trimmed = invoiceNumber.trim();
       if (trimmed && organizationId) {
         const field = INVOICE_NUMBER_FIELD[type];
@@ -139,12 +162,10 @@ export function VendorInvoiceRow({
           .eq("deleted", false)
           .neq("id", entry.id)
           .limit(1);
-        // Use filter() to avoid deep type instantiation with dynamic column
         query = query.filter(field, "eq", trimmed);
         const { data: duplicates, error: dupError } = await query;
         if (dupError) throw dupError;
         if (duplicates && duplicates.length > 0) {
-          // Signal duplicate found — mutation will be aborted
           throw { __duplicate: true };
         }
       }
@@ -172,21 +193,59 @@ export function VendorInvoiceRow({
     onError: () => toast.error("Failed to save"),
   });
 
+  // Concrete details save
+  const concreteDetailsSaveMutation = useMutation({
+    mutationFn: async () => {
+      const updates: Record<string, string | number | boolean | null> = {
+        concrete_mix_id: cdMixId || null,
+        supplier_id: cdSupplierId || null,
+        qty_ordered: cdQtyOrdered || null,
+        concrete_notes: cdNotes || null,
+        additive_hot_water: cdHotWater,
+        additive_1_percent_he: cd1He,
+        additive_2_percent_he: cd2He,
+      };
+      const { error } = await supabase
+        .from("schedule_entries")
+        .update(updates)
+        .eq("id", entry.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["vendor-invoice-entries"] });
+      toast.success("Concrete details saved");
+      setShowConcreteDetails(false);
+    },
+    onError: () => toast.error("Failed to save concrete details"),
+  });
+
   const handleSave = () => saveMutation.mutate();
 
-  // Column visibility (mirrors VendorInvoiceTable headers)
+  const openConcreteDetails = () => {
+    // Reset form to current entry values
+    setCdMixId(entry.concrete_mix_id ?? "");
+    setCdSupplierId(entry.supplier_id ?? "");
+    setCdQtyOrdered(entry.qty_ordered ?? "");
+    setCdNotes(entry.concrete_notes ?? "");
+    setCdHotWater(entry.additive_hot_water);
+    setCd1He(entry.additive_1_percent_he);
+    setCd2He(entry.additive_2_percent_he);
+    setShowConcreteDetails(true);
+  };
+
+  // Column visibility
   const showTypeCol = typeFilter === "all";
   const showInvoiceCol = true;
   const showYardsCol =
     typeFilter === "all" || typeFilter === "concrete" || typeFilter === "stone";
   const showAmountCol = true;
 
-  // Editability — in "all" mode, cells not applicable to this type show "-"
   const canEditInvoice = true;
   const canEditYards = type === "concrete" || type === "stone";
   const canEditAmount = true;
 
   const isInspection = type === "inspection";
+  const isConcrete = type === "concrete";
   const showRowCheckbox = showCheckboxCol && isInspection;
 
   const dateStr = format(
@@ -201,6 +260,8 @@ export function VendorInvoiceRow({
   const lotNumber = entry.projects?.lot_number || "-";
   const phaseName = entry.phases?.name || "-";
   const typeLabel = type.charAt(0).toUpperCase() + type.slice(1);
+
+  const isSaving = saveMutation.isPending || forceSaveMutation.isPending;
 
   const duplicateDialog = (
     <AlertDialog open={showDuplicateWarning} onOpenChange={setShowDuplicateWarning}>
@@ -221,13 +282,147 @@ export function VendorInvoiceRow({
     </AlertDialog>
   );
 
-  const isSaving = saveMutation.isPending || forceSaveMutation.isPending;
+  const concreteDetailsDialog = (
+    <>
+      <Dialog open={showConcreteDetails} onOpenChange={setShowConcreteDetails}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Concrete Details</DialogTitle>
+          </DialogHeader>
+
+          {/* Project info (read-only, clickable) */}
+          <div className="rounded-md border border-border bg-muted/50 px-3 py-2 text-sm">
+            <span className="text-muted-foreground">Project: </span>
+            {entry.projects?.id ? (
+              <button
+                className="text-primary hover:underline font-medium"
+                onClick={() => {
+                  setSelectedProjectId(entry.projects!.id);
+                  setIsProjectSheetOpen(true);
+                }}
+              >
+                {builderName} / {locationName} / {lotNumber}
+              </button>
+            ) : (
+              <span>{builderName} / {locationName} / {lotNumber}</span>
+            )}
+          </div>
+
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Supplier</Label>
+                <Select value={cdSupplierId} onValueChange={(v) => setCdSupplierId(v === "__none__" ? "" : v)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select supplier" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__" className="text-muted-foreground">— None —</SelectItem>
+                    {suppliers.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.code ? `${s.code} — ${s.name}` : s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Concrete Mix</Label>
+                <Select value={cdMixId} onValueChange={(v) => setCdMixId(v === "__none__" ? "" : v)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select mix" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__" className="text-muted-foreground">— None —</SelectItem>
+                    {concreteMixes.map((m) => (
+                      <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Qty Ordered</Label>
+              <Input
+                value={cdQtyOrdered}
+                onChange={(e) => setCdQtyOrdered(e.target.value)}
+                placeholder="e.g. 10+ or 8+2"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Additives</Label>
+              <div className="flex flex-wrap gap-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`cd_hot_water_${entry.id}`}
+                    checked={cdHotWater}
+                    onCheckedChange={(checked) => setCdHotWater(checked === true)}
+                  />
+                  <label htmlFor={`cd_hot_water_${entry.id}`} className="text-sm">Hot Water</label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`cd_1he_${entry.id}`}
+                    checked={cd1He}
+                    onCheckedChange={(checked) => setCd1He(checked === true)}
+                  />
+                  <label htmlFor={`cd_1he_${entry.id}`} className="text-sm">1% HE</label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`cd_2he_${entry.id}`}
+                    checked={cd2He}
+                    onCheckedChange={(checked) => setCd2He(checked === true)}
+                  />
+                  <label htmlFor={`cd_2he_${entry.id}`} className="text-sm">2% HE</label>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Concrete Notes</Label>
+              <Textarea
+                value={cdNotes}
+                onChange={(e) => setCdNotes(e.target.value)}
+                placeholder="Notes related to concrete..."
+                rows={3}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowConcreteDetails(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => concreteDetailsSaveMutation.mutate()}
+              disabled={concreteDetailsSaveMutation.isPending}
+            >
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <ProjectDetailsSheet
+        projectId={selectedProjectId}
+        isOpen={isProjectSheetOpen}
+        onClose={() => {
+          setIsProjectSheetOpen(false);
+          setSelectedProjectId(null);
+        }}
+      />
+    </>
+  );
 
   /* ─── Mobile card ─── */
   if (isMobile) {
     return (
       <>
         {duplicateDialog}
+        {concreteDetailsDialog}
         <Card className="mb-3">
           <CardContent className="p-4 space-y-3">
             <div className="flex items-center justify-between">
@@ -294,6 +489,17 @@ export function VendorInvoiceRow({
                   <Save className="w-4 h-4 mr-1" />
                   Save
                 </Button>
+                {isConcrete && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={openConcreteDetails}
+                    className="h-9"
+                    title="Concrete Details"
+                  >
+                    <FlaskConical className="w-4 h-4" />
+                  </Button>
+                )}
               </div>
           </CardContent>
         </Card>
@@ -305,6 +511,7 @@ export function VendorInvoiceRow({
   return (
     <>
       {duplicateDialog}
+      {concreteDetailsDialog}
       <TableRow>
         {showCheckboxCol && (
           <TableCell>
@@ -382,15 +589,28 @@ export function VendorInvoiceRow({
           </TableCell>
         )}
         <TableCell>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleSave}
-            disabled={isSaving}
-            className="h-8"
-          >
-            <Save className="w-4 h-4" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleSave}
+              disabled={isSaving}
+              className="h-8"
+            >
+              <Save className="w-4 h-4" />
+            </Button>
+            {isConcrete && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={openConcreteDetails}
+                className="h-8"
+                title="Concrete Details"
+              >
+                <FlaskConical className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
         </TableCell>
       </TableRow>
     </>
