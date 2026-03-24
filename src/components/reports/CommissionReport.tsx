@@ -260,7 +260,7 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
     enabled: projectIds.length > 0,
   });
 
-  const isLoading = loadingEntries || loadingRevenue || loadingCommissions || loadingOther;
+  const isLoading = loadingWallEntries || loadingAllEntries || loadingRevenue || loadingCommissions || loadingOther;
 
   // ── Save handlers ──
   const handleSave = async (
