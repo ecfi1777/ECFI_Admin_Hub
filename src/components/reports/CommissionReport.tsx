@@ -310,6 +310,8 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
         .from("schedule_entries")
         .select(`
           project_id,
+          crew_id,
+          crews(id, name),
           phases(pl_section, phase_type),
           projects!inner(
             id, lot_number, exclude_from_commission,
@@ -329,7 +331,7 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
           e.phases?.phase_type === "wall" &&
           e.projects?.exclude_from_commission === true;
       });
-      // Deduplicate by project_id
+      // Deduplicate by project_id, keep crew info
       const seen = new Set<string>();
       return wallExcluded.filter((e: any) => {
         if (seen.has(e.project_id)) return false;
