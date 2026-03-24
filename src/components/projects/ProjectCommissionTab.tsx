@@ -29,6 +29,40 @@ export function ProjectCommissionTab({ projectId, readOnly = false }: ProjectCom
   const { organizationId } = useOrganization();
   const queryClient = useQueryClient();
 
+  // ── Query: Project exclude flag ──
+  const { data: projectData } = useQuery({
+    queryKey: ["project-exclude-commission", projectId],
+    queryFn: async () => {
+      if (!projectId) return null;
+      const { data, error } = await supabase
+        .from("projects")
+        .select("exclude_from_commission")
+        .eq("id", projectId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!projectId,
+  });
+
+  const toggleExcludeMutation = useMutation({
+    mutationFn: async (exclude: boolean) => {
+      if (!projectId) return;
+      const { error } = await supabase
+        .from("projects")
+        .update({ exclude_from_commission: exclude })
+        .eq("id", projectId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["project-exclude-commission", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["commission-report"] });
+      invalidateProjectQueries(queryClient);
+      toast.success("Commission exclusion updated");
+    },
+    onError: (e: Error) => toast.error(getUserFriendlyError(e)),
+  });
+
   // ── Query 1: F&W schedule entries ──
   const { data: fwEntries = [] } = useQuery({
     queryKey: ["commission-fw-entries", projectId],
