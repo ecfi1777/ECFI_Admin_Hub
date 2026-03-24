@@ -774,7 +774,7 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
 
                 {/* Percentages row */}
                 <tr className="text-muted-foreground italic text-xs">
-                  <td colSpan={8} className="px-2 py-1"></td>
+                  <td colSpan={9} className="px-2 py-1"></td>
                   <td colSpan={2} className="px-2 py-1"></td>
                   <td className="px-2 py-1 text-right">100%</td>
                   <td className="px-2 py-1 text-right">
