@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Download, Loader2, EyeOff } from "lucide-react";
+import { Download, Loader2, EyeOff, Eye } from "lucide-react";
 import { format, startOfMonth, endOfMonth, parseISO } from "date-fns";
 import { toast } from "sonner";
 import ExcelJS from "exceljs";
@@ -152,10 +152,30 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["commission-report-wall-anchor"] });
       queryClient.invalidateQueries({ queryKey: ["commission-report-all-entries"] });
+      queryClient.invalidateQueries({ queryKey: ["commission-report-excluded"] });
       toast.success("Project excluded from commission report");
     },
     onError: () => {
       toast.error("Failed to exclude project");
+    },
+  });
+
+  const restoreMutation = useMutation({
+    mutationFn: async (projectId: string) => {
+      const { error } = await supabase
+        .from("projects")
+        .update({ exclude_from_commission: false })
+        .eq("id", projectId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["commission-report-wall-anchor"] });
+      queryClient.invalidateQueries({ queryKey: ["commission-report-all-entries"] });
+      queryClient.invalidateQueries({ queryKey: ["commission-report-excluded"] });
+      toast.success("Project restored to commission report");
+    },
+    onError: () => {
+      toast.error("Failed to restore project");
     },
   });
   const [overrides, setOverrides] = useState<Record<string, {
@@ -277,6 +297,43 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
       return data || [];
     },
     enabled: projectIds.length > 0,
+  });
+
+  // ── Excluded projects for this month (wall entries exist but project is excluded) ──
+  const { data: excludedProjects } = useQuery({
+    queryKey: ["commission-report-excluded", organizationId, startDate, endDate],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("schedule_entries")
+        .select(`
+          project_id,
+          phases(pl_section, phase_type),
+          projects!inner(
+            id, lot_number, exclude_from_commission,
+            builders(name, code),
+            locations(name)
+          )
+        `)
+        .eq("organization_id", organizationId)
+        .eq("deleted", false)
+        .gte("scheduled_date", startDate)
+        .lte("scheduled_date", endDate);
+      if (error) throw error;
+      // Keep only wall entries for excluded projects
+      const wallExcluded = (data || []).filter((e: any) => {
+        const s = e.phases?.pl_section;
+        return (s === "footings_walls" || s === "both") &&
+          e.phases?.phase_type === "wall" &&
+          e.projects?.exclude_from_commission === true;
+      });
+      // Deduplicate by project_id
+      const seen = new Set<string>();
+      return wallExcluded.filter((e: any) => {
+        if (seen.has(e.project_id)) return false;
+        seen.add(e.project_id);
+        return true;
+      });
+    },
   });
 
   const isLoading = loadingWallEntries || loadingAllEntries || loadingRevenue || loadingCommissions || loadingOther;
@@ -802,6 +859,41 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
           {gi < crewGroups.length - 1 && <div className="py-3" />}
         </div>
       ))}
+
+      {/* Excluded projects section */}
+      {(excludedProjects?.length ?? 0) > 0 && (
+        <div className="mt-6 border border-border rounded-lg p-4">
+          <h3 className="text-sm font-semibold text-muted-foreground mb-3">
+            Excluded Projects ({excludedProjects!.length})
+          </h3>
+          <div className="space-y-2">
+            {excludedProjects!.map((entry: any) => (
+              <div
+                key={entry.project_id}
+                className="flex items-center justify-between text-sm py-1.5 px-3 rounded bg-muted/30 border border-border"
+              >
+                <span className="text-foreground">
+                  {entry.projects?.locations?.name && (
+                    <span className="text-muted-foreground">{entry.projects.locations.name} — </span>
+                  )}
+                  Lot {entry.projects?.lot_number}
+                  {entry.projects?.builders?.name && (
+                    <span className="text-muted-foreground"> ({entry.projects.builders.code || entry.projects.builders.name})</span>
+                  )}
+                </span>
+                <button
+                  onClick={() => restoreMutation.mutate(entry.project_id)}
+                  disabled={restoreMutation.isPending}
+                  className="inline-flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors font-medium"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  Restore
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
