@@ -721,7 +721,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
                       {entry.projects?.builders?.code || entry.projects?.builders?.name || "-"}
                     </button>
                   </TableCell>
-                  <TableCell className="text-foreground text-xs py-2">
+                  <TableCell className="text-foreground text-xs py-2 align-middle">
                     <button
                       onClick={() => {
                         if (entry.project_id) {
