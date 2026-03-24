@@ -826,7 +826,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
                     </TableCell>
                   )}
                   {!readOnly && (
-                    <TableCell className="py-2">
+                    <TableCell className="py-2 align-middle">
                       <div className="flex items-center gap-1">
                         <Button
                           type="button"
