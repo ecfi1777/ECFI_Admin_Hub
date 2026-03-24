@@ -669,7 +669,16 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
               <tbody>
                 {group.rows.map((r, ri) => (
                   <tr key={ri} className="border-t border-border hover:bg-muted/30">
-                    <td className="px-2 py-1.5 whitespace-nowrap">{r.crewName}</td>
+                    <td className="px-1 py-1.5 text-center">
+                      <button
+                        onClick={() => excludeMutation.mutate(r.projectId)}
+                        disabled={excludeMutation.isPending}
+                        title="Exclude from commission report"
+                        className="text-muted-foreground hover:text-destructive transition-colors"
+                      >
+                        <EyeOff className="w-3.5 h-3.5" />
+                      </button>
+                    </td>
                     <td className="px-2 py-1.5 whitespace-nowrap">{r.builder}</td>
                     <td className="px-2 py-1.5 whitespace-nowrap">{r.subdivision}</td>
                     <td className="px-2 py-1.5 whitespace-nowrap">{r.lotNumber}</td>
