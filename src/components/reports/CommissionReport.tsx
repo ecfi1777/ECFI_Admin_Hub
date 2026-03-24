@@ -658,6 +658,7 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
                 </tr>
                 {/* Column headers */}
                 <tr className="bg-muted">
+                  <th className="px-1 py-1.5 w-8"></th>
                   {COLUMNS.map((col) => (
                     <th key={col} className="px-2 py-1.5 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">
                       {col}
