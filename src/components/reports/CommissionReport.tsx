@@ -158,6 +158,25 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
       toast.error("Failed to exclude project");
     },
   });
+
+  const restoreMutation = useMutation({
+    mutationFn: async (projectId: string) => {
+      const { error } = await supabase
+        .from("projects")
+        .update({ exclude_from_commission: false })
+        .eq("id", projectId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["commission-report-wall-anchor"] });
+      queryClient.invalidateQueries({ queryKey: ["commission-report-all-entries"] });
+      queryClient.invalidateQueries({ queryKey: ["commission-report-excluded"] });
+      toast.success("Project restored to commission report");
+    },
+    onError: () => {
+      toast.error("Failed to restore project");
+    },
+  });
   const [overrides, setOverrides] = useState<Record<string, {
     base_house?: number | null;
     extras?: number | null;
