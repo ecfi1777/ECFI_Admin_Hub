@@ -594,7 +594,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
                       <span className="truncate block">{entry.crews?.name || "-"}</span>
                     </TableCell>
                     <TableCell colSpan={readOnly ? 9 : 11} className="text-xs py-2 text-destructive italic">
-                      <span className="line-through">Did not work</span>
+                      <span>Did not work</span>
                       {entry.not_working_reason && (
                         <span className="ml-2 no-underline">— {entry.not_working_reason}</span>
                       )}
