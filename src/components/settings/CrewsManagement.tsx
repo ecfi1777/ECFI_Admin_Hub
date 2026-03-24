@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -281,7 +281,7 @@ function SortableCrewRow({
 
 export function CrewsManagement() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [orderedCrews, setOrderedCrews] = useState<Crew[]>([]);
+  const [localOrder, setLocalOrder] = useState<Crew[] | null>(null);
   const [hasOrderChanges, setHasOrderChanges] = useState(false);
   const [showInactive, setShowInactive] = useState(false);
 
@@ -313,7 +313,7 @@ export function CrewsManagement() {
   );
 
   // Fetch crews
-  const { isLoading: crewsLoading } = useQuery({
+  const { data: fetchedCrews, isLoading: crewsLoading } = useQuery({
     queryKey: ["crews-management", organizationId],
     queryFn: async () => {
       if (!organizationId) return [];
@@ -324,31 +324,35 @@ export function CrewsManagement() {
         .order("display_order")
         .order("name");
       if (error) throw error;
-
-      // Sort crews: by display_order first, then numbers first, then alphabetical
-      const sorted = [...(data as Crew[])].sort((a, b) => {
-        if (a.display_order !== 0 || b.display_order !== 0) {
-          if (a.display_order !== b.display_order) {
-            return a.display_order - b.display_order;
-          }
-        }
-        const aIsNumber = /^\d/.test(a.name);
-        const bIsNumber = /^\d/.test(b.name);
-        if (aIsNumber && !bIsNumber) return -1;
-        if (!aIsNumber && bIsNumber) return 1;
-        if (aIsNumber && bIsNumber) {
-          const aNum = parseInt(a.name.match(/^\d+/)?.[0] || "0", 10);
-          const bNum = parseInt(b.name.match(/^\d+/)?.[0] || "0", 10);
-          return aNum - bNum;
-        }
-        return a.name.localeCompare(b.name);
-      });
-
-      setOrderedCrews(sorted);
-      return sorted;
+      return data as Crew[];
     },
     enabled: !!organizationId,
   });
+
+  // Deterministic sort derived from query data
+  const sortedCrews = useMemo(() => {
+    if (!fetchedCrews) return [];
+    return [...fetchedCrews].sort((a, b) => {
+      if (a.display_order !== 0 || b.display_order !== 0) {
+        if (a.display_order !== b.display_order) {
+          return a.display_order - b.display_order;
+        }
+      }
+      const aIsNumber = /^\d/.test(a.name);
+      const bIsNumber = /^\d/.test(b.name);
+      if (aIsNumber && !bIsNumber) return -1;
+      if (!aIsNumber && bIsNumber) return 1;
+      if (aIsNumber && bIsNumber) {
+        const aNum = parseInt(a.name.match(/^\d+/)?.[0] || "0", 10);
+        const bNum = parseInt(b.name.match(/^\d+/)?.[0] || "0", 10);
+        return aNum - bNum;
+      }
+      return a.name.localeCompare(b.name);
+    });
+  }, [fetchedCrews]);
+
+  // Use local drag override if set, otherwise fall through to query-derived data
+  const orderedCrews = localOrder ?? sortedCrews;
 
   // Fetch crew members
   const { data: members = [] } = useQuery({
@@ -381,6 +385,7 @@ export function CrewsManagement() {
       queryClient.invalidateQueries({ queryKey: ["crews"] });
       queryClient.invalidateQueries({ queryKey: ["crews-all"] });
       queryClient.invalidateQueries({ queryKey: ["crews-management"] });
+      setLocalOrder(null);
       setHasOrderChanges(false);
       toast.success("Crew order saved");
     },
@@ -504,11 +509,10 @@ export function CrewsManagement() {
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (over && active.id !== over.id) {
-      setOrderedCrews((items) => {
-        const oldIndex = items.findIndex((item) => item.id === active.id);
-        const newIndex = items.findIndex((item) => item.id === over.id);
-        return arrayMove(items, oldIndex, newIndex);
-      });
+      const current = localOrder ?? sortedCrews;
+      const oldIndex = current.findIndex((item) => item.id === active.id);
+      const newIndex = current.findIndex((item) => item.id === over.id);
+      setLocalOrder(arrayMove(current, oldIndex, newIndex));
       setHasOrderChanges(true);
     }
   };
