@@ -148,9 +148,9 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
     wall_total?: number | null;
   }>>({});
 
-  // ── Step 1: F&W schedule entries ──
-  const { data: rawEntries, isLoading: loadingEntries } = useQuery({
-    queryKey: ["commission-report-entries", organizationId, startDate, endDate],
+  // ── Step 1: Wall-anchor entries (only wall phases in selected month) ──
+  const { data: rawWallEntries, isLoading: loadingWallEntries } = useQuery({
+    queryKey: ["commission-report-wall-anchor", organizationId, startDate, endDate],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("schedule_entries")
@@ -172,16 +172,48 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
       if (error) throw error;
       return (data || []).filter((e: any) => {
         const s = e.phases?.pl_section;
-        return s === "footings_walls" || s === "both";
+        return (s === "footings_walls" || s === "both") && e.phases?.phase_type === "wall";
       });
     },
   });
 
-  const fwEntries = rawEntries || [];
+  const wallAnchorEntries = rawWallEntries || [];
   const projectIds = useMemo(
-    () => [...new Set(fwEntries.map((e: any) => e.project_id).filter(Boolean))],
-    [fwEntries]
+    () => [...new Set(wallAnchorEntries.map((e: any) => e.project_id).filter(Boolean))],
+    [wallAnchorEntries]
   );
+
+  // ── Step 1b: All F&W entries for qualifying projects (no date filter) ──
+  const { data: rawAllEntries, isLoading: loadingAllEntries } = useQuery({
+    queryKey: ["commission-report-all-entries", projectIds],
+    queryFn: async () => {
+      if (projectIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from("schedule_entries")
+        .select(`
+          id, scheduled_date, crew_id, crew_yards_poured,
+          ready_mix_invoice_amount, project_id,
+          crews(id, name),
+          phases(pl_section, phase_type),
+          projects!inner(
+            id, lot_number,
+            builders(name, code),
+            locations(name)
+          )
+        `)
+        .eq("organization_id", organizationId)
+        .eq("deleted", false)
+        .in("project_id", projectIds);
+      if (error) throw error;
+      return (data || []).filter((e: any) => {
+        const s = e.phases?.pl_section;
+        return s === "footings_walls" || s === "both";
+      });
+    },
+    enabled: projectIds.length > 0,
+  });
+
+  const allProjectEntries = rawAllEntries || [];
 
   // ── Step 2: Revenue, commissions, other costs ──
   const { data: revenueData, isLoading: loadingRevenue } = useQuery({
@@ -228,7 +260,7 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
     enabled: projectIds.length > 0,
   });
 
-  const isLoading = loadingEntries || loadingRevenue || loadingCommissions || loadingOther;
+  const isLoading = loadingWallEntries || loadingAllEntries || loadingRevenue || loadingCommissions || loadingOther;
 
   // ── Save handlers ──
   const handleSave = async (
@@ -340,7 +372,7 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
   }, [otherCostsData]);
 
   const { crewGroups } = useMemo(() => {
-    if (!fwEntries.length) return { crewGroups: [] };
+    if (!allProjectEntries.length) return { crewGroups: [] };
 
     const revenue = revenueData || [];
     const commissions = commissionsData || [];
@@ -348,7 +380,7 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
 
     // Group entries by project
     const projectMap = new Map<string, any[]>();
-    fwEntries.forEach((e: any) => {
+    allProjectEntries.forEach((e: any) => {
       const pid = e.project_id;
       if (!projectMap.has(pid)) projectMap.set(pid, []);
       projectMap.get(pid)!.push(e);
@@ -453,7 +485,7 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
     });
 
     return { crewGroups };
-  }, [fwEntries, revenueData, commissionsData, otherCostsData, overrides]);
+  }, [allProjectEntries, revenueData, commissionsData, otherCostsData, overrides]);
 
   // ── Export to Excel ──
   const handleExport = async () => {
@@ -557,11 +589,11 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
     );
   }
 
-  if (fwEntries.length === 0) {
+  if (wallAnchorEntries.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground text-sm space-y-2">
-        <p>No Footings & Walls entries found for {MONTH_NAMES[month]} {year}.</p>
-        <p>Make sure schedule entries exist for this month and phases are tagged with Phase Type in Settings → Phases.</p>
+        <p>No wall entries found for {MONTH_NAMES[month]} {year}.</p>
+        <p>Projects appear in the month their wall phase is scheduled. Make sure phases are tagged with Phase Type in Settings → Phases.</p>
       </div>
     );
   }
