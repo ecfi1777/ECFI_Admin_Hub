@@ -572,6 +572,16 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
       return { crewId, crewName: g.crewName, rows: g.rows, totals };
     });
 
+    // Sort crew groups: numeric crew names sorted ascending (ensures 800 < 1200)
+    crewGroups.sort((a, b) => {
+      const numA = parseInt(a.crewName, 10);
+      const numB = parseInt(b.crewName, 10);
+      if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+      if (!isNaN(numA)) return -1;
+      if (!isNaN(numB)) return 1;
+      return a.crewName.localeCompare(b.crewName);
+    });
+
     return { crewGroups };
   }, [allProjectEntries, revenueData, commissionsData, otherCostsData, overrides]);
 
