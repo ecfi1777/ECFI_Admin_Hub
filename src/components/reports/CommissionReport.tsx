@@ -748,7 +748,7 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
 
                 {/* Totals row */}
                 <tr className="border-t-2 border-foreground/20 font-bold bg-muted/50">
-                  <td colSpan={8} className="px-2 py-1.5 whitespace-nowrap">
+                  <td colSpan={9} className="px-2 py-1.5 whitespace-nowrap">
                     Total - Crew {group.crewName}:
                   </td>
                   <td className="px-2 py-1.5 text-right whitespace-nowrap">{fmtCurrency(group.totals.baseHouse)}</td>
