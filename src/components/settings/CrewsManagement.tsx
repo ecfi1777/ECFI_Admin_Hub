@@ -313,7 +313,7 @@ export function CrewsManagement() {
   );
 
   // Fetch crews
-  const { isLoading: crewsLoading } = useQuery({
+  const { data: fetchedCrews, isLoading: crewsLoading } = useQuery({
     queryKey: ["crews-management", organizationId],
     queryFn: async () => {
       if (!organizationId) return [];
@@ -324,31 +324,35 @@ export function CrewsManagement() {
         .order("display_order")
         .order("name");
       if (error) throw error;
-
-      // Sort crews: by display_order first, then numbers first, then alphabetical
-      const sorted = [...(data as Crew[])].sort((a, b) => {
-        if (a.display_order !== 0 || b.display_order !== 0) {
-          if (a.display_order !== b.display_order) {
-            return a.display_order - b.display_order;
-          }
-        }
-        const aIsNumber = /^\d/.test(a.name);
-        const bIsNumber = /^\d/.test(b.name);
-        if (aIsNumber && !bIsNumber) return -1;
-        if (!aIsNumber && bIsNumber) return 1;
-        if (aIsNumber && bIsNumber) {
-          const aNum = parseInt(a.name.match(/^\d+/)?.[0] || "0", 10);
-          const bNum = parseInt(b.name.match(/^\d+/)?.[0] || "0", 10);
-          return aNum - bNum;
-        }
-        return a.name.localeCompare(b.name);
-      });
-
-      setOrderedCrews(sorted);
-      return sorted;
+      return data as Crew[];
     },
     enabled: !!organizationId,
   });
+
+  // Deterministic sort derived from query data
+  const sortedCrews = useMemo(() => {
+    if (!fetchedCrews) return [];
+    return [...fetchedCrews].sort((a, b) => {
+      if (a.display_order !== 0 || b.display_order !== 0) {
+        if (a.display_order !== b.display_order) {
+          return a.display_order - b.display_order;
+        }
+      }
+      const aIsNumber = /^\d/.test(a.name);
+      const bIsNumber = /^\d/.test(b.name);
+      if (aIsNumber && !bIsNumber) return -1;
+      if (!aIsNumber && bIsNumber) return 1;
+      if (aIsNumber && bIsNumber) {
+        const aNum = parseInt(a.name.match(/^\d+/)?.[0] || "0", 10);
+        const bNum = parseInt(b.name.match(/^\d+/)?.[0] || "0", 10);
+        return aNum - bNum;
+      }
+      return a.name.localeCompare(b.name);
+    });
+  }, [fetchedCrews]);
+
+  // Use local drag override if set, otherwise fall through to query-derived data
+  const orderedCrews = localOrder ?? sortedCrews;
 
   // Fetch crew members
   const { data: members = [] } = useQuery({
