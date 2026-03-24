@@ -99,15 +99,17 @@ function SortableRow({ id, className, showGrip, children }: { id: string; classN
   return (
     <TableRow ref={setNodeRef} style={style} className={className}>
       {showGrip && (
-        <TableCell className="py-2 w-8 px-1">
-          <button
-            {...attributes}
-            {...listeners}
-            className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground touch-none"
-            tabIndex={-1}
-          >
-            <GripVertical className="w-4 h-4" />
-          </button>
+        <TableCell className="py-2 w-8 px-1 align-middle">
+          <div className="flex items-center justify-center h-full">
+            <button
+              {...attributes}
+              {...listeners}
+              className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground touch-none"
+              tabIndex={-1}
+            >
+              <GripVertical className="w-4 h-4" />
+            </button>
+          </div>
         </TableCell>
       )}
       {children}
