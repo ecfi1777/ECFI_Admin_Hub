@@ -768,7 +768,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
                       "pump"
                     )}
                   </TableCell>
-                  <TableCell className="py-2 text-center">
+                  <TableCell className="py-2 text-center align-middle">
                     {renderSelectCellWithQuickEdit(
                       entry,
                       "inspection_type_id",
