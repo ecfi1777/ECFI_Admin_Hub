@@ -281,7 +281,7 @@ function SortableCrewRow({
 
 export function CrewsManagement() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [orderedCrews, setOrderedCrews] = useState<Crew[]>([]);
+  const [localOrder, setLocalOrder] = useState<Crew[] | null>(null);
   const [hasOrderChanges, setHasOrderChanges] = useState(false);
   const [showInactive, setShowInactive] = useState(false);
 
