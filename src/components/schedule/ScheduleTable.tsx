@@ -601,19 +601,35 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
                         <span className="ml-2 no-underline">— {entry.not_working_reason}</span>
                       )}
                       {!readOnly && (
-                        <Button
-                          type="button"
-                          size="icon"
-                          variant="ghost"
-                          className="h-7 w-7 ml-2 text-muted-foreground hover:text-foreground"
-                          title="Edit entry"
-                          onClick={() => {
-                            setEditEntry(entry);
-                            setEditEntryTab("general");
-                          }}
-                        >
-                          <Pencil className="w-3.5 h-3.5" />
-                        </Button>
+                        <>
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 ml-2 text-muted-foreground hover:text-foreground"
+                            title="Edit entry"
+                            onClick={() => {
+                              setEditEntry(entry);
+                              setEditEntryTab("general");
+                            }}
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 ml-1 text-muted-foreground hover:text-destructive"
+                            title="Delete entry"
+                            onPointerDown={(e) => e.stopPropagation()}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteEntryId(entry.id);
+                            }}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </>
                       )}
                     </TableCell>
                   </SortableRow>
