@@ -123,13 +123,32 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      if (!entry) return;
+      const { error } = await supabase
+        .from("schedule_entries")
+        .update({ deleted: true, deleted_at: new Date().toISOString() })
+        .eq("id", entry.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      invalidateScheduleQueries(queryClient);
+      toast.success("Entry removed");
+      onOpenChange(false);
+    },
+    onError: (error: Error) => {
+      toast.error(getUserFriendlyError(error));
+    },
+  });
+
   const handleSave = () => {
     if (formData.did_not_work && !formData.not_working_reason.trim()) {
       toast.error("Please enter a reason why the crew did not work");
       return;
     }
     if (!formData.did_not_work && !entry?.project_id) {
-      toast.error("Please select a project, or keep 'Did not work' checked. This entry has no project attached.");
+      deleteMutation.mutate();
       return;
     }
     updateMutation.mutate();
