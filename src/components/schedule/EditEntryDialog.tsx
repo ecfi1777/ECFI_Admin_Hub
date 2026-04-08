@@ -128,6 +128,10 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
       toast.error("Please enter a reason why the crew did not work");
       return;
     }
+    if (!formData.did_not_work && !entry?.project_id) {
+      toast.error("Please select a project, or keep 'Did not work' checked. This entry has no project attached.");
+      return;
+    }
     updateMutation.mutate();
   };
 
