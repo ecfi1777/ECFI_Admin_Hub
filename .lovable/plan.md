@@ -1,17 +1,27 @@
 
 
-## Add Delete Button to "Did Not Work" Rows
+## Auto-Delete When Unchecking "Did Not Work" Without Project
 
 ### Summary
-Add a trash/delete button next to the existing pencil/edit button in the `isDidNotWork` row block of `ScheduleTable.tsx`.
+When a user unchecks "Did not work" on an entry that has no project, instead of showing an error toast, automatically soft-delete the entry.
 
-### Changes
+### Important Note
+The user's code references `newProjectId`, but this variable does not exist in the component or the form state — there is no project selector shown when editing a "did not work" entry. The condition will use `!entry?.project_id` only, which is functionally equivalent since `newProjectId` would always be undefined/falsy.
 
-**File: `src/components/schedule/ScheduleTable.tsx`**
+### Changes — `src/components/schedule/EditEntryDialog.tsx`
 
-1. Ensure `Trash2` is imported from `lucide-react` (likely already imported for regular entry rows)
-2. Find the `isDidNotWork` block's `{!readOnly && (` section containing only the pencil button
-3. Wrap both buttons in a Fragment (`<>...</>`) and add the trash button with `setDeleteEntryId(entry.id)` onClick — exactly as specified in the user's prompt
+**1. Add deleteMutation** (after `updateMutation`, ~line 124):
+- Soft-deletes the entry by setting `deleted: true` and `deleted_at` to current timestamp
+- On success: invalidates schedule queries, shows "Entry removed" toast, closes dialog
+- On error: shows user-friendly error toast
 
-No other files or logic need changes. The existing `deleteMutation` and `AlertDialog` confirmation flow already handle deletion.
+**2. Replace handleSave** (lines 126-136):
+- Keep the "did not work without reason" validation
+- Replace the error toast for "no project" with `deleteMutation.mutate()` + return
+- Otherwise proceed with `updateMutation.mutate()`
+
+**3. Update Save button disabled prop** (line 299):
+- Change `disabled={updateMutation.isPending}` to `disabled={updateMutation.isPending || deleteMutation.isPending}`
+
+### No other files changed
 
