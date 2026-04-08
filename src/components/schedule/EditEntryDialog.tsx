@@ -5,7 +5,7 @@
  * regardless of which view (Calendar, Schedule, etc.) opens it.
  */
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -20,11 +20,12 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Loader2, RotateCcw } from "lucide-react";
+import { Loader2, RotateCcw, ExternalLink } from "lucide-react";
 import { getUserFriendlyError } from "@/lib/errorHandler";
 import { invalidateScheduleQueries } from "@/lib/queryHelpers";
 import { useEntryForm } from "./entry-form/useEntryForm";
 import { usePhases } from "@/hooks/useReferenceData";
+import { ProjectDetailsSheet } from "@/components/projects/ProjectDetailsSheet";
 import { 
   GeneralTab, 
   ConcreteTab, 
@@ -45,6 +46,8 @@ interface EditEntryDialogProps {
 
 export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "general" }: EditEntryDialogProps) {
   const queryClient = useQueryClient();
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [isProjectSheetOpen, setIsProjectSheetOpen] = useState(false);
   
   const { formData, updateField, loadFromEntry, getUpdatePayload } = useEntryForm();
   const { data: phases = [] } = usePhases();
@@ -173,7 +176,22 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] md:max-w-2xl max-h-[100dvh] md:max-h-[90dvh] overflow-y-auto rounded-none md:rounded-lg">
         <DialogHeader className="pr-8">
-          <DialogTitle className="truncate text-base sm:text-lg">Edit Entry: {projectLabel}</DialogTitle>
+          <DialogTitle className="text-base sm:text-lg flex items-center gap-2 pr-8 min-w-0">
+            <span className="truncate">Edit Entry: {projectLabel}</span>
+            {entry?.project_id && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedProjectId(entry.project_id);
+                  setIsProjectSheetOpen(true);
+                }}
+                className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+                title="Open project details"
+              >
+                <ExternalLink className="w-4 h-4" />
+              </button>
+            )}
+          </DialogTitle>
         </DialogHeader>
         
         {isLoadingEntry ? (
@@ -322,6 +340,14 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
           </>
         )}
       </DialogContent>
+      <ProjectDetailsSheet
+        projectId={selectedProjectId}
+        isOpen={isProjectSheetOpen}
+        onClose={() => {
+          setIsProjectSheetOpen(false);
+          setSelectedProjectId(null);
+        }}
+      />
     </Dialog>
   );
 }
