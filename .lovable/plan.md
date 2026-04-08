@@ -1,27 +1,28 @@
 
 
-## Auto-Delete When Unchecking "Did Not Work" Without Project
+## Add Project Details Link to Edit Entry Dialog Title
 
 ### Summary
-When a user unchecks "Did not work" on an entry that has no project, instead of showing an error toast, automatically soft-delete the entry.
-
-### Important Note
-The user's code references `newProjectId`, but this variable does not exist in the component or the form state — there is no project selector shown when editing a "did not work" entry. The condition will use `!entry?.project_id` only, which is functionally equivalent since `newProjectId` would always be undefined/falsy.
+Add an `ExternalLink` icon button next to the project name in the Edit Entry dialog title. Clicking it opens the `ProjectDetailsSheet` overlay, matching the pattern already used in `ScheduleTable.tsx`.
 
 ### Changes — `src/components/schedule/EditEntryDialog.tsx`
 
-**1. Add deleteMutation** (after `updateMutation`, ~line 124):
-- Soft-deletes the entry by setting `deleted: true` and `deleted_at` to current timestamp
-- On success: invalidates schedule queries, shows "Entry removed" toast, closes dialog
-- On error: shows user-friendly error toast
+**1. Imports (line 8, 23)**
+- Add `useState` to the existing `useEffect, useMemo` import on line 8
+- Add `ExternalLink` to the lucide-react import on line 23
+- Add `import { ProjectDetailsSheet } from "@/components/projects/ProjectDetailsSheet";` after line 27
 
-**2. Replace handleSave** (lines 126-136):
-- Keep the "did not work without reason" validation
-- Replace the error toast for "no project" with `deleteMutation.mutate()` + return
-- Otherwise proceed with `updateMutation.mutate()`
+**2. State variables (after line 47)**
+```tsx
+const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+const [isProjectSheetOpen, setIsProjectSheetOpen] = useState(false);
+```
 
-**3. Update Save button disabled prop** (line 299):
-- Change `disabled={updateMutation.isPending}` to `disabled={updateMutation.isPending || deleteMutation.isPending}`
+**3. DialogTitle update (line 176)**
+Replace the single-line `<DialogTitle>` with a flex layout containing the truncated text plus a conditional `ExternalLink` icon button (only shown when `entry?.project_id` exists). The button calls `setSelectedProjectId` and `setIsProjectSheetOpen`.
+
+**4. ProjectDetailsSheet (before closing `</Dialog>` on line 325)**
+Add the `<ProjectDetailsSheet>` component with `projectId={selectedProjectId}`, `isOpen={isProjectSheetOpen}`, and an `onClose` handler that resets both state variables.
 
 ### No other files changed
 
