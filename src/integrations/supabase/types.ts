@@ -143,57 +143,6 @@ export type Database = {
           },
         ]
       }
-      crew_employees: {
-        Row: {
-          created_at: string | null
-          crew_id: string
-          display_order: number | null
-          hourly_rate: number | null
-          id: string
-          is_active: boolean | null
-          name: string
-          organization_id: string
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          crew_id: string
-          display_order?: number | null
-          hourly_rate?: number | null
-          id?: string
-          is_active?: boolean | null
-          name: string
-          organization_id: string
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          crew_id?: string
-          display_order?: number | null
-          hourly_rate?: number | null
-          id?: string
-          is_active?: boolean | null
-          name?: string
-          organization_id?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "crew_employees_crew_id_fkey"
-            columns: ["crew_id"]
-            isOneToOne: false
-            referencedRelation: "crews"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "crew_employees_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       crew_members: {
         Row: {
           created_at: string
@@ -789,13 +738,6 @@ export type Database = {
           line_cost?: number | null
         }
         Relationships: [
-          {
-            foreignKeyName: "project_labor_employees_crew_employee_id_fkey"
-            columns: ["crew_employee_id"]
-            isOneToOne: false
-            referencedRelation: "crew_employees"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "project_labor_employees_labor_entry_id_fkey"
             columns: ["labor_entry_id"]
@@ -1424,62 +1366,6 @@ export type Database = {
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "suppliers"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      schedule_entry_financials: {
-        Row: {
-          created_at: string
-          inspection_amount: number | null
-          inspection_invoice_number: string | null
-          invoice_complete: boolean
-          invoice_number: string | null
-          pump_invoice_amount: number | null
-          pump_invoice_number: string | null
-          ready_mix_invoice_amount: number | null
-          ready_mix_invoice_number: string | null
-          ready_mix_yards_billed: number | null
-          schedule_entry_id: string
-          to_be_invoiced: boolean
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          inspection_amount?: number | null
-          inspection_invoice_number?: string | null
-          invoice_complete?: boolean
-          invoice_number?: string | null
-          pump_invoice_amount?: number | null
-          pump_invoice_number?: string | null
-          ready_mix_invoice_amount?: number | null
-          ready_mix_invoice_number?: string | null
-          ready_mix_yards_billed?: number | null
-          schedule_entry_id: string
-          to_be_invoiced?: boolean
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          inspection_amount?: number | null
-          inspection_invoice_number?: string | null
-          invoice_complete?: boolean
-          invoice_number?: string | null
-          pump_invoice_amount?: number | null
-          pump_invoice_number?: string | null
-          ready_mix_invoice_amount?: number | null
-          ready_mix_invoice_number?: string | null
-          ready_mix_yards_billed?: number | null
-          schedule_entry_id?: string
-          to_be_invoiced?: boolean
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "schedule_entry_financials_schedule_entry_id_fkey"
-            columns: ["schedule_entry_id"]
-            isOneToOne: true
-            referencedRelation: "schedule_entries"
             referencedColumns: ["id"]
           },
         ]
