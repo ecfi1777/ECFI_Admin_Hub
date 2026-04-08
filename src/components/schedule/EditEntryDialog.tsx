@@ -315,8 +315,8 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
               <Button variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleSave} disabled={updateMutation.isPending}>
-                {updateMutation.isPending ? "Saving..." : "Save Changes"}
+              <Button onClick={handleSave} disabled={updateMutation.isPending || deleteMutation.isPending}>
+                {updateMutation.isPending || deleteMutation.isPending ? "Saving..." : "Save Changes"}
               </Button>
             </div>
           </>
