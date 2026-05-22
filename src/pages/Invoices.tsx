@@ -352,7 +352,7 @@ export default function Invoices() {
               <div className="relative w-full md:flex-1 md:min-w-[200px]">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                 <Input
-                  placeholder="Search builder, location, crew, phase..."
+                  placeholder="Search builder, location, lot, crew, phase..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10"
