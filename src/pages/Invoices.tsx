@@ -164,6 +164,7 @@ export default function Invoices() {
         entry.projects?.builders?.name?.toLowerCase().includes(searchLower) ||
         entry.projects?.builders?.code?.toLowerCase().includes(searchLower) ||
         entry.projects?.locations?.name?.toLowerCase().includes(searchLower) ||
+        entry.projects?.lot_number?.toLowerCase().includes(searchLower) ||
         entry.crews?.name?.toLowerCase().includes(searchLower) ||
         entry.phases?.name?.toLowerCase().includes(searchLower);
       

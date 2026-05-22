@@ -1,29 +1,14 @@
+## Invoices Page — Two Updates
 
+### 1. Include lot number in search
+In `src/pages/Invoices.tsx` `filterEntries` (around line 163), extend `matchesSearch` to also match `entry.projects?.lot_number?.toLowerCase().includes(searchLower)`. Update the search input placeholder (line 349) to `"Search builder, location, lot, crew, phase..."`.
 
-## Green Checkbox for Completed Invoices in "Need to Inv." Column
+### 2. Require invoice # before marking complete
+In the checkbox `onCheckedChange` handler (lines 248–250), when the user is checking the box (`checked === true`) and `entry.invoice_number` is empty/null:
+- Do NOT call `toggleCompleteMutation`.
+- Show a toast: `"Please add an invoice number before marking complete"`.
+- Auto-open the inline invoice # editor by calling `handleStartEditInvoice(entry)` so the user can immediately type one.
 
-### Summary
-Update the "Need to Inv." cell in `ScheduleTable.tsx` to show a disabled green checkbox when `invoice_complete` is true, otherwise show the existing togglable checkbox.
+Unchecking (moving back to pending) remains unchanged.
 
-### Changes — `src/components/schedule/ScheduleTable.tsx`
-
-**Lines 835-840**: Replace the single `<Checkbox>` with a conditional:
-
-```tsx
-{entry.invoice_complete ? (
-  <Checkbox
-    checked={true}
-    disabled={true}
-    className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
-  />
-) : (
-  <Checkbox
-    checked={entry.to_be_invoiced}
-    onCheckedChange={() => handleCheckboxChange(entry.id, entry.to_be_invoiced)}
-    className="border-muted-foreground data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-  />
-)}
-```
-
-The wrapping `<div>` and `<TableCell>` remain unchanged. No other files or columns affected.
-
+No other files affected.
