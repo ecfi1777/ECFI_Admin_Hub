@@ -246,9 +246,14 @@ export default function Invoices() {
                 <TableCell>
                   <Checkbox
                     checked={entry.invoice_complete}
-                    onCheckedChange={(checked) => 
-                      toggleCompleteMutation.mutate({ entryId: entry.id, complete: !!checked })
-                    }
+                    onCheckedChange={(checked) => {
+                      if (checked && !entry.invoice_number) {
+                        toast.error("Please add an invoice number before marking complete");
+                        handleStartEditInvoice(entry);
+                        return;
+                      }
+                      toggleCompleteMutation.mutate({ entryId: entry.id, complete: !!checked });
+                    }}
                     disabled={toggleCompleteMutation.isPending}
                     className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
                   />
