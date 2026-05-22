@@ -164,6 +164,7 @@ export default function Invoices() {
         entry.projects?.builders?.name?.toLowerCase().includes(searchLower) ||
         entry.projects?.builders?.code?.toLowerCase().includes(searchLower) ||
         entry.projects?.locations?.name?.toLowerCase().includes(searchLower) ||
+        entry.projects?.lot_number?.toLowerCase().includes(searchLower) ||
         entry.crews?.name?.toLowerCase().includes(searchLower) ||
         entry.phases?.name?.toLowerCase().includes(searchLower);
       
@@ -245,9 +246,14 @@ export default function Invoices() {
                 <TableCell>
                   <Checkbox
                     checked={entry.invoice_complete}
-                    onCheckedChange={(checked) => 
-                      toggleCompleteMutation.mutate({ entryId: entry.id, complete: !!checked })
-                    }
+                    onCheckedChange={(checked) => {
+                      if (checked && !entry.invoice_number) {
+                        toast.error("Please add an invoice number before marking complete");
+                        handleStartEditInvoice(entry);
+                        return;
+                      }
+                      toggleCompleteMutation.mutate({ entryId: entry.id, complete: !!checked });
+                    }}
                     disabled={toggleCompleteMutation.isPending}
                     className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
                   />
@@ -346,7 +352,7 @@ export default function Invoices() {
               <div className="relative w-full md:flex-1 md:min-w-[200px]">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                 <Input
-                  placeholder="Search builder, location, crew, phase..."
+                  placeholder="Search builder, location, lot, crew, phase..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10"
