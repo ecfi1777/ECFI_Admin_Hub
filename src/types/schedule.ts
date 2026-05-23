@@ -3,6 +3,24 @@
  * This is the single source of truth for ScheduleEntry-related types.
  */
 
+export interface StoneLine {
+  id: string;
+  schedule_entry_id: string;
+  organization_id: string;
+  supplier_id: string | null;
+  stone_type_id: string | null;
+  qty_ordered: string | null;
+  order_number: string | null;
+  invoice_number: string | null;
+  invoice_amount: number | null;
+  tons_billed: number | null;
+  notes: string | null;
+  display_order: number;
+  // Optional joined relations
+  suppliers?: { id: string; name: string; code: string | null } | null;
+  stone_types?: { id: string; name: string } | null;
+}
+
 export interface ScheduleEntryProject {
   id?: string;
   lot_number: string;
