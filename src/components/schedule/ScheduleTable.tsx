@@ -413,7 +413,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
           onChange={(e) => setEditValue(e.target.value)}
           onBlur={() => saveEdit(entry.id, field)}
           onKeyDown={(e) => handleKeyDown(e, entry.id, field)}
-          className="h-7 bg-background border-border text-foreground text-sm w-full"
+          className="h-7 bg-background border-border text-foreground text-sm w-full px-1 text-center"
           autoFocus
         />
       );
@@ -527,7 +527,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
               <TableHead className="text-muted-foreground w-20 text-center">Insp. Type</TableHead>
               <TableHead className="text-muted-foreground w-20 text-center">Inspector</TableHead>
               <TableHead className="text-muted-foreground w-[4.25rem] text-center">Supplier</TableHead>
-              <TableHead className="text-muted-foreground w-14 text-center">Qty Ord</TableHead>
+              <TableHead className="text-muted-foreground w-16 text-center">Qty Ord</TableHead>
               {!readOnly && <TableHead className="text-muted-foreground w-14 text-center">Need to Inv.</TableHead>}
               {!readOnly && <TableHead className="text-muted-foreground w-24">Actions</TableHead>}
             </TableRow>
