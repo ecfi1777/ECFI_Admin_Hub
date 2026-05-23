@@ -68,7 +68,7 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate,
   const { data: phases = [] } = usePhases();
 
   // Use shared form hook with default crew if provided
-  const { formData, updateField, resetForm, getInsertPayload } = useEntryForm({
+  const { formData, updateField, resetForm, getInsertPayload, addStoneLine, updateStoneLine, removeStoneLine } = useEntryForm({
     initialValues: { crew_id: defaultCrewId || "" }
   });
 
@@ -115,13 +115,45 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate,
       if (!organizationId) throw new Error("No organization found");
       
       const payload = getInsertPayload();
-      const { error } = await supabase.from("schedule_entries").insert({
-        organization_id: organizationId,
-        scheduled_date: effectiveDate,
-        project_id: formData.did_not_work ? null : (projectId || null),
-        ...payload,
-      });
+      const { data: inserted, error } = await supabase
+        .from("schedule_entries")
+        .insert({
+          organization_id: organizationId,
+          scheduled_date: effectiveDate,
+          project_id: formData.did_not_work ? null : (projectId || null),
+          ...payload,
+        })
+        .select("id")
+        .single();
       if (error) throw error;
+
+      // Insert any non-empty stone supplier lines for the new entry
+      const isEmpty = (l: typeof formData.stone_lines[number]) =>
+        !l.supplier_id && !l.stone_type_id && !l.qty_ordered && !l.order_number &&
+        !l.invoice_number && !l.invoice_amount && !l.tons_billed && !l.notes;
+
+      const toInsert = formData.stone_lines
+        .filter(l => !isEmpty(l))
+        .map((l, idx) => ({
+          schedule_entry_id: inserted!.id,
+          organization_id: organizationId,
+          supplier_id: l.supplier_id || null,
+          stone_type_id: l.stone_type_id || null,
+          qty_ordered: l.qty_ordered || null,
+          order_number: l.order_number || null,
+          invoice_number: l.invoice_number || null,
+          invoice_amount: l.invoice_amount ? parseFloat(l.invoice_amount) : 0,
+          tons_billed: l.tons_billed ? parseFloat(l.tons_billed) : 0,
+          notes: l.notes || null,
+          display_order: idx,
+        }));
+
+      if (toInsert.length > 0) {
+        const { error: linesErr } = await supabase
+          .from("schedule_entry_stone_lines")
+          .insert(toInsert);
+        if (linesErr) throw linesErr;
+      }
     },
     onSuccess: () => {
       invalidateScheduleQueries(queryClient);
@@ -346,6 +378,9 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate,
                     <StoneTab 
                       formData={formData} 
                       updateField={updateField}
+                      addStoneLine={addStoneLine}
+                      updateStoneLine={updateStoneLine}
+                      removeStoneLine={removeStoneLine}
                       showInlineAdd={false}
                     />
                   </TabsContent>

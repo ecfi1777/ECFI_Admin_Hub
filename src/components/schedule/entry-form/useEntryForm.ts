@@ -3,13 +3,24 @@
  */
 
 import { useState, useCallback } from "react";
-import type { EntryFormValues } from "./types";
+import type { EntryFormValues, StoneLineFormValue } from "./types";
 import { DEFAULT_ENTRY_FORM_VALUES } from "./types";
 import type { ScheduleEntry } from "@/types/schedule";
 
 interface UseEntryFormOptions {
   initialValues?: Partial<EntryFormValues>;
 }
+
+const emptyStoneLine = (): StoneLineFormValue => ({
+  supplier_id: "",
+  stone_type_id: "",
+  qty_ordered: "",
+  order_number: "",
+  invoice_number: "",
+  invoice_amount: "",
+  tons_billed: "",
+  notes: "",
+});
 
 export function useEntryForm(options: UseEntryFormOptions = {}) {
   const [formData, setFormData] = useState<EntryFormValues>({
@@ -24,6 +35,27 @@ export function useEntryForm(options: UseEntryFormOptions = {}) {
     setFormData(prev => ({ ...prev, [field]: value }));
   }, []);
 
+  const addStoneLine = useCallback(() => {
+    setFormData(prev => ({
+      ...prev,
+      stone_lines: [...prev.stone_lines, emptyStoneLine()],
+    }));
+  }, []);
+
+  const updateStoneLine = useCallback((index: number, patch: Partial<StoneLineFormValue>) => {
+    setFormData(prev => ({
+      ...prev,
+      stone_lines: prev.stone_lines.map((l, i) => (i === index ? { ...l, ...patch } : l)),
+    }));
+  }, []);
+
+  const removeStoneLine = useCallback((index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      stone_lines: prev.stone_lines.filter((_, i) => i !== index),
+    }));
+  }, []);
+
   const resetForm = useCallback(() => {
     setFormData({
       ...DEFAULT_ENTRY_FORM_VALUES,
@@ -32,6 +64,34 @@ export function useEntryForm(options: UseEntryFormOptions = {}) {
   }, [options.initialValues]);
 
   const loadFromEntry = useCallback((entry: ScheduleEntry) => {
+    const rawLines = ((entry as any).stone_lines ?? []) as any[];
+    let stoneLines: StoneLineFormValue[] = rawLines.map((l: any) => ({
+      id: l.id,
+      supplier_id: l.supplier_id || "",
+      stone_type_id: l.stone_type_id || "",
+      qty_ordered: l.qty_ordered || "",
+      order_number: l.order_number || "",
+      invoice_number: l.invoice_number || "",
+      invoice_amount: l.invoice_amount?.toString() || "",
+      tons_billed: l.tons_billed?.toString() || "",
+      notes: l.notes || "",
+    }));
+
+    // Safety net: if no lines but legacy single-supplier data exists, synthesize one line
+    const legacyStoneId = (entry as any).stone_supplier_id;
+    if (stoneLines.length === 0 && legacyStoneId) {
+      stoneLines = [{
+        supplier_id: legacyStoneId || "",
+        stone_type_id: (entry as any).stone_type_id || "",
+        qty_ordered: entry.qty_ordered || "",
+        order_number: entry.order_number || "",
+        invoice_number: (entry as any).stone_invoice_number || "",
+        invoice_amount: (entry as any).stone_invoice_amount?.toString() || "",
+        tons_billed: (entry as any).stone_tons_billed?.toString() || "",
+        notes: (entry as any).stone_notes || "",
+      }];
+    }
+
     setFormData({
       crew_id: entry.crew_id || "",
       phase_id: entry.phase_id || "",
@@ -55,17 +115,7 @@ export function useEntryForm(options: UseEntryFormOptions = {}) {
       stone_invoice_number: (entry as any).stone_invoice_number || "",
       stone_invoice_amount: (entry as any).stone_invoice_amount?.toString() || "",
       stone_notes: (entry as any).stone_notes || "",
-      stone_lines: ((entry as any).stone_lines ?? []).map((l: any) => ({
-        id: l.id,
-        supplier_id: l.supplier_id || "",
-        stone_type_id: l.stone_type_id || "",
-        qty_ordered: l.qty_ordered || "",
-        order_number: l.order_number || "",
-        invoice_number: l.invoice_number || "",
-        invoice_amount: l.invoice_amount?.toString() || "",
-        tons_billed: l.tons_billed?.toString() || "",
-        notes: l.notes || "",
-      })),
+      stone_lines: stoneLines,
       pump_vendor_id: entry.pump_vendor_id || "",
       pump_invoice_number: entry.pump_invoice_number || "",
       pump_invoice_amount: entry.pump_invoice_amount?.toString() || "",
@@ -85,6 +135,10 @@ export function useEntryForm(options: UseEntryFormOptions = {}) {
   }, []);
 
   const getInsertPayload = useCallback(() => {
+    // Mirror line 1 into the legacy stone_* columns so the schedule table cell,
+    // P&L, Discrepancies, and Vendor Bills (which still read legacy columns) keep working.
+    const line1 = formData.stone_lines[0];
+
     return {
       crew_id: formData.crew_id || null,
       phase_id: formData.phase_id || null,
@@ -102,12 +156,12 @@ export function useEntryForm(options: UseEntryFormOptions = {}) {
       ready_mix_invoice_amount: formData.ready_mix_invoice_amount ? parseFloat(formData.ready_mix_invoice_amount) : null,
       ready_mix_yards_billed: formData.ready_mix_yards_billed ? parseFloat(formData.ready_mix_yards_billed) : null,
       concrete_notes: formData.concrete_notes || null,
-      stone_supplier_id: formData.stone_supplier_id || null,
-      stone_type_id: formData.stone_type_id || null,
-      stone_tons_billed: formData.stone_tons_billed ? parseFloat(formData.stone_tons_billed) : null,
-      stone_invoice_number: formData.stone_invoice_number || null,
-      stone_invoice_amount: formData.stone_invoice_amount ? parseFloat(formData.stone_invoice_amount) : null,
-      stone_notes: formData.stone_notes || null,
+      stone_supplier_id: line1?.supplier_id || null,
+      stone_type_id: line1?.stone_type_id || null,
+      stone_tons_billed: line1?.tons_billed ? parseFloat(line1.tons_billed) : null,
+      stone_invoice_number: line1?.invoice_number || null,
+      stone_invoice_amount: line1?.invoice_amount ? parseFloat(line1.invoice_amount) : null,
+      stone_notes: line1?.notes || null,
       pump_vendor_id: formData.pump_vendor_id || null,
       pump_invoice_number: formData.pump_invoice_number || null,
       pump_invoice_amount: formData.pump_invoice_amount ? parseFloat(formData.pump_invoice_amount) : null,
@@ -131,6 +185,9 @@ export function useEntryForm(options: UseEntryFormOptions = {}) {
   return {
     formData,
     updateField,
+    addStoneLine,
+    updateStoneLine,
+    removeStoneLine,
     resetForm,
     loadFromEntry,
     getInsertPayload,
