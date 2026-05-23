@@ -97,6 +97,7 @@ export const DEFAULT_ENTRY_FORM_VALUES: EntryFormValues = {
   stone_invoice_number: "",
   stone_invoice_amount: "",
   stone_notes: "",
+  stone_lines: [],
   pump_vendor_id: "",
   pump_invoice_number: "",
   pump_invoice_amount: "",
