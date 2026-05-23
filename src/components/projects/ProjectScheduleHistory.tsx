@@ -30,7 +30,7 @@ import { toast } from "sonner";
 import { getUserFriendlyError } from "@/lib/errorHandler";
 import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
-import { Calendar, Users, Truck, Building, ClipboardCheck, Pencil, FileText } from "lucide-react";
+import { Calendar, Users, Truck, Building, ClipboardCheck, Pencil, FileText, Mountain } from "lucide-react";
 import { useOrganization } from "@/hooks/useOrganization";
 
 interface ScheduleEntry {
@@ -49,6 +49,7 @@ interface ScheduleEntry {
   inspection_invoice_number: string | null;
   inspection_amount: number | null;
   inspection_notes: string | null;
+  stone_notes: string | null;
   notes: string | null;
   supplier_id: string | null;
   pump_vendor_id: string | null;
@@ -70,6 +71,18 @@ interface ScheduleEntry {
   pump_vendors: { id: string; name: string; code: string | null } | null;
   inspectors: { id: string; name: string } | null;
   inspection_types: { id: string; name: string } | null;
+  stone_lines: Array<{
+    id: string;
+    invoice_number: string | null;
+    invoice_amount: number | null;
+    tons_billed: number | null;
+    qty_ordered: string | null;
+    order_number: string | null;
+    notes: string | null;
+    display_order: number;
+    stone_suppliers: { id: string; name: string; code: string | null } | null;
+    stone_types: { id: string; name: string } | null;
+  }> | null;
 }
 
 interface ProjectScheduleHistoryProps {
@@ -125,6 +138,7 @@ export function ProjectScheduleHistory({ projectId, readOnly = false }: ProjectS
           inspection_invoice_number,
           inspection_amount,
           inspection_notes,
+          stone_notes,
           notes,
           supplier_id,
           pump_vendor_id,
@@ -146,13 +160,18 @@ export function ProjectScheduleHistory({ projectId, readOnly = false }: ProjectS
           suppliers(id, name, code),
           pump_vendors(id, name, code),
           inspectors(id, name),
-          inspection_types(id, name)
+          inspection_types(id, name),
+          stone_lines:schedule_entry_stone_lines(
+            id, invoice_number, invoice_amount, tons_billed, qty_ordered, order_number, notes, display_order,
+            stone_suppliers(id, name, code),
+            stone_types(id, name)
+          )
         `)
         .eq("project_id", projectId)
         .eq("deleted", false)
         .order("scheduled_date", { ascending: false });
       if (error) throw error;
-      return data as (ScheduleEntry & { phase_id: string | null })[];
+      return data as unknown as (ScheduleEntry & { phase_id: string | null })[];
     },
   });
 
@@ -479,6 +498,59 @@ export function ProjectScheduleHistory({ projectId, readOnly = false }: ProjectS
                               )}
                             </div>
                           )}
+
+                          {/* Stone */}
+                          {((entry.stone_lines && entry.stone_lines.length > 0) || entry.stone_notes) && (
+                            <div className="bg-muted rounded p-2 space-y-1">
+                              <div className="flex items-center gap-1 text-muted-foreground text-xs font-medium">
+                                <Mountain className="w-3 h-3" />
+                                Stone
+                              </div>
+                              {entry.stone_lines && [...entry.stone_lines]
+                                .sort((a, b) => a.display_order - b.display_order)
+                                .map((line, idx) => (
+                                  <div
+                                    key={line.id}
+                                    className={idx > 0 ? "border-t border-border pt-1 mt-1 space-y-0.5" : "space-y-0.5"}
+                                  >
+                                    {line.stone_suppliers && (
+                                      <div className="text-muted-foreground">
+                                        {line.stone_suppliers.code || line.stone_suppliers.name}
+                                        {line.stone_types && (
+                                          <span className="ml-1">— {line.stone_types.name}</span>
+                                        )}
+                                      </div>
+                                    )}
+                                    {line.tons_billed !== null && Number(line.tons_billed) > 0 && (
+                                      <div className="text-muted-foreground">
+                                        Billed: {line.tons_billed} tons
+                                      </div>
+                                    )}
+                                    {!readOnly && line.invoice_number && (
+                                      <div className="text-muted-foreground">
+                                        Inv: {line.invoice_number}
+                                      </div>
+                                    )}
+                                    {!readOnly && formatCurrency(line.invoice_amount) && (
+                                      <div className="text-green-400">
+                                        {formatCurrency(line.invoice_amount)}
+                                      </div>
+                                    )}
+                                    {line.notes && (
+                                      <div className="text-muted-foreground text-xs italic">
+                                        {line.notes}
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              {entry.stone_notes && (
+                                <div className="text-muted-foreground text-xs italic border-t border-border pt-1 mt-1">
+                                  {entry.stone_notes}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
 
                           {/* Pump */}
                           {(entry.pump_vendors || entry.pump_invoice_number || entry.pump_notes) && (

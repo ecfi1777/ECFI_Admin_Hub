@@ -1427,6 +1427,20 @@ export type Database = {
             referencedRelation: "schedule_entries"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "schedule_entry_stone_lines_stone_type_id_fkey"
+            columns: ["stone_type_id"]
+            isOneToOne: false
+            referencedRelation: "stone_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_entry_stone_lines_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "stone_suppliers"
+            referencedColumns: ["id"]
+          },
         ]
       }
       stone_suppliers: {
