@@ -124,7 +124,7 @@ export function DailySchedule() {
         .order("display_order", { ascending: true })
         .order("start_time", { ascending: true, nullsFirst: false });
       if (error) throw error;
-      return data as ScheduleEntry[];
+      return data as unknown as ScheduleEntry[];
     },
     enabled: !!organizationId,
   });
