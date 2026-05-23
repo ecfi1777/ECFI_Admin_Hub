@@ -87,6 +87,24 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate,
     }
   }, [defaultCrewId, updateField]);
 
+  // Reset the "invoice touched" flag when dialog opens/closes
+  useEffect(() => {
+    if (!open) setInvoiceTouched(false);
+  }, [open]);
+
+  // Auto-check "To Be Invoiced" when selected phase has default_to_be_invoiced=true,
+  // unless the user has manually toggled the checkbox.
+  useEffect(() => {
+    if (invoiceTouched) return;
+    if (!formData.phase_id) return;
+    const phase = phases.find((p) => p.id === formData.phase_id) as (typeof phases[number] & { default_to_be_invoiced?: boolean }) | undefined;
+    const shouldCheck = !!phase?.default_to_be_invoiced;
+    if (formData.to_be_invoiced !== shouldCheck) {
+      updateField("to_be_invoiced", shouldCheck);
+    }
+  }, [formData.phase_id, phases, invoiceTouched, formData.to_be_invoiced, updateField]);
+
+
   // Filter projects based on search term
   const filteredProjects = useMemo(() => {
     if (!projectSearch.trim()) return projects;
