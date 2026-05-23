@@ -138,6 +138,7 @@ export function ProjectScheduleHistory({ projectId, readOnly = false }: ProjectS
           inspection_invoice_number,
           inspection_amount,
           inspection_notes,
+          stone_notes,
           notes,
           supplier_id,
           pump_vendor_id,
@@ -159,7 +160,12 @@ export function ProjectScheduleHistory({ projectId, readOnly = false }: ProjectS
           suppliers(id, name, code),
           pump_vendors(id, name, code),
           inspectors(id, name),
-          inspection_types(id, name)
+          inspection_types(id, name),
+          stone_lines:schedule_entry_stone_lines(
+            id, invoice_number, invoice_amount, tons_billed, qty_ordered, order_number, notes, display_order,
+            stone_suppliers(id, name, code),
+            stone_types(id, name)
+          )
         `)
         .eq("project_id", projectId)
         .eq("deleted", false)
