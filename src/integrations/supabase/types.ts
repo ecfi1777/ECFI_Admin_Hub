@@ -452,6 +452,7 @@ export type Database = {
       phases: {
         Row: {
           created_at: string
+          default_to_be_invoiced: boolean
           display_order: number
           id: string
           is_active: boolean
@@ -463,6 +464,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          default_to_be_invoiced?: boolean
           display_order?: number
           id?: string
           is_active?: boolean
@@ -474,6 +476,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          default_to_be_invoiced?: boolean
           display_order?: number
           id?: string
           is_active?: boolean

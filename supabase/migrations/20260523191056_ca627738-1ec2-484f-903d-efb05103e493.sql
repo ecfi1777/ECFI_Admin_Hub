@@ -1,0 +1,1 @@
+ALTER TABLE public.phases ADD COLUMN IF NOT EXISTS default_to_be_invoiced boolean NOT NULL DEFAULT false;
