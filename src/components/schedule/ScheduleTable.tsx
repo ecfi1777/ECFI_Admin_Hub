@@ -413,7 +413,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
           onChange={(e) => setEditValue(e.target.value)}
           onBlur={() => saveEdit(entry.id, field)}
           onKeyDown={(e) => handleKeyDown(e, entry.id, field)}
-          className="h-7 bg-background border-border text-foreground text-sm w-full"
+          className="h-7 bg-background border-border text-foreground text-sm w-full px-1 text-center"
           autoFocus
         />
       );
