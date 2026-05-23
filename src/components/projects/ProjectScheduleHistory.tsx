@@ -171,7 +171,7 @@ export function ProjectScheduleHistory({ projectId, readOnly = false }: ProjectS
         .eq("deleted", false)
         .order("scheduled_date", { ascending: false });
       if (error) throw error;
-      return data as (ScheduleEntry & { phase_id: string | null })[];
+      return data as unknown as (ScheduleEntry & { phase_id: string | null })[];
     },
   });
 
