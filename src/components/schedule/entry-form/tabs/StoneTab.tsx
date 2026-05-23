@@ -178,11 +178,14 @@ export function StoneTab({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Qty Ordered</Label>
+              <Label>Tons</Label>
               <Input
+                type="number"
+                step="0.01"
+                min="0"
                 value={line.qty_ordered}
                 onChange={(e) => patchLine(idx, { qty_ordered: e.target.value })}
-                placeholder="e.g. 10+"
+                placeholder="0"
               />
             </div>
             <div className="space-y-2">
