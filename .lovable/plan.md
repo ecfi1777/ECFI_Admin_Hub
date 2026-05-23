@@ -1,23 +1,27 @@
-## Make the desktop sidebar collapsible
+# Stone Multi-Supplier Display & Numeric Tons
 
-Add a collapse/expand toggle to the desktop sidebar in `AppLayout.tsx` so the main content area can use more width.
+## 1. Fetch stone lines with schedule entries
+**File:** `src/components/schedule/DailySchedule.tsx`
+Extend the `schedule_entries` select to also pull `stone_lines:schedule_entry_stone_lines(id, supplier_id, qty_ordered, stone_suppliers:suppliers(name, code))`.
 
-### Behavior
+## 2. Supplier cell — comma-separated names (Prep Slabs)
+**File:** `src/components/schedule/ScheduleTable.tsx` (Prep Slabs branch, ~lines 808–816)
+- Build a deduped list of supplier labels from `entry.stone_lines` (prefer `code`, fallback `name`).
+- If 2+ unique suppliers: render plain text like `Sloan, Luna` (centered, `text-xs`, truncate w/ title tooltip). Click opens Edit Entry dialog.
+- If 0 or 1 supplier: keep current dropdown behavior unchanged.
 
-- **Expanded (default)**: current 16rem (`w-64`) sidebar with logo, org switcher, full nav labels, theme toggle, email + logout.
-- **Collapsed**: narrow rail (`w-14`) that still shows the ECFI logo, nav icons, theme toggle icon, and logout icon — labels hidden, OrganizationSwitcher hidden (or replaced with an icon-only placeholder), tooltips on hover show each nav label.
-- **Toggle**: a small chevron button (`ChevronLeft` / `ChevronRight`) pinned to the top-right edge of the sidebar (or in the header strip) flips state.
-- **Persistence**: remember the collapsed state in `localStorage` so it survives reloads.
-- Mobile flow (Sheet drawer) is unchanged.
+## 3. Qty Ord cell — sum of tons (Prep Slabs)
+**File:** `src/components/schedule/ScheduleTable.tsx` (Qty Ord cell, ~lines 826–831)
+- For Prep Slabs entries: compute `sum = Σ parseFloat(line.qty_ordered)` (skip NaN/empty). Render the total or `-`. Click opens Edit Entry dialog. No inline editing here (value is computed).
+- Non-Prep-Slabs entries: keep existing editable `entry.qty_ordered` behavior.
 
-### Technical details
+## 4. Stone tab — "Tons" label + numeric-only input
+**File:** `src/components/schedule/entry-form/tabs/StoneTab.tsx`
+- Rename per-line "Qty Ordered" label to **"Tons"**.
+- Change `<Input>` to `type="number"` with `step="0.01"` and `min="0"`.
+- DB column `qty_ordered` stays `text`; we store the raw numeric string.
 
-- New `collapsed` state in `AppLayout` (desktop branch only), initialized from `localStorage['sidebar-collapsed']`; updates write back to localStorage.
-- Sidebar `<aside>` width swaps between `w-64` and `w-14` with a `transition-all` class.
-- `renderNavLinks` accepts a `collapsed` flag; when true, hide the label `<span>`, center the icon, and wrap each link in `Tooltip` (shadcn) showing the label on the right.
-- Header block: when collapsed, hide the title/subtitle and just show the logo, centered.
-- `OrganizationSwitcher` and the email row are hidden when collapsed; logout icon stays.
-- Theme toggle: collapsed variant becomes an icon-only button.
-- Toggle button placed at the bottom of the sidebar (or top-right) using `ChevronLeft`/`ChevronRight`.
-
-No backend, schema, or routing changes. Only `src/components/layout/AppLayout.tsx` is edited.
+## Out of scope
+- No DB migrations.
+- Calendar, Reports, Project Schedule History views (they already render lines individually).
+- No inline editing of stone-line tons from the Daily Schedule table — still via the Edit Entry modal.
