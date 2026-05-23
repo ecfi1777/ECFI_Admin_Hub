@@ -499,6 +499,59 @@ export function ProjectScheduleHistory({ projectId, readOnly = false }: ProjectS
                             </div>
                           )}
 
+                          {/* Stone */}
+                          {((entry.stone_lines && entry.stone_lines.length > 0) || entry.stone_notes) && (
+                            <div className="bg-muted rounded p-2 space-y-1">
+                              <div className="flex items-center gap-1 text-muted-foreground text-xs font-medium">
+                                <Mountain className="w-3 h-3" />
+                                Stone
+                              </div>
+                              {entry.stone_lines && [...entry.stone_lines]
+                                .sort((a, b) => a.display_order - b.display_order)
+                                .map((line, idx) => (
+                                  <div
+                                    key={line.id}
+                                    className={idx > 0 ? "border-t border-border pt-1 mt-1 space-y-0.5" : "space-y-0.5"}
+                                  >
+                                    {line.stone_suppliers && (
+                                      <div className="text-muted-foreground">
+                                        {line.stone_suppliers.code || line.stone_suppliers.name}
+                                        {line.stone_types && (
+                                          <span className="ml-1">— {line.stone_types.name}</span>
+                                        )}
+                                      </div>
+                                    )}
+                                    {line.tons_billed !== null && Number(line.tons_billed) > 0 && (
+                                      <div className="text-muted-foreground">
+                                        Billed: {line.tons_billed} tons
+                                      </div>
+                                    )}
+                                    {!readOnly && line.invoice_number && (
+                                      <div className="text-muted-foreground">
+                                        Inv: {line.invoice_number}
+                                      </div>
+                                    )}
+                                    {!readOnly && formatCurrency(line.invoice_amount) && (
+                                      <div className="text-green-400">
+                                        {formatCurrency(line.invoice_amount)}
+                                      </div>
+                                    )}
+                                    {line.notes && (
+                                      <div className="text-muted-foreground text-xs italic">
+                                        {line.notes}
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              {entry.stone_notes && (
+                                <div className="text-muted-foreground text-xs italic border-t border-border pt-1 mt-1">
+                                  {entry.stone_notes}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+
                           {/* Pump */}
                           {(entry.pump_vendors || entry.pump_invoice_number || entry.pump_notes) && (
                             <div className="bg-muted rounded p-2 space-y-1">
