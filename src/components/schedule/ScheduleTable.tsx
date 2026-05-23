@@ -527,7 +527,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
               <TableHead className="text-muted-foreground w-20 text-center">Insp. Type</TableHead>
               <TableHead className="text-muted-foreground w-20 text-center">Inspector</TableHead>
               <TableHead className="text-muted-foreground w-[4.25rem] text-center">Supplier</TableHead>
-              <TableHead className="text-muted-foreground w-14 text-center">Qty Ord</TableHead>
+              <TableHead className="text-muted-foreground w-16 text-center">Qty Ord</TableHead>
               {!readOnly && <TableHead className="text-muted-foreground w-14 text-center">Need to Inv.</TableHead>}
               {!readOnly && <TableHead className="text-muted-foreground w-24">Actions</TableHead>}
             </TableRow>
