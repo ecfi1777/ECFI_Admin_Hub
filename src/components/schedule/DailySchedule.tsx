@@ -106,6 +106,12 @@ export function DailySchedule() {
           concrete_mixes(name),
           stone_suppliers(name, code),
           stone_types(name),
+          stone_lines:schedule_entry_stone_lines(
+            id,
+            supplier_id,
+            qty_ordered,
+            stone_suppliers:supplier_id(name, code)
+          ),
           projects(
             lot_number,
             builders(name, code),
@@ -118,7 +124,7 @@ export function DailySchedule() {
         .order("display_order", { ascending: true })
         .order("start_time", { ascending: true, nullsFirst: false });
       if (error) throw error;
-      return data as ScheduleEntry[];
+      return data as unknown as ScheduleEntry[];
     },
     enabled: !!organizationId,
   });
