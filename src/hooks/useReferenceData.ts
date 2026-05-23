@@ -94,12 +94,12 @@ export function usePhases() {
       if (!organizationId) return [];
       const { data, error } = await supabase
         .from("phases")
-        .select("id, name")
+        .select("id, name, default_to_be_invoiced")
         .eq("organization_id", organizationId)
         .eq("is_active", true)
         .order("display_order");
       if (error) throw error;
-      return data as Phase[];
+      return data as (Phase & { default_to_be_invoiced?: boolean })[];
     },
     enabled: !!organizationId,
   });

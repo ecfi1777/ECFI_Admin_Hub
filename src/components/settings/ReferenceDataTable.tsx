@@ -61,6 +61,7 @@ interface ReferenceItem {
   is_active: boolean;
   pl_section?: string | null;
   phase_type?: string | null;
+  default_to_be_invoiced?: boolean;
 }
 
 export function ReferenceDataTable({ tableName, displayName, hasCode = false, hasPlSection = false }: ReferenceDataTableProps) {

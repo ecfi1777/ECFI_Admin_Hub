@@ -17,6 +17,7 @@ interface ReferenceItem {
   is_active: boolean;
   pl_section?: string | null;
   phase_type?: string | null;
+  default_to_be_invoiced?: boolean;
 }
 
 const PL_SECTION_CONFIG: Record<string, { label: string; badge: string; variant: string }> = {
@@ -98,6 +99,20 @@ export function SortableReferenceRow({
       queryClient.invalidateQueries({ queryKey: [tableName] });
     }
   };
+
+  const handleDefaultInvoiceChange = async (checked: boolean) => {
+    const { error } = await supabase
+      .from("phases")
+      .update({ default_to_be_invoiced: checked } as any)
+      .eq("id", item.id);
+    if (error) {
+      toast.error("Failed to update phase");
+    } else {
+      queryClient.invalidateQueries({ queryKey: [tableName] });
+      queryClient.invalidateQueries({ queryKey: ["phases-active"] });
+    }
+  };
+
 
   return (
     <div
@@ -182,6 +197,17 @@ export function SortableReferenceRow({
             <SelectItem value="other">Other</SelectItem>
           </SelectContent>
         </Select>
+      )}
+
+      {/* Default to be invoiced toggle (phases only) */}
+      {hasPlSection && (
+        <div className="flex items-center gap-1.5" title="Pre-check 'To Be Invoiced' on new schedule entries with this phase">
+          <Switch
+            checked={!!item.default_to_be_invoiced}
+            onCheckedChange={handleDefaultInvoiceChange}
+          />
+          <span className="text-xs text-muted-foreground whitespace-nowrap">Auto Inv.</span>
+        </div>
       )}
 
       {/* Active Toggle */}
