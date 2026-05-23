@@ -225,16 +225,30 @@ export function AppLayout({ children }: AppLayoutProps) {
           )}
         >
           <div className={cn("border-b border-border", collapsed ? "p-2" : "p-4")}>
-            <div className={cn("flex items-center", collapsed ? "justify-center" : "gap-3")}>
-              <div className={cn("bg-amber-500 rounded-xl flex items-center justify-center shrink-0", collapsed ? "w-10 h-10" : "w-10 h-10")}>
+            <div className={cn("flex items-center", collapsed ? "flex-col gap-2" : "gap-3")}>
+              <div className="bg-amber-500 rounded-xl flex items-center justify-center shrink-0 w-10 h-10">
                 <HardHat className="w-6 h-6 text-slate-900" />
               </div>
               {!collapsed && (
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <h1 className="font-bold text-foreground">ECFI Hub</h1>
                   <p className="text-xs text-muted-foreground">Project Management</p>
                 </div>
               )}
+              <Tooltip delayDuration={0}>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setCollapsed((c) => !c)}
+                    className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground"
+                    aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+                  >
+                    {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right">{collapsed ? "Expand sidebar" : "Collapse sidebar"}</TooltipContent>
+              </Tooltip>
             </div>
           </div>
           {!collapsed && <OrganizationSwitcher />}
@@ -274,15 +288,22 @@ export function AppLayout({ children }: AppLayoutProps) {
                 </Button>
               </div>
             )}
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setCollapsed((c) => !c)}
-              className="w-full h-8 border-border"
-              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            >
-              {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-            </Button>
+            {collapsed && (
+              <Tooltip delayDuration={0}>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setCollapsed((c) => !c)}
+                    className="w-10 h-10 mx-auto border-border"
+                    aria-label="Expand sidebar"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right">Expand sidebar</TooltipContent>
+              </Tooltip>
+            )}
           </div>
         </aside>
 
