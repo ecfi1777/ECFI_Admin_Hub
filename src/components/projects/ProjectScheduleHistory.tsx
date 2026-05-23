@@ -30,7 +30,7 @@ import { toast } from "sonner";
 import { getUserFriendlyError } from "@/lib/errorHandler";
 import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
-import { Calendar, Users, Truck, Building, ClipboardCheck, Pencil, FileText } from "lucide-react";
+import { Calendar, Users, Truck, Building, ClipboardCheck, Pencil, FileText, Mountain } from "lucide-react";
 import { useOrganization } from "@/hooks/useOrganization";
 
 interface ScheduleEntry {
