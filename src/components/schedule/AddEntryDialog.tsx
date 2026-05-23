@@ -51,6 +51,7 @@ interface AddEntryDialogProps {
 export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate, prefilledProject, showDatePicker, onSuccess }: AddEntryDialogProps) {
   const [projectId, setProjectId] = useState("");
   const [projectSearch, setProjectSearch] = useState("");
+  const [invoiceTouched, setInvoiceTouched] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
     defaultDate ? new Date(defaultDate + "T12:00:00") : undefined
   );
