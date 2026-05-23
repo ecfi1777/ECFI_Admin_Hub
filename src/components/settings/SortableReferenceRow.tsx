@@ -100,6 +100,20 @@ export function SortableReferenceRow({
     }
   };
 
+  const handleDefaultInvoiceChange = async (checked: boolean) => {
+    const { error } = await supabase
+      .from("phases")
+      .update({ default_to_be_invoiced: checked } as any)
+      .eq("id", item.id);
+    if (error) {
+      toast.error("Failed to update phase");
+    } else {
+      queryClient.invalidateQueries({ queryKey: [tableName] });
+      queryClient.invalidateQueries({ queryKey: ["phases-active"] });
+    }
+  };
+
+
   return (
     <div
       ref={setNodeRef}
