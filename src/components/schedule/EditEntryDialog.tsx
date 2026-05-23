@@ -88,7 +88,11 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
           inspectors:inspector_id ( id, name ),
           concrete_mixes:concrete_mix_id ( id, name ),
           stone_suppliers:stone_supplier_id ( id, name, code ),
-          stone_types:stone_type_id ( id, name )
+          stone_types:stone_type_id ( id, name ),
+          stone_lines:schedule_entry_stone_lines (
+            id, supplier_id, stone_type_id, qty_ordered, order_number,
+            invoice_number, invoice_amount, tons_billed, notes, display_order
+          )
         `)
         .eq("id", entry!.id)
         .maybeSingle();

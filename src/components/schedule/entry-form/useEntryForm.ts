@@ -65,7 +65,10 @@ export function useEntryForm(options: UseEntryFormOptions = {}) {
 
   const loadFromEntry = useCallback((entry: ScheduleEntry) => {
     const rawLines = ((entry as any).stone_lines ?? []) as any[];
-    let stoneLines: StoneLineFormValue[] = rawLines.map((l: any) => ({
+    const sortedRawLines = [...rawLines].sort(
+      (a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)
+    );
+    let stoneLines: StoneLineFormValue[] = sortedRawLines.map((l: any) => ({
       id: l.id,
       supplier_id: l.supplier_id || "",
       stone_type_id: l.stone_type_id || "",
