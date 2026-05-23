@@ -106,6 +106,12 @@ export function DailySchedule() {
           concrete_mixes(name),
           stone_suppliers(name, code),
           stone_types(name),
+          stone_lines:schedule_entry_stone_lines(
+            id,
+            supplier_id,
+            qty_ordered,
+            stone_suppliers:supplier_id(name, code)
+          ),
           projects(
             lot_number,
             builders(name, code),
