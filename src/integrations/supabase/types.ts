@@ -1370,6 +1370,65 @@ export type Database = {
           },
         ]
       }
+      schedule_entry_stone_lines: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          invoice_amount: number | null
+          invoice_number: string | null
+          notes: string | null
+          order_number: string | null
+          organization_id: string
+          qty_ordered: string | null
+          schedule_entry_id: string
+          stone_type_id: string | null
+          supplier_id: string | null
+          tons_billed: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          invoice_amount?: number | null
+          invoice_number?: string | null
+          notes?: string | null
+          order_number?: string | null
+          organization_id: string
+          qty_ordered?: string | null
+          schedule_entry_id: string
+          stone_type_id?: string | null
+          supplier_id?: string | null
+          tons_billed?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          invoice_amount?: number | null
+          invoice_number?: string | null
+          notes?: string | null
+          order_number?: string | null
+          organization_id?: string
+          qty_ordered?: string | null
+          schedule_entry_id?: string
+          stone_type_id?: string | null
+          supplier_id?: string | null
+          tons_billed?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_entry_stone_lines_schedule_entry_id_fkey"
+            columns: ["schedule_entry_id"]
+            isOneToOne: false
+            referencedRelation: "schedule_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stone_suppliers: {
         Row: {
           code: string | null

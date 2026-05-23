@@ -2,6 +2,19 @@
  * Shared types for entry form used by AddEntryDialog and EditEntryDialog
  */
 
+export interface StoneLineFormValue {
+  id?: string; // present if row exists in DB
+  supplier_id: string;
+  stone_type_id: string;
+  qty_ordered: string;
+  order_number: string;
+  invoice_number: string;
+  invoice_amount: string;
+  tons_billed: string;
+  notes: string;
+}
+
+
 export interface EntryFormValues {
   // General tab
   crew_id: string;
@@ -23,13 +36,17 @@ export interface EntryFormValues {
   ready_mix_yards_billed: string;
   concrete_notes: string;
 
-  // Stone tab (used for Prep Slabs phase)
+  // Stone tab (used for Prep Slabs phase) — DEPRECATED flat single-supplier fields,
+  // kept only so existing code/types compile. Real data lives on stone_lines below.
   stone_supplier_id: string;
   stone_type_id: string;
   stone_tons_billed: string;
   stone_invoice_number: string;
   stone_invoice_amount: string;
   stone_notes: string;
+
+  // Multi-supplier stone lines (new model)
+  stone_lines: StoneLineFormValue[];
   
   // Pump tab
   pump_vendor_id: string;
@@ -80,6 +97,7 @@ export const DEFAULT_ENTRY_FORM_VALUES: EntryFormValues = {
   stone_invoice_number: "",
   stone_invoice_amount: "",
   stone_notes: "",
+  stone_lines: [],
   pump_vendor_id: "",
   pump_invoice_number: "",
   pump_invoice_amount: "",
