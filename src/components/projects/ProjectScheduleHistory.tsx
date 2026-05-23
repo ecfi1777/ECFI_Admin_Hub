@@ -49,6 +49,7 @@ interface ScheduleEntry {
   inspection_invoice_number: string | null;
   inspection_amount: number | null;
   inspection_notes: string | null;
+  stone_notes: string | null;
   notes: string | null;
   supplier_id: string | null;
   pump_vendor_id: string | null;
@@ -70,6 +71,18 @@ interface ScheduleEntry {
   pump_vendors: { id: string; name: string; code: string | null } | null;
   inspectors: { id: string; name: string } | null;
   inspection_types: { id: string; name: string } | null;
+  stone_lines: Array<{
+    id: string;
+    invoice_number: string | null;
+    invoice_amount: number | null;
+    tons_billed: number | null;
+    qty_ordered: string | null;
+    order_number: string | null;
+    notes: string | null;
+    display_order: number;
+    stone_suppliers: { id: string; name: string; code: string | null } | null;
+    stone_types: { id: string; name: string } | null;
+  }> | null;
 }
 
 interface ProjectScheduleHistoryProps {
