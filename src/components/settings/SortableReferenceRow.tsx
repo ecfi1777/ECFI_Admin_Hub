@@ -199,6 +199,17 @@ export function SortableReferenceRow({
         </Select>
       )}
 
+      {/* Default to be invoiced toggle (phases only) */}
+      {hasPlSection && (
+        <div className="flex items-center gap-1.5" title="Pre-check 'To Be Invoiced' on new schedule entries with this phase">
+          <Switch
+            checked={!!item.default_to_be_invoiced}
+            onCheckedChange={handleDefaultInvoiceChange}
+          />
+          <span className="text-xs text-muted-foreground whitespace-nowrap">Auto Inv.</span>
+        </div>
+      )}
+
       {/* Active Toggle */}
       <Switch
         checked={item.is_active}
