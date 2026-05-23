@@ -90,6 +90,8 @@ export interface ScheduleEntry {
   stone_suppliers: { name: string; code: string | null } | null;
   stone_types: { name: string } | null;
   projects: ScheduleEntryProject | null;
+  // Multi-supplier stone lines (new child relation)
+  stone_lines?: StoneLine[];
 }
 
 /**
