@@ -805,7 +805,32 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
                     )}
                   </TableCell>
                   <TableCell className="py-2 text-center align-middle">
-                    {isPrepSlabs(entry)
+                    {isPrepSlabs(entry) && (entry.stone_lines?.length ?? 0) > 1
+                      ? (() => {
+                          const labels = Array.from(
+                            new Set(
+                              (entry.stone_lines || [])
+                                .map((l: any) => l.stone_suppliers?.code || l.stone_suppliers?.name)
+                                .filter((v: string | undefined): v is string => !!v && v.trim() !== "")
+                            )
+                          );
+                          const text = labels.join(", ") || "-";
+                          return (
+                            <button
+                              type="button"
+                              className="text-xs truncate max-w-full hover:underline"
+                              title={text}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditEntry(entry);
+                                setEditEntryTab("stone");
+                              }}
+                            >
+                              {text}
+                            </button>
+                          );
+                        })()
+                      : isPrepSlabs(entry)
                       ? renderSelectCellWithQuickEdit(
                           entry,
                           "stone_supplier_id",
@@ -824,11 +849,32 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
                         )}
                   </TableCell>
                   <TableCell className="py-2 text-center align-middle">
-                    {renderEditableCell(
-                      entry,
-                      "qty_ordered",
-                      entry.qty_ordered || "-"
-                    )}
+                    {isPrepSlabs(entry) && (entry.stone_lines?.length ?? 0) > 0
+                      ? (() => {
+                          const sum = (entry.stone_lines || []).reduce((acc: number, l: any) => {
+                            const n = parseFloat(l.qty_ordered ?? "");
+                            return acc + (isNaN(n) ? 0 : n);
+                          }, 0);
+                          const text = sum > 0 ? String(sum) : "-";
+                          return (
+                            <button
+                              type="button"
+                              className="text-xs hover:underline"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditEntry(entry);
+                                setEditEntryTab("stone");
+                              }}
+                            >
+                              {text}
+                            </button>
+                          );
+                        })()
+                      : renderEditableCell(
+                          entry,
+                          "qty_ordered",
+                          entry.qty_ordered || "-"
+                        )}
                   </TableCell>
                   {!readOnly && (
                     <TableCell className="py-2 text-center align-middle">
