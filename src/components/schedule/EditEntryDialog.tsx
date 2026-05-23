@@ -49,7 +49,7 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [isProjectSheetOpen, setIsProjectSheetOpen] = useState(false);
   
-  const { formData, updateField, loadFromEntry, getUpdatePayload } = useEntryForm();
+  const { formData, updateField, loadFromEntry, getUpdatePayload, addStoneLine, updateStoneLine, removeStoneLine } = useEntryForm();
   const { data: phases = [] } = usePhases();
 
   // Determine if the current phase is "Prep Slabs"
@@ -115,6 +115,71 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
         .update(payload)
         .eq("id", entry.id);
       if (error) throw error;
+
+      // Sync multi-supplier stone lines (only meaningful for Prep Slabs but safe
+      // to run any time — non-Prep entries simply won't have any lines).
+      const originalLines = ((fullEntry as any)?.stone_lines ?? []) as Array<{ id: string }>;
+      const originalIds = new Set(originalLines.map(l => l.id));
+      const formIds = new Set(
+        formData.stone_lines.filter(l => !!l.id).map(l => l.id as string)
+      );
+
+      // Lines with an id that no longer exist in the form → delete
+      const idsToDelete = [...originalIds].filter(id => !formIds.has(id));
+
+      // Helper: a line is "empty" if no supplier and no invoice/qty data
+      const isEmpty = (l: typeof formData.stone_lines[number]) =>
+        !l.supplier_id && !l.stone_type_id && !l.qty_ordered && !l.order_number &&
+        !l.invoice_number && !l.invoice_amount && !l.tons_billed && !l.notes;
+
+      const toInsert = formData.stone_lines
+        .filter(l => !l.id && !isEmpty(l))
+        .map((l, idx) => ({
+          schedule_entry_id: entry.id,
+          organization_id: entry.organization_id,
+          supplier_id: l.supplier_id || null,
+          stone_type_id: l.stone_type_id || null,
+          qty_ordered: l.qty_ordered || null,
+          order_number: l.order_number || null,
+          invoice_number: l.invoice_number || null,
+          invoice_amount: l.invoice_amount ? parseFloat(l.invoice_amount) : 0,
+          tons_billed: l.tons_billed ? parseFloat(l.tons_billed) : 0,
+          notes: l.notes || null,
+          display_order: idx,
+        }));
+
+      const toUpdate = formData.stone_lines
+        .map((l, idx) => ({ l, idx }))
+        .filter(({ l }) => !!l.id)
+        .map(({ l, idx }) => ({
+          id: l.id as string,
+          supplier_id: l.supplier_id || null,
+          stone_type_id: l.stone_type_id || null,
+          qty_ordered: l.qty_ordered || null,
+          order_number: l.order_number || null,
+          invoice_number: l.invoice_number || null,
+          invoice_amount: l.invoice_amount ? parseFloat(l.invoice_amount) : 0,
+          tons_billed: l.tons_billed ? parseFloat(l.tons_billed) : 0,
+          notes: l.notes || null,
+          display_order: idx,
+        }));
+
+      const ops: Promise<any>[] = [];
+      if (idsToDelete.length > 0) {
+        ops.push(
+          supabase.from("schedule_entry_stone_lines").delete().in("id", idsToDelete)
+        );
+      }
+      if (toInsert.length > 0) {
+        ops.push(supabase.from("schedule_entry_stone_lines").insert(toInsert));
+      }
+      for (const u of toUpdate) {
+        const { id, ...rest } = u;
+        ops.push(supabase.from("schedule_entry_stone_lines").update(rest).eq("id", id));
+      }
+      const results = await Promise.all(ops);
+      const firstErr = results.find((r: any) => r?.error)?.error;
+      if (firstErr) throw firstErr;
     },
     onSuccess: () => {
       invalidateScheduleQueries(queryClient);
@@ -283,6 +348,9 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
                     <StoneTab 
                       formData={formData} 
                       updateField={updateField}
+                      addStoneLine={addStoneLine}
+                      updateStoneLine={updateStoneLine}
+                      removeStoneLine={removeStoneLine}
                       showInlineAdd={true}
                     />
                   </TabsContent>
