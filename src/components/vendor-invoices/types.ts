@@ -43,6 +43,20 @@ export interface VendorEntry {
   inspectors: { name: string } | null;
   phases: { name: string } | null;
   concrete_mixes: { id: string; name: string } | null;
+  stone_lines?: Array<{
+    id: string;
+    supplier_id: string | null;
+    stone_type_id: string | null;
+    qty_ordered: string | null;
+    order_number: string | null;
+    invoice_number: string | null;
+    invoice_amount: number | null;
+    tons_billed: number | null;
+    notes: string | null;
+    display_order: number;
+    suppliers?: { name: string; code: string | null } | null;
+    stone_types?: { name: string } | null;
+  }>;
 }
 
 export interface VendorInvoiceRowData {
