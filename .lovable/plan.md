@@ -1,27 +1,23 @@
-## Goal
-Let each phase carry a "Default to Invoice" setting. When a new schedule entry is created for a phase that has this flag on, the entry's "To Be Invoiced" checkbox is pre-checked automatically.
+## Make the desktop sidebar collapsible
 
-## Changes
+Add a collapse/expand toggle to the desktop sidebar in `AppLayout.tsx` so the main content area can use more width.
 
-### 1. Database
-- Add column `default_to_be_invoiced boolean NOT NULL DEFAULT false` to `phases`.
+### Behavior
 
-### 2. Phases reference data (Settings → Reference Data → Phases)
-- Add a "Default Invoice" toggle column to the phases management table (`ReferenceDataTable` / phase-specific row), alongside the existing P&L Section and Phase Type controls.
-- Persist toggling via update to `phases.default_to_be_invoiced`.
+- **Expanded (default)**: current 16rem (`w-64`) sidebar with logo, org switcher, full nav labels, theme toggle, email + logout.
+- **Collapsed**: narrow rail (`w-14`) that still shows the ECFI logo, nav icons, theme toggle icon, and logout icon — labels hidden, OrganizationSwitcher hidden (or replaced with an icon-only placeholder), tooltips on hover show each nav label.
+- **Toggle**: a small chevron button (`ChevronLeft` / `ChevronRight`) pinned to the top-right edge of the sidebar (or in the header strip) flips state.
+- **Persistence**: remember the collapsed state in `localStorage` so it survives reloads.
+- Mobile flow (Sheet drawer) is unchanged.
 
-### 3. Add Entry Dialog (`AddEntryDialog` + `useEntryForm`)
-- When the user picks a phase (or when the dialog opens with a pre-selected phase), look up that phase's `default_to_be_invoiced` and, if true AND the user hasn't manually toggled the box yet, set `to_be_invoiced = true`.
-- Track a "user manually changed" flag so switching phases back and forth doesn't fight the user.
-- Edit dialog is NOT affected — only applies on creation.
+### Technical details
 
-### 4. Types
-- Extend the phase type / reference data hook to include `default_to_be_invoiced`.
+- New `collapsed` state in `AppLayout` (desktop branch only), initialized from `localStorage['sidebar-collapsed']`; updates write back to localStorage.
+- Sidebar `<aside>` width swaps between `w-64` and `w-14` with a `transition-all` class.
+- `renderNavLinks` accepts a `collapsed` flag; when true, hide the label `<span>`, center the icon, and wrap each link in `Tooltip` (shadcn) showing the label on the right.
+- Header block: when collapsed, hide the title/subtitle and just show the logo, centered.
+- `OrganizationSwitcher` and the email row are hidden when collapsed; logout icon stays.
+- Theme toggle: collapsed variant becomes an icon-only button.
+- Toggle button placed at the bottom of the sidebar (or top-right) using `ChevronLeft`/`ChevronRight`.
 
-## Out of scope
-- Edit Entry Dialog behavior (existing entries keep whatever was saved).
-- Inline schedule add (`InlineAddSelect`) — only the full Add Entry dialog. (Tell me if you want inline included.)
-- Auto-checking "Invoice Complete" — that stays manual via the Invoices page.
-
-## Open question
-Should this also apply to the quick **inline add** row on the schedule (where a phase is picked from a dropdown), or only the full "Add Entry" dialog?
+No backend, schema, or routing changes. Only `src/components/layout/AppLayout.tsx` is edited.
