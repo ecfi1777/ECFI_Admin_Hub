@@ -23,13 +23,17 @@ export interface EntryFormValues {
   ready_mix_yards_billed: string;
   concrete_notes: string;
 
-  // Stone tab (used for Prep Slabs phase)
+  // Stone tab (used for Prep Slabs phase) — DEPRECATED flat single-supplier fields,
+  // kept only so existing code/types compile. Real data lives on stone_lines below.
   stone_supplier_id: string;
   stone_type_id: string;
   stone_tons_billed: string;
   stone_invoice_number: string;
   stone_invoice_amount: string;
   stone_notes: string;
+
+  // Multi-supplier stone lines (new model)
+  stone_lines: StoneLineFormValue[];
   
   // Pump tab
   pump_vendor_id: string;
