@@ -2,6 +2,19 @@
  * Shared types for entry form used by AddEntryDialog and EditEntryDialog
  */
 
+export interface StoneLineFormValue {
+  id?: string; // present if row exists in DB
+  supplier_id: string;
+  stone_type_id: string;
+  qty_ordered: string;
+  order_number: string;
+  invoice_number: string;
+  invoice_amount: string;
+  tons_billed: string;
+  notes: string;
+}
+
+
 export interface EntryFormValues {
   // General tab
   crew_id: string;
