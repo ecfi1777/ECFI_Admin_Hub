@@ -164,21 +164,21 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
           display_order: idx,
         }));
 
-      const ops: Promise<any>[] = [];
+      const ops: Array<PromiseLike<{ error: any }>> = [];
       if (idsToDelete.length > 0) {
         ops.push(
-          supabase.from("schedule_entry_stone_lines").delete().in("id", idsToDelete)
+          supabase.from("schedule_entry_stone_lines").delete().in("id", idsToDelete) as unknown as PromiseLike<{ error: any }>
         );
       }
       if (toInsert.length > 0) {
-        ops.push(supabase.from("schedule_entry_stone_lines").insert(toInsert));
+        ops.push(supabase.from("schedule_entry_stone_lines").insert(toInsert) as unknown as PromiseLike<{ error: any }>);
       }
       for (const u of toUpdate) {
         const { id, ...rest } = u;
-        ops.push(supabase.from("schedule_entry_stone_lines").update(rest).eq("id", id));
+        ops.push(supabase.from("schedule_entry_stone_lines").update(rest).eq("id", id) as unknown as PromiseLike<{ error: any }>);
       }
       const results = await Promise.all(ops);
-      const firstErr = results.find((r: any) => r?.error)?.error;
+      const firstErr = results.find((r) => r?.error)?.error;
       if (firstErr) throw firstErr;
     },
     onSuccess: () => {
