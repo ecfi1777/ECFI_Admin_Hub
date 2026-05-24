@@ -259,7 +259,7 @@ export function useCrewsAll() {
       if (!organizationId) return [];
       const { data, error } = await supabase
         .from("crews")
-        .select("id, name, display_order, is_active, color")
+        .select("id, name, display_order, is_active, color, is_subcontractor")
         .eq("organization_id", organizationId);
       if (error) throw error;
       return data as Crew[];
