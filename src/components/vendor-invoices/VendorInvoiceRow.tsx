@@ -299,6 +299,56 @@ export function VendorInvoiceRow({
 
   const isSaving = saveMutation.isPending || forceSaveMutation.isPending;
 
+  const notesButton = (
+    <Popover
+      open={noteOpen}
+      onOpenChange={(open) => {
+        setNoteOpen(open);
+        if (open) setNoteValue(savedNote);
+      }}
+    >
+      <PopoverTrigger asChild>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-8 px-2"
+          title={hasNote ? "Edit note" : "Add note"}
+        >
+          <StickyNote
+            className={`w-4 h-4 ${hasNote ? "text-primary fill-primary/20" : "text-muted-foreground"}`}
+          />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-80" align="end">
+        <div className="space-y-3">
+          <div className="text-sm font-medium">{typeLabel} Notes</div>
+          <Textarea
+            value={noteValue}
+            onChange={(e) => setNoteValue(e.target.value)}
+            placeholder="Add a note for this bill..."
+            rows={4}
+          />
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setNoteOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => saveNoteMutation.mutate()}
+              disabled={saveNoteMutation.isPending}
+            >
+              Save
+            </Button>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+
   const duplicateDialog = (
     <AlertDialog open={showDuplicateWarning} onOpenChange={setShowDuplicateWarning}>
       <AlertDialogContent>
