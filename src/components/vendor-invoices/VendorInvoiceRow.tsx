@@ -598,6 +598,7 @@ export function VendorInvoiceRow({
                     <FlaskConical className="w-4 h-4" />
                   </Button>
                 )}
+                {notesButton}
               </div>
           </CardContent>
         </Card>
@@ -720,6 +721,7 @@ export function VendorInvoiceRow({
                 <FlaskConical className="w-4 h-4" />
               </Button>
             )}
+            {notesButton}
           </div>
         </TableCell>
       </TableRow>
