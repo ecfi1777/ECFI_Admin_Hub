@@ -75,6 +75,7 @@ function SortableCrewRow({
   onToggleExpand,
   onEditCrew,
   onToggleCrewActive,
+  onToggleCrewSubcontractor,
   onEditMember,
   onToggleMemberActive,
   onDeleteMember,
@@ -87,6 +88,7 @@ function SortableCrewRow({
   onToggleExpand: (id: string) => void;
   onEditCrew: (crew: Crew) => void;
   onToggleCrewActive: (id: string, isActive: boolean) => void;
+  onToggleCrewSubcontractor: (id: string, isSub: boolean) => void;
   onEditMember: (member: CrewMember) => void;
   onDeleteMember: (member: CrewMember) => void;
   onToggleMemberActive: (id: string, isActive: boolean) => void;
