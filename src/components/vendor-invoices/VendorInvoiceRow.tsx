@@ -70,6 +70,14 @@ const INVOICE_NUMBER_FIELD: Record<string, string> = {
   inspection: "inspection_invoice_number",
 };
 
+// Map vendor type to the notes column name on schedule_entries
+const NOTES_FIELD: Record<string, "concrete_notes" | "stone_notes" | "pump_notes" | "inspection_notes"> = {
+  concrete: "concrete_notes",
+  stone: "stone_notes",
+  pump: "pump_notes",
+  inspection: "inspection_notes",
+};
+
 export function VendorInvoiceRow({
   row,
   typeFilter,
@@ -127,6 +135,29 @@ export function VendorInvoiceRow({
   // Project details sheet
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [isProjectSheetOpen, setIsProjectSheetOpen] = useState(false);
+
+  // Notes popover state
+  const savedNote = (entry[NOTES_FIELD[type]] as string | null) ?? "";
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [noteValue, setNoteValue] = useState(savedNote);
+  const hasNote = savedNote.trim().length > 0;
+
+  const saveNoteMutation = useMutation({
+    mutationFn: async () => {
+      const field = NOTES_FIELD[type];
+      const { error } = await supabase
+        .from("schedule_entries")
+        .update({ [field]: noteValue.trim() ? noteValue : null })
+        .eq("id", entry.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["vendor-invoice-entries"] });
+      toast.success("Note saved");
+      setNoteOpen(false);
+    },
+    onError: () => toast.error("Failed to save note"),
+  });
 
   const { data: suppliers = [] } = useSuppliers();
   const { data: concreteMixes = [] } = useConcreteMixes();
