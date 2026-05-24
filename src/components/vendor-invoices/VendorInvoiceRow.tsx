@@ -34,7 +34,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Save, FlaskConical } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Save, FlaskConical, StickyNote } from "lucide-react";
 import { toast } from "sonner";
 import { VendorInvoiceRowData, VendorTypeFilter } from "./types";
 import { useOrganization } from "@/hooks/useOrganization";
