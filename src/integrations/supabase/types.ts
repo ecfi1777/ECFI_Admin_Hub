@@ -198,6 +198,7 @@ export type Database = {
           display_order: number
           id: string
           is_active: boolean
+          is_subcontractor: boolean
           name: string
           organization_id: string
           updated_at: string
@@ -208,6 +209,7 @@ export type Database = {
           display_order?: number
           id?: string
           is_active?: boolean
+          is_subcontractor?: boolean
           name: string
           organization_id: string
           updated_at?: string
@@ -218,6 +220,7 @@ export type Database = {
           display_order?: number
           id?: string
           is_active?: boolean
+          is_subcontractor?: boolean
           name?: string
           organization_id?: string
           updated_at?: string
@@ -1164,6 +1167,9 @@ export type Database = {
           stone_supplier_id: string | null
           stone_tons_billed: number | null
           stone_type_id: string | null
+          sub_invoice_amount: number | null
+          sub_invoice_number: string | null
+          sub_will_invoice: boolean
           supplier_id: string | null
           to_be_invoiced: boolean
           updated_at: string
@@ -1223,6 +1229,9 @@ export type Database = {
           stone_supplier_id?: string | null
           stone_tons_billed?: number | null
           stone_type_id?: string | null
+          sub_invoice_amount?: number | null
+          sub_invoice_number?: string | null
+          sub_will_invoice?: boolean
           supplier_id?: string | null
           to_be_invoiced?: boolean
           updated_at?: string
@@ -1282,6 +1291,9 @@ export type Database = {
           stone_supplier_id?: string | null
           stone_tons_billed?: number | null
           stone_type_id?: string | null
+          sub_invoice_amount?: number | null
+          sub_invoice_number?: string | null
+          sub_will_invoice?: boolean
           supplier_id?: string | null
           to_be_invoiced?: boolean
           updated_at?: string
