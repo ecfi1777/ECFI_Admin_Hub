@@ -1,27 +1,44 @@
-# Stone Multi-Supplier Display & Numeric Tons
+## Add Notes to Vendor Bills rows
 
-## 1. Fetch stone lines with schedule entries
-**File:** `src/components/schedule/DailySchedule.tsx`
-Extend the `schedule_entries` select to also pull `stone_lines:schedule_entry_stone_lines(id, supplier_id, qty_ordered, stone_suppliers:suppliers(name, code))`.
+Add the ability to add/edit a note for each row directly from the Vendor Bills view. Each row maps to a vendor type (concrete / stone / pump / inspection), and each type already has its own notes column on `schedule_entries` (`concrete_notes`, `stone_notes`, `pump_notes`, `inspection_notes`). The note saved from a row writes to the column that matches the row's type.
 
-## 2. Supplier cell — comma-separated names (Prep Slabs)
-**File:** `src/components/schedule/ScheduleTable.tsx` (Prep Slabs branch, ~lines 808–816)
-- Build a deduped list of supplier labels from `entry.stone_lines` (prefer `code`, fallback `name`).
-- If 2+ unique suppliers: render plain text like `Sloan, Luna` (centered, `text-xs`, truncate w/ title tooltip). Click opens Edit Entry dialog.
-- If 0 or 1 supplier: keep current dropdown behavior unchanged.
+### UX
 
-## 3. Qty Ord cell — sum of tons (Prep Slabs)
-**File:** `src/components/schedule/ScheduleTable.tsx` (Qty Ord cell, ~lines 826–831)
-- For Prep Slabs entries: compute `sum = Σ parseFloat(line.qty_ordered)` (skip NaN/empty). Render the total or `-`. Click opens Edit Entry dialog. No inline editing here (value is computed).
-- Non-Prep-Slabs entries: keep existing editable `entry.qty_ordered` behavior.
+- New small **note icon button** in each row, placed just before the Save (disk) button in the action area.
+- Icon reflects state:
+  - Empty note → outlined `StickyNote` icon, muted color.
+  - Has note → filled/primary-colored icon so users can see at a glance which rows have notes.
+- Clicking the icon opens a **Popover** anchored to the button with:
+  - Title showing the vendor type (e.g. "Concrete Notes", "Stone Notes").
+  - `<Textarea>` (3–4 rows) prefilled with the existing note.
+  - Cancel and Save buttons.
+- Save persists to the type-specific column and shows a toast; popover closes.
+- On mobile card layout, the same icon button appears in the action row.
 
-## 4. Stone tab — "Tons" label + numeric-only input
-**File:** `src/components/schedule/entry-form/tabs/StoneTab.tsx`
-- Rename per-line "Qty Ordered" label to **"Tons"**.
-- Change `<Input>` to `type="number"` with `step="0.01"` and `min="0"`.
-- DB column `qty_ordered` stays `text`; we store the raw numeric string.
+### Data
 
-## Out of scope
-- No DB migrations.
-- Calendar, Reports, Project Schedule History views (they already render lines individually).
-- No inline editing of stone-line tons from the Daily Schedule table — still via the Edit Entry modal.
+- No DB migration. Reuse existing columns:
+  - concrete → `concrete_notes`
+  - stone → `stone_notes`
+  - pump → `pump_notes`
+  - inspection → `inspection_notes`
+- Add these fields to the `VendorEntry` interface in `src/components/vendor-invoices/types.ts` and to the select in the parent query that builds vendor rows (so the initial note value loads).
+
+### Files to change
+
+1. **`src/components/vendor-invoices/types.ts`** — Add `concrete_notes`, `stone_notes`, `pump_notes`, `inspection_notes` to `VendorEntry`.
+2. **`src/pages/VendorInvoices.tsx`** (parent that fetches `vendor-invoice-entries`) — Add the four notes columns to the supabase select.
+3. **`src/components/vendor-invoices/VendorInvoiceRow.tsx`**:
+   - Add `NOTES_FIELD` map: `{ concrete: "concrete_notes", stone: "stone_notes", pump: "pump_notes", inspection: "inspection_notes" }`.
+   - Local state `noteValue` initialized from the matching column, plus `noteOpen`.
+   - `saveNoteMutation` that updates the single notes column on `schedule_entries` and invalidates `["vendor-invoice-entries"]`.
+   - Render a `Popover` with `StickyNote` trigger button in both desktop row (next to Save) and mobile card actions.
+   - Filled icon style when current saved note is non-empty.
+4. **`src/components/vendor-invoices/VendorInvoiceTable.tsx`** — No header column needed (icon fits in the existing Save action cell). If the icon needs its own column for alignment, add a "Notes" header before "Save".
+
+### Out of scope
+
+- No changes to the underlying schedule entry edit dialog.
+- No bulk-notes editing.
+- No new filters based on notes.
+- No DB schema changes.

@@ -76,7 +76,7 @@ export default function VendorInvoices() {
           pump_invoice_number, pump_invoice_amount,
           inspection_invoice_number, inspection_amount, inspection_no_charge,
           crew_yards_poured,
-          concrete_mix_id, qty_ordered, order_number, concrete_notes,
+          concrete_mix_id, qty_ordered, order_number, concrete_notes, stone_notes, pump_notes, inspection_notes,
           additive_hot_water, additive_1_percent_he, additive_2_percent_he,
           projects(id, lot_number, builders(name, code), locations(name)),
           crews(name),

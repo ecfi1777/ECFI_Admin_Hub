@@ -34,7 +34,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Save, FlaskConical } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Save, FlaskConical, StickyNote } from "lucide-react";
 import { toast } from "sonner";
 import { VendorInvoiceRowData, VendorTypeFilter } from "./types";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -63,6 +68,14 @@ const INVOICE_NUMBER_FIELD: Record<string, string> = {
   stone: "stone_invoice_number",
   pump: "pump_invoice_number",
   inspection: "inspection_invoice_number",
+};
+
+// Map vendor type to the notes column name on schedule_entries
+const NOTES_FIELD: Record<string, "concrete_notes" | "stone_notes" | "pump_notes" | "inspection_notes"> = {
+  concrete: "concrete_notes",
+  stone: "stone_notes",
+  pump: "pump_notes",
+  inspection: "inspection_notes",
 };
 
 export function VendorInvoiceRow({
@@ -122,6 +135,29 @@ export function VendorInvoiceRow({
   // Project details sheet
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [isProjectSheetOpen, setIsProjectSheetOpen] = useState(false);
+
+  // Notes popover state
+  const savedNote = (entry[NOTES_FIELD[type]] as string | null) ?? "";
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [noteValue, setNoteValue] = useState(savedNote);
+  const hasNote = savedNote.trim().length > 0;
+
+  const saveNoteMutation = useMutation({
+    mutationFn: async () => {
+      const field = NOTES_FIELD[type];
+      const { error } = await supabase
+        .from("schedule_entries")
+        .update({ [field]: noteValue.trim() ? noteValue : null })
+        .eq("id", entry.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["vendor-invoice-entries"] });
+      toast.success("Note saved");
+      setNoteOpen(false);
+    },
+    onError: () => toast.error("Failed to save note"),
+  });
 
   const { data: suppliers = [] } = useSuppliers();
   const { data: concreteMixes = [] } = useConcreteMixes();
@@ -262,6 +298,56 @@ export function VendorInvoiceRow({
   const typeLabel = type.charAt(0).toUpperCase() + type.slice(1);
 
   const isSaving = saveMutation.isPending || forceSaveMutation.isPending;
+
+  const notesButton = (
+    <Popover
+      open={noteOpen}
+      onOpenChange={(open) => {
+        setNoteOpen(open);
+        if (open) setNoteValue(savedNote);
+      }}
+    >
+      <PopoverTrigger asChild>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-8 px-2"
+          title={hasNote ? "Edit note" : "Add note"}
+        >
+          <StickyNote
+            className={`w-4 h-4 ${hasNote ? "text-primary fill-primary/20" : "text-muted-foreground"}`}
+          />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-80" align="end">
+        <div className="space-y-3">
+          <div className="text-sm font-medium">{typeLabel} Notes</div>
+          <Textarea
+            value={noteValue}
+            onChange={(e) => setNoteValue(e.target.value)}
+            placeholder="Add a note for this bill..."
+            rows={4}
+          />
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setNoteOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => saveNoteMutation.mutate()}
+              disabled={saveNoteMutation.isPending}
+            >
+              Save
+            </Button>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
 
   const duplicateDialog = (
     <AlertDialog open={showDuplicateWarning} onOpenChange={setShowDuplicateWarning}>
@@ -512,6 +598,7 @@ export function VendorInvoiceRow({
                     <FlaskConical className="w-4 h-4" />
                   </Button>
                 )}
+                {notesButton}
               </div>
           </CardContent>
         </Card>
@@ -634,6 +721,7 @@ export function VendorInvoiceRow({
                 <FlaskConical className="w-4 h-4" />
               </Button>
             )}
+            {notesButton}
           </div>
         </TableCell>
       </TableRow>

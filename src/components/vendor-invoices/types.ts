@@ -27,6 +27,9 @@ export interface VendorEntry {
   qty_ordered: string | null;
   order_number: string | null;
   concrete_notes: string | null;
+  stone_notes: string | null;
+  pump_notes: string | null;
+  inspection_notes: string | null;
   additive_hot_water: boolean;
   additive_1_percent_he: boolean;
   additive_2_percent_he: boolean;
