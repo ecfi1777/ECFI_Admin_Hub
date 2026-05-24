@@ -166,6 +166,15 @@ function SortableCrewRow({
             {crewMembers.length}
           </span>
 
+          {/* Sub Contractor / 1099 Toggle */}
+          <div className="flex items-center gap-1.5 mr-2" title="Sub Contractor / 1099">
+            <Switch
+              checked={crew.is_subcontractor}
+              onCheckedChange={(checked) => onToggleCrewSubcontractor(crew.id, checked)}
+            />
+            <span className="text-xs text-muted-foreground hidden sm:inline">Sub</span>
+          </div>
+
           {/* Active Toggle */}
           <Switch
             checked={crew.is_active}
