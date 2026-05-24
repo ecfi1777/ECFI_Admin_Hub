@@ -629,7 +629,15 @@ export function VendorInvoiceRow({
             ) : null}
           </TableCell>
         )}
-        <TableCell className="text-sm">{dateStr}</TableCell>
+      <TableCell className="text-sm">
+        <a
+          href={`/?date=${entry.scheduled_date}`}
+          className="text-primary hover:underline"
+          title="Open Daily Schedule for this date"
+        >
+          {dateStr}
+        </a>
+      </TableCell>
         <TableCell className="text-sm">
           {entry.projects?.id ? (
             <span
