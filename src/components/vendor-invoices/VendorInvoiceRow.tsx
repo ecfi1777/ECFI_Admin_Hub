@@ -520,7 +520,13 @@ export function VendorInvoiceRow({
                     aria-label="Select for no charge"
                   />
                 )}
-                <span className="text-sm font-medium text-foreground">{dateStr}</span>
+                <a
+                  href={`/?date=${entry.scheduled_date}`}
+                  className="text-sm font-medium text-primary hover:underline"
+                  title="Open Daily Schedule for this date"
+                >
+                  {dateStr}
+                </a>
               </div>
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className={TYPE_BADGE_STYLES[type]}>
