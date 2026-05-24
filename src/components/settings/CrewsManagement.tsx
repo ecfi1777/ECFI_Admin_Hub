@@ -56,6 +56,7 @@ interface Crew {
   display_order: number;
   is_active: boolean;
   color: string | null;
+  is_subcontractor: boolean;
 }
 
 interface CrewMember {
