@@ -26,10 +26,14 @@ interface ProjectPLTabProps {
 
 interface VendorEntry {
   pl_section: string | null;
+  phase_type: string | null;
   ready_mix_invoice_amount: number | null;
   stone_invoice_amount: number | null;
   pump_invoice_amount: number | null;
   inspection_amount: number | null;
+  sub_will_invoice: boolean;
+  sub_invoice_amount: number | null;
+  crew_name: string | null;
 }
 
 
