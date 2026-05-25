@@ -138,7 +138,7 @@ export function ProjectCommissionTab({ projectId, readOnly = false }: ProjectCom
   });
 
   // ── Derived values ──
-  const totalFWYards = fwEntries.reduce((s: number, e: any) => s + (e.crew_yards_poured ?? 0), 0);
+  const totalFWYards = fwEntries.reduce((s: number, e: any) => s + (e.ready_mix_yards_billed ?? 0), 0);
   const fwConcreteTotal = fwEntries.reduce((s: number, e: any) => s + (e.ready_mix_invoice_amount ?? 0), 0);
   const fwOtherTotal = otherCosts.reduce((s: number, c: any) => s + (c.amount ?? 0), 0);
   const fwInvoiceTotal = ((revenue as any)?.base_house ?? 0) + ((revenue as any)?.extras ?? 0);
