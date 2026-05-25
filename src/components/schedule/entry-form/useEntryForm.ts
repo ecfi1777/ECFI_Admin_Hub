@@ -179,6 +179,7 @@ export function useEntryForm(options: UseEntryFormOptions = {}) {
       crew_hours: formData.crew_hours ? parseFloat(formData.crew_hours) : null,
       crew_notes: formData.crew_notes || null,
       to_be_invoiced: formData.to_be_invoiced,
+      sub_will_invoice: formData.sub_will_invoice,
       did_not_work: formData.did_not_work,
       not_working_reason: formData.did_not_work ? (formData.not_working_reason || null) : null,
     };
