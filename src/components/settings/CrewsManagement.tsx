@@ -670,6 +670,7 @@ export function CrewsManagement() {
           <span className="w-8 text-center">#</span>
           <span className="flex-1">Crew Name</span>
           <span className="w-12"></span>
+          <span className="w-20 hidden sm:inline">Sub/1099</span>
           <span className="w-12">Active</span>
           <span className="w-10"></span>
         </div>
