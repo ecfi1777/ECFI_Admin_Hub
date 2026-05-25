@@ -43,7 +43,7 @@ export interface VendorEntry {
     builders: { name: string; code: string | null } | null;
     locations: { name: string } | null;
   } | null;
-  crews: { name: string } | null;
+  crews: { name: string; is_subcontractor?: boolean } | null;
   suppliers: { name: string; code: string | null } | null;
   stone_suppliers: { name: string; code: string | null } | null;
   pump_vendors: { name: string; code: string | null } | null;
