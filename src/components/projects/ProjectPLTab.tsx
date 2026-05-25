@@ -299,7 +299,7 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
     const labor = aggregateLabor(section);
     const sectionOther = otherCosts.filter((c) => c.pl_section === section);
     const otherTotal = sectionOther.reduce((s, c) => s + (c.amount || 0), 0);
-    const totalCosts = vendor.concrete + vendor.stone + vendor.pump + vendor.inspection + labor + otherTotal;
+    const totalCosts = vendor.concrete + vendor.stone + vendor.pump + vendor.inspection + vendor.sub + labor + otherTotal;
     const rev = revenueRows.find((r) => r.section === section);
     const salesPrice = rev?.sales_price ?? null;
     const grossProfit = salesPrice != null ? salesPrice - totalCosts : null;
