@@ -449,10 +449,21 @@ function SectionCard({
             {/* Vendor Costs */}
             <div className="space-y-1">
               <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Costs</h4>
-              <CostLine label="Concrete" amount={data.vendor.concrete} />
+              {section === "footings_walls" ? (
+                <>
+                  <CostLine label="Footing Concrete" amount={data.vendor.concrete_footing} />
+                  <CostLine label="Wall Concrete" amount={data.vendor.concrete_wall} />
+                  {data.vendor.concrete_other > 0 && (
+                    <CostLine label="Other F&W Concrete" amount={data.vendor.concrete_other} />
+                  )}
+                </>
+              ) : (
+                <CostLine label="Concrete" amount={data.vendor.concrete} />
+              )}
               {data.vendor.stone > 0 && <CostLine label="Stone / Gravel" amount={data.vendor.stone} />}
               {data.vendor.pump > 0 && <CostLine label="Pump" amount={data.vendor.pump} />}
               {data.vendor.inspection > 0 && <CostLine label="Inspection" amount={data.vendor.inspection} />}
+              {data.vendor.sub > 0 && <CostLine label="Sub Labor" amount={data.vendor.sub} />}
               {/* Labor */}
               <div className="flex items-start justify-between py-1 text-sm">
                 <div>
