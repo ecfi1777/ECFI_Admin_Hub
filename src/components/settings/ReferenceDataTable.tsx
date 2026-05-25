@@ -273,9 +273,21 @@ export function ReferenceDataTable({ tableName, displayName, hasCode = false, ha
       </CardHeader>
       <CardContent className="p-0">
         {hasPlSection && (
-          <p className="text-sm text-muted-foreground px-4 pt-3 pb-1">
-            Set both P&L Section and Phase Type on each phase. Phase Type is required for the Commission Report to identify footing and wall pour dates correctly.
+          <p className="text-sm text-muted-foreground px-4 pt-3 pb-2">
+            Set both <strong>P&amp;L Section</strong> (which P&amp;L bucket the phase rolls into) and <strong>Phase Type</strong> (which rows are actual concrete pours). Phase Type drives the Commission Report (footing/wall anchors), Project P&amp;L sub-totals, and the Yards Discrepancies filter.
           </p>
+        )}
+        {hasPlSection && !isLoading && displayItems.length > 0 && (
+          <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border bg-muted/30 text-[10px] uppercase tracking-wide text-muted-foreground">
+            <span className="w-6" />
+            <span className="w-8" />
+            <span className="flex-1">Phase Name</span>
+            <span className="w-[160px] text-center">P&amp;L Section</span>
+            <span className="w-[140px] text-center">Phase Type</span>
+            <span className="w-[60px] text-center">Auto Inv.</span>
+            <span className="w-[60px] text-center">Active</span>
+            <span className="w-10" />
+          </div>
         )}
         {isLoading ? (
           <div className="text-muted-foreground text-center py-8">Loading...</div>

@@ -1,24 +1,20 @@
-## Problem
-The Discrepancies page currently shows all schedule entries with missing yards data, including non-concrete phases like Prep Footings, Set Walls, and Strip Walls. These phases never involve concrete and should not appear on this report.
-
-## Solution
-Restrict the Discrepancies page to only schedule entries whose associated phase has `phase_type` in `['footing', 'wall', 'slab']`.
+## Goal
+Clarify the Phases settings table so each control is clearly labeled, and fix the misleading helper text that says Phase Type is "for the Commission Report" (it's actually used by Commission Report, Project P&L, and Discrepancies).
 
 ## Changes
 
-### 1. Type update (`src/types/schedule.ts`)
-- Add `phase_type: string | null` to the `phases` nested relation on `ScheduleEntry`.
+### 1. `src/components/settings/SortableReferenceRow.tsx`
+- Restructure the two trailing toggles into vertical stacks (small label on top, switch below):
+  - **Auto Inv.** stacked above its switch
+  - **Active** stacked above its switch
+- Remove the inline "Auto Inv." text that currently sits to the right of the switch.
+- Labels: `text-[10px] text-muted-foreground`, centered above each switch.
 
-### 2. Query update (`src/pages/Discrepancies.tsx`)
-- Update `ENTRY_SELECT` to select `phases(phase_type, name)` instead of `phases(name)`.
-- After fetching `incompleteEntries`, filter to only those where `phases?.phase_type` is `'footing'`, `'wall'`, or `'slab'` before passing to `IncompleteEntriesSection`.
-- After fetching `completeEntries`, apply the same phase-type filter before passing to:
-  - `projectGroups` (Project Discrepancies section)
-  - `YardsSummaryCards` (breakdown cards)
-
-This keeps the page scoped to actual concrete pours and hides Prep Footings, Set Walls, Strip Walls, Service, and any other non-pour phases entirely.
+### 2. `src/components/settings/ReferenceDataTable.tsx`
+- Replace the helper sentence under the Phases header with:
+  > "Set both **P&L Section** (which P&L bucket the phase rolls into) and **Phase Type** (which rows are actual concrete pours). Phase Type drives the Commission Report (footing/wall anchors), Project P&L sub-totals, and the Yards Discrepancies filter."
+- Add a thin header strip above the sortable list (only when `hasPlSection` is true) with small column labels aligned to the controls below: `P&L Section`, `Phase Type`, `Auto Inv.`, `Active`. Styled `text-[10px] text-muted-foreground uppercase tracking-wide`, mirroring the widths in `SortableReferenceRow`.
 
 ## Out of scope
-- P&L tab, Commission tab, Vendor Bills, Calendar, other reports — those are handled separately.
-- No database schema changes needed.
-- No new UI elements or filters.
+- No DB or business-logic changes.
+- No changes to other reference tables (Crews, Builders, etc.).
