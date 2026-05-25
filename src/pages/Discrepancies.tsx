@@ -30,7 +30,7 @@ const ENTRY_SELECT = `
   inspection_type_id, inspector_id, inspection_invoice_number, inspection_amount, inspection_notes,
   to_be_invoiced, invoice_complete, invoice_number,
   additive_hot_water, additive_1_percent_he, additive_2_percent_he,
-  crews(name), phases(name), suppliers(name, code),
+  crews(name), phases(name, phase_type), suppliers(name, code),
   pump_vendors(name, code), inspection_types(name), inspectors(name),
   concrete_mixes(name),
   projects(id, lot_number, builders(name, code), locations(name))
@@ -99,6 +99,11 @@ export default function Discrepancies() {
 
   const isLoading = loadingIncomplete || loadingComplete;
 
+  // Only concrete-pour phases belong on this report
+  const POUR_PHASE_TYPES = ["footing", "wall", "slab"];
+  const isPourPhase = (entry: ScheduleEntry) =>
+    !!entry.phases?.phase_type && POUR_PHASE_TYPES.includes(entry.phases.phase_type);
+
   // Filter helper
   const matchesFilters = (entry: ScheduleEntry) => {
     const searchLower = searchQuery.toLowerCase();
@@ -124,15 +129,15 @@ export default function Discrepancies() {
     return matchesSearch && matchesBuilder && matchesCrew && matchesLocation;
   };
 
-  // Filtered incomplete
+  // Filtered incomplete (pour phases only)
   const filteredIncomplete = useMemo(
-    () => incompleteEntries.filter(matchesFilters),
+    () => incompleteEntries.filter(isPourPhase).filter(matchesFilters),
     [incompleteEntries, searchQuery, filterBuilder, filterCrew, filterLocation]
   );
 
   // Group complete entries by project
   const projectGroups = useMemo(() => {
-    const filtered = completeEntries.filter(matchesFilters);
+    const filtered = completeEntries.filter(isPourPhase).filter(matchesFilters);
     const grouped = new Map<
       string,
       {
@@ -318,7 +323,7 @@ export default function Discrepancies() {
             </div>
 
             {/* Breakdowns */}
-            <YardsSummaryCards entries={completeEntries} />
+            <YardsSummaryCards entries={completeEntries.filter(isPourPhase)} />
           </>
         )}
       </div>
