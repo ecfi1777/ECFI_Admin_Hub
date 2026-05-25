@@ -278,10 +278,10 @@ export function ProjectCommissionTab({ projectId, readOnly = false }: ProjectCom
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h3 className="text-sm font-semibold text-foreground">
+          <h3 className="text-sm font-semibold text-slate-100">
             Footings & Walls Commission — <span className="text-primary">{crewName}</span>
           </h3>
-          <p className="text-xs text-foreground/70 mt-0.5">
+          <p className="text-xs text-slate-300 mt-0.5">
             Commission is separate from project P&L and gross margin
           </p>
         </div>
@@ -292,7 +292,7 @@ export function ProjectCommissionTab({ projectId, readOnly = false }: ProjectCom
               checked={projectData?.exclude_from_commission ?? false}
               onCheckedChange={(checked) => toggleExcludeMutation.mutate(checked)}
             />
-            <Label htmlFor="exclude-commission" className="text-xs text-foreground cursor-pointer">
+            <Label htmlFor="exclude-commission" className="text-xs text-slate-200 cursor-pointer">
               Exclude from report
             </Label>
           </div>
