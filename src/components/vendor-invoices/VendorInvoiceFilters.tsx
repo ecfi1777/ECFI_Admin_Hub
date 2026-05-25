@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/select";
 import { Search, X } from "lucide-react";
 import { VendorTypeFilter } from "./types";
-import type { Supplier, PumpVendor, Inspector, StoneSupplier } from "@/hooks/useReferenceData";
+import type { Supplier, PumpVendor, Inspector, StoneSupplier, Crew } from "@/hooks/useReferenceData";
 
 interface VendorInvoiceFiltersProps {
   typeFilter: VendorTypeFilter;
