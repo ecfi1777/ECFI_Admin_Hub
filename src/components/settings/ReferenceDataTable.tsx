@@ -13,7 +13,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Save, Eye, EyeOff } from "lucide-react";
+import { Plus, Save, Eye, EyeOff, Info } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useOrganization } from "@/hooks/useOrganization";
 import {
   DndContext,
