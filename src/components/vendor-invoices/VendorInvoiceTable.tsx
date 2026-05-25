@@ -82,6 +82,7 @@ export function VendorInvoiceTable({
     stone: "Stone Supplier",
     pump: "Pump Vendor",
     inspection: "Inspector",
+    sub: "Sub Crew",
   };
 
   const yardsLabel = typeFilter === "stone" ? "Tons Billed" : "Yards Billed";
