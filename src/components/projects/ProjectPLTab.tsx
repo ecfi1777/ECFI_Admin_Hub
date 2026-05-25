@@ -105,17 +105,25 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
           stone_invoice_amount,
           pump_invoice_amount,
           inspection_amount,
-          phases(pl_section)
+          sub_will_invoice,
+          sub_invoice_amount,
+          phases(pl_section, phase_type),
+          crews(name, is_subcontractor)
         `)
         .eq("project_id", projectId)
-        .eq("deleted", false);
+        .eq("deleted", false)
+        .eq("is_cancelled", false);
       if (error) throw error;
       return (data || []).map((d: any) => ({
         pl_section: d.phases?.pl_section ?? null,
+        phase_type: d.phases?.phase_type ?? null,
         ready_mix_invoice_amount: d.ready_mix_invoice_amount,
         stone_invoice_amount: d.stone_invoice_amount,
         pump_invoice_amount: d.pump_invoice_amount,
         inspection_amount: d.inspection_amount,
+        sub_will_invoice: !!d.sub_will_invoice && !!d.crews?.is_subcontractor,
+        sub_invoice_amount: d.sub_invoice_amount,
+        crew_name: d.crews?.name ?? null,
       })) as VendorEntry[];
     },
     enabled: !!projectId,
@@ -139,7 +147,8 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
           phases(pl_section)
         `)
         .eq("project_id", projectId)
-        .eq("deleted", false);
+        .eq("deleted", false)
+        .eq("is_cancelled", false);
       if (error) throw error;
       return (data || []).filter((e: any) => {
         const hasAmount =
