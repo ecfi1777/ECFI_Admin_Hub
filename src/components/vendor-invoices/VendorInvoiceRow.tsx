@@ -315,7 +315,7 @@ export function VendorInvoiceRow({
   const locationName = entry.projects?.locations?.name || "-";
   const lotNumber = entry.projects?.lot_number || "-";
   const phaseName = entry.phases?.name || "-";
-  const typeLabel = type.charAt(0).toUpperCase() + type.slice(1);
+  const typeLabel = TYPE_LABELS[type] ?? type;
 
   const isSaving = saveMutation.isPending || forceSaveMutation.isPending;
 
