@@ -195,6 +195,9 @@ export function VendorInvoiceRow({
     } else if (type === "inspection") {
       updates.inspection_invoice_number = invoiceNumber || null;
       updates.inspection_amount = amount ? parseFloat(amount) : null;
+    } else if (type === "sub") {
+      updates.sub_invoice_number = invoiceNumber || null;
+      updates.sub_invoice_amount = amount ? parseFloat(amount) : null;
     }
     const { error } = await supabase
       .from("schedule_entries")
