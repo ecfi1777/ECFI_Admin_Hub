@@ -209,6 +209,7 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
         `)
         .eq("organization_id", organizationId)
         .eq("deleted", false)
+        .eq("is_cancelled", false)
         .gte("scheduled_date", startDate)
         .lte("scheduled_date", endDate);
       if (error) throw error;
