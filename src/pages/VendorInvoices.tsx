@@ -355,6 +355,7 @@ export default function VendorInvoices() {
           inspectors={inspectors}
           
           stoneSuppliers={stoneSuppliers}
+          subCrews={subCrews}
         />
 
         {/* Bulk action bar */}
