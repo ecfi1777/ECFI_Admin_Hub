@@ -152,8 +152,9 @@ export function VendorInvoiceRow({
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [isProjectSheetOpen, setIsProjectSheetOpen] = useState(false);
 
-  // Notes popover state
-  const savedNote = (entry[NOTES_FIELD[type]] as string | null) ?? "";
+  // Notes popover state (Sub Labor has no dedicated notes column → hide)
+  const hasNotesField = type !== "sub";
+  const savedNote = hasNotesField ? ((entry[NOTES_FIELD[type]] as string | null) ?? "") : "";
   const [noteOpen, setNoteOpen] = useState(false);
   const [noteValue, setNoteValue] = useState(savedNote);
   const hasNote = savedNote.trim().length > 0;
