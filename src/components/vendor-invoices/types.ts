@@ -22,6 +22,10 @@ export interface VendorEntry {
   inspection_amount: number | null;
   inspection_no_charge: boolean;
   crew_yards_poured: number | null;
+  // Sub Contractor / 1099 vendor bill fields
+  sub_will_invoice: boolean;
+  sub_invoice_number: string | null;
+  sub_invoice_amount: number | null;
   // Concrete detail fields
   concrete_mix_id: string | null;
   qty_ordered: string | null;
