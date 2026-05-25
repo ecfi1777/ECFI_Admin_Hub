@@ -852,7 +852,9 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
                   </td>
                   <td className="px-2 py-1.5 text-right whitespace-nowrap">{fmtCurrency(group.totals.cogs)}</td>
                   <td className="px-2 py-1.5 text-right whitespace-nowrap">{fmtCurrency(group.totals.gross)}</td>
-                  <td className="px-2 py-1.5 text-right whitespace-nowrap">—</td>
+                  <td className="px-2 py-1.5 text-right whitespace-nowrap">
+                    {group.totals.totalInvoice > 0 ? fmtPct(group.totals.gross / group.totals.totalInvoice) : "—"}
+                  </td>
                 </tr>
 
                 {/* Percentages row */}
