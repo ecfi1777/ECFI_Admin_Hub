@@ -60,6 +60,15 @@ const TYPE_BADGE_STYLES: Record<string, string> = {
   stone: "bg-amber-500/10 text-amber-500 border-amber-500/20",
   pump: "bg-purple-500/10 text-purple-500 border-purple-500/20",
   inspection: "bg-orange-500/10 text-orange-500 border-orange-500/20",
+  sub: "bg-green-500/10 text-green-500 border-green-500/20",
+};
+
+const TYPE_LABELS: Record<string, string> = {
+  concrete: "Concrete",
+  stone: "Stone",
+  pump: "Pump",
+  inspection: "Inspection",
+  sub: "Sub Labor",
 };
 
 // Map vendor type to the invoice number column name on schedule_entries
@@ -68,6 +77,7 @@ const INVOICE_NUMBER_FIELD: Record<string, string> = {
   stone: "stone_invoice_number",
   pump: "pump_invoice_number",
   inspection: "inspection_invoice_number",
+  sub: "sub_invoice_number",
 };
 
 // Map vendor type to the notes column name on schedule_entries
@@ -76,6 +86,8 @@ const NOTES_FIELD: Record<string, "concrete_notes" | "stone_notes" | "pump_notes
   stone: "stone_notes",
   pump: "pump_notes",
   inspection: "inspection_notes",
+  // sub has no dedicated notes column; reuse a no-op key handled below
+  sub: "concrete_notes",
 };
 
 export function VendorInvoiceRow({
@@ -99,7 +111,9 @@ export function VendorInvoiceRow({
           ? (entry.pump_invoice_number ?? "")
           : type === "inspection"
             ? (entry.inspection_invoice_number ?? "")
-            : ""
+            : type === "sub"
+              ? (entry.sub_invoice_number ?? "")
+              : ""
   );
   const [yards, setYards] = useState(
     type === "concrete"
@@ -117,7 +131,9 @@ export function VendorInvoiceRow({
           ? (entry.pump_invoice_amount?.toString() ?? "")
           : type === "inspection"
             ? (entry.inspection_amount?.toString() ?? "")
-            : ""
+            : type === "sub"
+              ? (entry.sub_invoice_amount?.toString() ?? "")
+              : ""
   );
 
   const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
@@ -136,8 +152,9 @@ export function VendorInvoiceRow({
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [isProjectSheetOpen, setIsProjectSheetOpen] = useState(false);
 
-  // Notes popover state
-  const savedNote = (entry[NOTES_FIELD[type]] as string | null) ?? "";
+  // Notes popover state (Sub Labor has no dedicated notes column → hide)
+  const hasNotesField = type !== "sub";
+  const savedNote = hasNotesField ? ((entry[NOTES_FIELD[type]] as string | null) ?? "") : "";
   const [noteOpen, setNoteOpen] = useState(false);
   const [noteValue, setNoteValue] = useState(savedNote);
   const hasNote = savedNote.trim().length > 0;
@@ -178,6 +195,9 @@ export function VendorInvoiceRow({
     } else if (type === "inspection") {
       updates.inspection_invoice_number = invoiceNumber || null;
       updates.inspection_amount = amount ? parseFloat(amount) : null;
+    } else if (type === "sub") {
+      updates.sub_invoice_number = invoiceNumber || null;
+      updates.sub_invoice_amount = amount ? parseFloat(amount) : null;
     }
     const { error } = await supabase
       .from("schedule_entries")
@@ -295,7 +315,7 @@ export function VendorInvoiceRow({
   const locationName = entry.projects?.locations?.name || "-";
   const lotNumber = entry.projects?.lot_number || "-";
   const phaseName = entry.phases?.name || "-";
-  const typeLabel = type.charAt(0).toUpperCase() + type.slice(1);
+  const typeLabel = TYPE_LABELS[type] ?? type;
 
   const isSaving = saveMutation.isPending || forceSaveMutation.isPending;
 

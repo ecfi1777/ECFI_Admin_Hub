@@ -50,6 +50,7 @@ export function VendorInvoiceFilters({
   pumpVendors,
   inspectors,
   stoneSuppliers,
+  subCrews = [],
 }: VendorInvoiceFiltersProps) {
   const vendorOptions = (() => {
     switch (typeFilter) {
@@ -61,6 +62,8 @@ export function VendorInvoiceFilters({
         return pumpVendors.map((p) => ({ id: p.id, name: p.name }));
       case "inspection":
         return inspectors.map((i) => ({ id: i.id, name: i.name }));
+      case "sub":
+        return subCrews.map((c) => ({ id: c.id, name: c.name }));
       default:
         return [];
     }
@@ -72,6 +75,7 @@ export function VendorInvoiceFilters({
     stone: "All Stone Suppliers",
     pump: "All Pump Vendors",
     inspection: "All Inspectors",
+    sub: "All Sub Crews",
   };
 
   return (
@@ -103,7 +107,7 @@ export function VendorInvoiceFilters({
               <SelectItem value="stone">Stone</SelectItem>
               <SelectItem value="pump">Pump</SelectItem>
               <SelectItem value="inspection">Inspection</SelectItem>
-              
+              <SelectItem value="sub">Sub Labor</SelectItem>
             </SelectContent>
           </Select>
 

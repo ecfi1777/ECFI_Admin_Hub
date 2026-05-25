@@ -26,10 +26,14 @@ interface ProjectPLTabProps {
 
 interface VendorEntry {
   pl_section: string | null;
+  phase_type: string | null;
   ready_mix_invoice_amount: number | null;
   stone_invoice_amount: number | null;
   pump_invoice_amount: number | null;
   inspection_amount: number | null;
+  sub_will_invoice: boolean;
+  sub_invoice_amount: number | null;
+  crew_name: string | null;
 }
 
 
@@ -101,17 +105,25 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
           stone_invoice_amount,
           pump_invoice_amount,
           inspection_amount,
-          phases(pl_section)
+          sub_will_invoice,
+          sub_invoice_amount,
+          phases(pl_section, phase_type),
+          crews(name, is_subcontractor)
         `)
         .eq("project_id", projectId)
-        .eq("deleted", false);
+        .eq("deleted", false)
+        .eq("is_cancelled", false);
       if (error) throw error;
       return (data || []).map((d: any) => ({
         pl_section: d.phases?.pl_section ?? null,
+        phase_type: d.phases?.phase_type ?? null,
         ready_mix_invoice_amount: d.ready_mix_invoice_amount,
         stone_invoice_amount: d.stone_invoice_amount,
         pump_invoice_amount: d.pump_invoice_amount,
         inspection_amount: d.inspection_amount,
+        sub_will_invoice: !!d.sub_will_invoice && !!d.crews?.is_subcontractor,
+        sub_invoice_amount: d.sub_invoice_amount,
+        crew_name: d.crews?.name ?? null,
       })) as VendorEntry[];
     },
     enabled: !!projectId,
@@ -135,7 +147,8 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
           phases(pl_section)
         `)
         .eq("project_id", projectId)
-        .eq("deleted", false);
+        .eq("deleted", false)
+        .eq("is_cancelled", false);
       if (error) throw error;
       return (data || []).filter((e: any) => {
         const hasAmount =
@@ -164,6 +177,7 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
         `)
         .eq("project_id", projectId)
         .eq("deleted", false)
+        .eq("is_cancelled", false)
         .not("crew_hours", "is", null);
       if (error) throw error;
       return data || [];
@@ -225,11 +239,26 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
       if (!e.pl_section) return false;
       return e.pl_section === section || e.pl_section === "both";
     });
+    const concrete_footing = matching
+      .filter((e) => e.phase_type === "footing")
+      .reduce((s, e) => s + (e.ready_mix_invoice_amount || 0), 0);
+    const concrete_wall = matching
+      .filter((e) => e.phase_type === "wall")
+      .reduce((s, e) => s + (e.ready_mix_invoice_amount || 0), 0);
+    const concrete_other = matching
+      .filter((e) => e.phase_type !== "footing" && e.phase_type !== "wall")
+      .reduce((s, e) => s + (e.ready_mix_invoice_amount || 0), 0);
     return {
       concrete: matching.reduce((s, e) => s + (e.ready_mix_invoice_amount || 0), 0),
+      concrete_footing,
+      concrete_wall,
+      concrete_other,
       stone: matching.reduce((s, e) => s + (e.stone_invoice_amount || 0), 0),
       pump: matching.reduce((s, e) => s + (e.pump_invoice_amount || 0), 0),
       inspection: matching.reduce((s, e) => s + (e.inspection_amount || 0), 0),
+      sub: matching
+        .filter((e) => e.sub_will_invoice)
+        .reduce((s, e) => s + (e.sub_invoice_amount || 0), 0),
     };
   };
 
@@ -270,7 +299,7 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
     const labor = aggregateLabor(section);
     const sectionOther = otherCosts.filter((c) => c.pl_section === section);
     const otherTotal = sectionOther.reduce((s, c) => s + (c.amount || 0), 0);
-    const totalCosts = vendor.concrete + vendor.stone + vendor.pump + vendor.inspection + labor + otherTotal;
+    const totalCosts = vendor.concrete + vendor.stone + vendor.pump + vendor.inspection + vendor.sub + labor + otherTotal;
     const rev = revenueRows.find((r) => r.section === section);
     const salesPrice = rev?.sales_price ?? null;
     const grossProfit = salesPrice != null ? salesPrice - totalCosts : null;
@@ -355,7 +384,7 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
 // ────────────────────────────────────────────────────────────────
 
 interface SectionData {
-  vendor: { concrete: number; stone: number; pump: number; inspection: number };
+  vendor: { concrete: number; concrete_footing: number; concrete_wall: number; concrete_other: number; stone: number; pump: number; inspection: number; sub: number };
   labor: number;
   sectionOther: OtherCost[];
   otherTotal: number;
@@ -420,10 +449,21 @@ function SectionCard({
             {/* Vendor Costs */}
             <div className="space-y-1">
               <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Costs</h4>
-              <CostLine label="Concrete" amount={data.vendor.concrete} />
+              {section === "footings_walls" ? (
+                <>
+                  <CostLine label="Footing Concrete" amount={data.vendor.concrete_footing} />
+                  <CostLine label="Wall Concrete" amount={data.vendor.concrete_wall} />
+                  {data.vendor.concrete_other > 0 && (
+                    <CostLine label="Other F&W Concrete" amount={data.vendor.concrete_other} />
+                  )}
+                </>
+              ) : (
+                <CostLine label="Concrete" amount={data.vendor.concrete} />
+              )}
               {data.vendor.stone > 0 && <CostLine label="Stone / Gravel" amount={data.vendor.stone} />}
               {data.vendor.pump > 0 && <CostLine label="Pump" amount={data.vendor.pump} />}
               {data.vendor.inspection > 0 && <CostLine label="Inspection" amount={data.vendor.inspection} />}
+              {data.vendor.sub > 0 && <CostLine label="Sub Labor" amount={data.vendor.sub} />}
               {/* Labor */}
               <div className="flex items-start justify-between py-1 text-sm">
                 <div>

@@ -65,6 +65,7 @@ export default function Discrepancies() {
         .select(ENTRY_SELECT)
         .eq("organization_id", organizationId)
         .eq("deleted", false)
+        .eq("is_cancelled", false)
         .or("crew_yards_poured.is.null,ready_mix_yards_billed.is.null")
         // At least one of project_id or crew_id should exist to be meaningful
         .not("project_id", "is", null)
@@ -85,6 +86,7 @@ export default function Discrepancies() {
         .select(ENTRY_SELECT)
         .eq("organization_id", organizationId)
         .eq("deleted", false)
+        .eq("is_cancelled", false)
         .not("crew_yards_poured", "is", null)
         .not("ready_mix_yards_billed", "is", null)
         .not("project_id", "is", null)

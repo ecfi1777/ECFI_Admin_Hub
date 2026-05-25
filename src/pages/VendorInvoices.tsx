@@ -10,6 +10,7 @@ import {
   useInspectors,
   
   useStoneSuppliers,
+  useCrews,
 } from "@/hooks/useReferenceData";
 import { VendorInvoiceFilters } from "@/components/vendor-invoices/VendorInvoiceFilters";
 import { VendorInvoiceTable } from "@/components/vendor-invoices/VendorInvoiceTable";
@@ -59,6 +60,11 @@ export default function VendorInvoices() {
   const { data: inspectors = [] } = useInspectors();
   
   const { data: stoneSuppliers = [] } = useStoneSuppliers();
+  const { data: allCrews = [] } = useCrews();
+  const subCrews = useMemo(
+    () => allCrews.filter((c: any) => c.is_subcontractor),
+    [allCrews]
+  );
 
   // Fetch entries that have at least one vendor/crew assigned
   const { data: entries = [], isLoading } = useQuery({
@@ -76,10 +82,11 @@ export default function VendorInvoices() {
           pump_invoice_number, pump_invoice_amount,
           inspection_invoice_number, inspection_amount, inspection_no_charge,
           crew_yards_poured,
+          sub_will_invoice, sub_invoice_number, sub_invoice_amount,
           concrete_mix_id, qty_ordered, order_number, concrete_notes, stone_notes, pump_notes, inspection_notes,
           additive_hot_water, additive_1_percent_he, additive_2_percent_he,
           projects(id, lot_number, builders(name, code), locations(name)),
-          crews(name),
+          crews(name, is_subcontractor),
           suppliers(name, code),
           stone_suppliers(name, code),
           pump_vendors(name, code),
@@ -223,6 +230,25 @@ export default function VendorInvoices() {
           });
         }
       }
+
+      // Sub Labor (1099 crew that will invoice)
+      if (
+        entry.sub_will_invoice &&
+        entry.crews?.is_subcontractor &&
+        (typeFilter === "all" || typeFilter === "sub")
+      ) {
+        const needsWork =
+          entry.sub_invoice_number == null ||
+          isMissing(entry.sub_invoice_amount);
+
+        if (isAllView || needsWork) {
+          result.push({
+            entry,
+            type: "sub",
+            vendorName: entry.crews?.name || "-",
+          });
+        }
+      }
     }
 
     // Specific vendor filter
@@ -232,7 +258,7 @@ export default function VendorInvoices() {
         if (row.type === "stone") return row.entry.stone_supplier_id === specificVendor;
         if (row.type === "pump") return row.entry.pump_vendor_id === specificVendor;
         if (row.type === "inspection") return row.entry.inspector_id === specificVendor;
-        
+        if (row.type === "sub") return row.entry.crew_id === specificVendor;
         return true;
       });
     }
@@ -329,6 +355,7 @@ export default function VendorInvoices() {
           inspectors={inspectors}
           
           stoneSuppliers={stoneSuppliers}
+          subCrews={subCrews}
         />
 
         {/* Bulk action bar */}

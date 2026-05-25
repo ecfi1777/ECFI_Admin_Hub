@@ -71,13 +71,14 @@ export function ProjectCommissionTab({ projectId, readOnly = false }: ProjectCom
       const { data, error } = await supabase
         .from("schedule_entries")
         .select(`
-          id, crew_id, crew_yards_poured, ready_mix_invoice_amount,
+          id, crew_id, crew_yards_poured, ready_mix_yards_billed, ready_mix_invoice_amount,
           scheduled_date,
           crews(id, name),
           phases(pl_section, phase_type)
         `)
         .eq("project_id", projectId)
-        .eq("deleted", false);
+        .eq("deleted", false)
+        .eq("is_cancelled", false);
       if (error) throw error;
       return (data || []).filter((e: any) => {
         const s = e.phases?.pl_section;
@@ -137,7 +138,7 @@ export function ProjectCommissionTab({ projectId, readOnly = false }: ProjectCom
   });
 
   // ── Derived values ──
-  const totalFWYards = fwEntries.reduce((s: number, e: any) => s + (e.crew_yards_poured ?? 0), 0);
+  const totalFWYards = fwEntries.reduce((s: number, e: any) => s + (e.ready_mix_yards_billed ?? 0), 0);
   const fwConcreteTotal = fwEntries.reduce((s: number, e: any) => s + (e.ready_mix_invoice_amount ?? 0), 0);
   const fwOtherTotal = otherCosts.reduce((s: number, c: any) => s + (c.amount ?? 0), 0);
   const fwInvoiceTotal = ((revenue as any)?.base_house ?? 0) + ((revenue as any)?.extras ?? 0);

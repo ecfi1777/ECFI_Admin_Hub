@@ -1,60 +1,48 @@
-## Sub Contractor / 1099 Crews → Sub Labor Vendor Bills
+## Combined plan: exclude cancelled costs everywhere + Sub Labor in P&L + split Footing/Wall concrete + fix Total F&W Yards
 
-Add a "Sub Contractor / 1099" flag on crews. When a sub crew is scheduled, allow flagging the entry as billable. Billable sub entries appear on the Vendor Bills page as a new "Sub Labor" row type, cleared by entering invoice # and amount (same UX as Pump).
+### 1. Exclude cancelled entries from all cost/yardage rollups
 
-### 1. Database
+Add `.eq("is_cancelled", false)` to every `schedule_entries` query that feeds a cost, yardage, or commission total. Applies uniformly to Concrete, Stone, Pump, Inspection, and Sub Labor.
 
-- `crews`: add `is_subcontractor boolean NOT NULL DEFAULT false`.
-- `schedule_entries`: add three new columns
-  - `sub_will_invoice boolean NOT NULL DEFAULT false`
-  - `sub_invoice_number text`
-  - `sub_invoice_amount numeric DEFAULT 0`
+Files:
+- `src/components/projects/ProjectPLTab.tsx` — `pl-vendor-costs`, `pl-uncategorized`, `pl-schedule-hours` queries.
+- `src/components/projects/ProjectCommissionTab.tsx` — `commission-fw-entries` query (fixes inflated yards/concrete totals from cancelled F&W entries).
+- `src/components/reports/CommissionReport.tsx` — both `schedule_entries` queries.
+- `src/pages/Reports.tsx` — Monthly Backup cost-summary queries.
+- `src/pages/Discrepancies.tsx` — verify cancelled rows are excluded.
 
-### 2. Settings → Crews
+`VendorInvoices` already excludes cancelled — no change.
 
-In `CrewsManagement` / `CrewOrderTable`, add a "Sub / 1099" toggle column next to the existing Active toggle. Toggles `crews.is_subcontractor`. Defaults off for existing crews.
+### 2. Sub Labor as its own P&L line
 
-### 3. Schedule Entry Form
+In `ProjectPLTab.tsx`:
+- Extend the `pl-vendor-costs` select to include `sub_will_invoice`, `sub_invoice_amount`, and `crews(name)`.
+- In each P&L section (Footings & Walls, Slab) emit a new **"Sub Labor"** row alongside Concrete / Stone / Pump / Inspection.
+- Sum `sub_invoice_amount` for entries in that section where `sub_will_invoice = true` and `is_cancelled = false`.
+- Roll into the section's `totalCosts` like any other vendor line.
 
-In `useEntryForm` + entry-form types, add `sub_will_invoice` to the form state.
+### 3. Split Footing Concrete vs Wall Concrete (P&L only)
 
-In `GeneralTab` (or a small new conditional block under the crew select): when the currently selected crew has `is_subcontractor = true`, show a checkbox "Sub will invoice for this work". Hidden otherwise. Persists to `schedule_entries.sub_will_invoice`.
+Footings & Walls section of `ProjectPLTab.tsx`:
+- Replace the single "Concrete" row with **two rows**:
+  - **Footing Concrete** — sum of `ready_mix_invoice_amount` where `phases.phase_type = 'footing'`.
+  - **Wall Concrete** — sum of `ready_mix_invoice_amount` where `phases.phase_type = 'wall'`.
+- Add `phase_type` to the existing `phases(...)` select in `pl-vendor-costs`.
+- Slab section stays as a single "Concrete" line (no split).
+- Commission tab is untouched — F&W concrete total there stays combined.
 
-No changes to phase logic, cancel/reschedule, P&L, or commissions.
+### 4. Fix Total F&W Yards = 0
 
-### 4. Vendor Bills page
+In `ProjectCommissionTab.tsx`, change the `totalFWYards` reducer from `crew_yards_poured` to `ready_mix_yards_billed` (and add it to the select). This is the same field that drives Vendor Bills and Discrepancies, so all three pages will agree. Cancelled entries excluded per #1.
 
-In `src/pages/VendorInvoices.tsx`:
-- Extend the entry query to select `sub_will_invoice`, `sub_invoice_number`, `sub_invoice_amount`, and `crews.is_subcontractor`, `crews.name`.
-- When building rows, emit a `type: 'sub'` row for any entry where `sub_will_invoice = true`, with `vendorName = crews.name`.
+### Out of scope
 
-In `src/components/vendor-invoices/types.ts`:
-- Extend `VendorTypeFilter` to include `'sub'`.
-- Extend `VendorInvoiceRowData.type` union with `'sub'`.
-- Add `sub_will_invoice`, `sub_invoice_number`, `sub_invoice_amount` to `VendorEntry`, and `crews.is_subcontractor` to the crews relation.
-
-In `VendorInvoiceFilters.tsx`:
-- Add "Sub Labor" option to the Type dropdown.
-- Vendor dropdown for Sub Labor lists subcontractor crew names.
-
-In `VendorInvoiceRow.tsx` (desktop + mobile):
-- For `type === 'sub'`:
-  - Type badge: "Sub Labor".
-  - Vendor: crew name.
-  - Invoice # input → `sub_invoice_number`.
-  - Yards Billed: render `—` (same as Pump/Inspection).
-  - Amount input → `sub_invoice_amount` with permanent `$` prefix (matches existing vendor-bills convention).
-  - Save handler writes both fields back to `schedule_entries`.
-- Keep cancelled-entry exclusion (`is_cancelled = false`) already in place.
-
-### 5. Out of scope
-
-- No P&L, Labor Tracking, or Commission changes. Sub Labor lives only in Vendor Bills for now (we can wire it into financials in a follow-up).
-- No changes to the cancel/reschedule flow, calendar, discrepancies, or reports.
-- No badge/color additions beyond the new "Sub Labor" type label.
+- No cancel/reschedule workflow, calendar, or audit changes.
+- No Labor Tracking / Commission payout recalculations beyond the yardage source swap.
+- No new badges or colors.
 
 ### Technical notes
 
-- New `crews.is_subcontractor` column — Settings toggle uses the existing org-scoped RLS update policy, no new policies needed.
-- New schedule_entries columns inherit existing RLS. The audit trigger on `schedule_entries` will automatically capture changes via `to_jsonb(NEW)` — no trigger edits required.
-- `VendorEntry` type lives in `src/components/vendor-invoices/types.ts`; row-builder logic lives in `VendorInvoices.tsx`. Both need parallel updates.
+- No schema changes — all four items use existing columns.
+- `ProjectPLTab.tsx` row builder will need a small refactor to support multiple concrete lines under one section; current code emits one row per vendor type, so adding a `phase_type`-filtered split for F&W and a Sub Labor row are parallel additions.
+- `phase_type` on `phases` is already nullable text with values `'footing'` and `'wall'` confirmed in production data.

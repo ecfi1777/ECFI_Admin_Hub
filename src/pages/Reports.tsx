@@ -100,6 +100,7 @@ export default function Reports() {
         `)
         .eq("organization_id", organizationId)
         .eq("deleted", false)
+        .eq("is_cancelled", false)
         .gte("scheduled_date", startDate)
         .lte("scheduled_date", endDate)
         .order("scheduled_date", { ascending: true });
