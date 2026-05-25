@@ -246,6 +246,7 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
         `)
         .eq("organization_id", organizationId)
         .eq("deleted", false)
+        .eq("is_cancelled", false)
         .in("project_id", projectIds);
       if (error) throw error;
       return (data || []).filter((e: any) => {
