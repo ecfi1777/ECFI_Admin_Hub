@@ -656,11 +656,6 @@ export function ProjectScheduleHistory({ projectId, readOnly = false }: ProjectS
                           )}
                         </div>
 
-                        {entry.notes && (
-                          <div className="text-muted-foreground text-sm italic border-t border-border pt-2 mt-2">
-                            {entry.notes}
-                          </div>
-                        )}
                       </div>
                     ))}
                   </div>
