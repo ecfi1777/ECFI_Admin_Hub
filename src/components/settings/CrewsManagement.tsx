@@ -56,6 +56,7 @@ interface Crew {
   display_order: number;
   is_active: boolean;
   color: string | null;
+  is_subcontractor: boolean;
 }
 
 interface CrewMember {
@@ -74,6 +75,7 @@ function SortableCrewRow({
   onToggleExpand,
   onEditCrew,
   onToggleCrewActive,
+  onToggleCrewSubcontractor,
   onEditMember,
   onToggleMemberActive,
   onDeleteMember,
@@ -86,6 +88,7 @@ function SortableCrewRow({
   onToggleExpand: (id: string) => void;
   onEditCrew: (crew: Crew) => void;
   onToggleCrewActive: (id: string, isActive: boolean) => void;
+  onToggleCrewSubcontractor: (id: string, isSub: boolean) => void;
   onEditMember: (member: CrewMember) => void;
   onDeleteMember: (member: CrewMember) => void;
   onToggleMemberActive: (id: string, isActive: boolean) => void;
@@ -162,6 +165,15 @@ function SortableCrewRow({
             <Users className="w-3 h-3" />
             {crewMembers.length}
           </span>
+
+          {/* Sub Contractor / 1099 Toggle */}
+          <div className="flex items-center gap-1.5 mr-2" title="Sub Contractor / 1099">
+            <Switch
+              checked={crew.is_subcontractor}
+              onCheckedChange={(checked) => onToggleCrewSubcontractor(crew.id, checked)}
+            />
+            <span className="text-xs text-muted-foreground hidden sm:inline">Sub</span>
+          </div>
 
           {/* Active Toggle */}
           <Switch
@@ -319,7 +331,7 @@ export function CrewsManagement() {
       if (!organizationId) return [];
       const { data, error } = await supabase
         .from("crews")
-        .select("id, name, display_order, is_active, color")
+        .select("id, name, display_order, is_active, color, is_subcontractor")
         .eq("organization_id", organizationId)
         .order("display_order")
         .order("name");
@@ -439,6 +451,21 @@ export function CrewsManagement() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["crews-management"] });
       queryClient.invalidateQueries({ queryKey: ["crews-all"] });
+    },
+    onError: (error: Error) => {
+      toast.error(getUserFriendlyError(error));
+    },
+  });
+
+  const toggleCrewSubcontractorMutation = useMutation({
+    mutationFn: async ({ id, is_subcontractor }: { id: string; is_subcontractor: boolean }) => {
+      const { error } = await supabase.from("crews").update({ is_subcontractor } as any).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["crews-management"] });
+      queryClient.invalidateQueries({ queryKey: ["crews-all"] });
+      queryClient.invalidateQueries({ queryKey: ["crews-active"] });
     },
     onError: (error: Error) => {
       toast.error(getUserFriendlyError(error));
@@ -643,6 +670,7 @@ export function CrewsManagement() {
           <span className="w-8 text-center">#</span>
           <span className="flex-1">Crew Name</span>
           <span className="w-12"></span>
+          <span className="w-20 hidden sm:inline">Sub/1099</span>
           <span className="w-12">Active</span>
           <span className="w-10"></span>
         </div>
@@ -669,6 +697,9 @@ export function CrewsManagement() {
                 onEditCrew={openCrewDialog}
                 onToggleCrewActive={(id, isActive) =>
                   toggleCrewActiveMutation.mutate({ id, is_active: isActive })
+                }
+                onToggleCrewSubcontractor={(id, isSub) =>
+                  toggleCrewSubcontractorMutation.mutate({ id, is_subcontractor: isSub })
                 }
                 onEditMember={(member) => openMemberDialog(member)}
                 onDeleteMember={(member) => {

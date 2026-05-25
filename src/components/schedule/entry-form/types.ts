@@ -69,6 +69,9 @@ export interface EntryFormValues {
   // Invoicing tab
   to_be_invoiced: boolean;
 
+  // Sub Contractor / 1099 — billable to org as a vendor bill
+  sub_will_invoice: boolean;
+
   // Did not work
   did_not_work: boolean;
   not_working_reason: string;
@@ -111,6 +114,7 @@ export const DEFAULT_ENTRY_FORM_VALUES: EntryFormValues = {
   crew_hours: "",
   crew_notes: "",
   to_be_invoiced: false,
+  sub_will_invoice: false,
   did_not_work: false,
   not_working_reason: "",
 };

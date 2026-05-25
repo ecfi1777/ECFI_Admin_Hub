@@ -20,14 +20,16 @@ interface GeneralTabProps {
   updateField: <K extends keyof EntryFormValues>(field: K, value: EntryFormValues[K]) => void;
   showCrew?: boolean;
   hideNonCrewFields?: boolean;
-  crewOptions?: Array<{ id: string; name: string; is_active: boolean }>;
+  crewOptions?: Array<{ id: string; name: string; is_active: boolean; is_subcontractor?: boolean }>;
 }
 
 export function GeneralTab({ formData, updateField, showCrew = true, hideNonCrewFields = false, crewOptions }: GeneralTabProps) {
   const { data: phases = [] } = usePhases();
   const { data: defaultCrews = [] } = useCrews();
-  
+
   const crews = crewOptions || defaultCrews;
+  const selectedCrew = crews.find((c) => c.id === formData.crew_id);
+  const isSubCrew = !!(selectedCrew as any)?.is_subcontractor;
 
   return (
     <div className="space-y-4">
@@ -64,6 +66,21 @@ export function GeneralTab({ formData, updateField, showCrew = true, hideNonCrew
           />
         </div>
       </div>
+
+      {isSubCrew && !hideNonCrewFields && (
+        <div className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2">
+          <input
+            type="checkbox"
+            id="sub_will_invoice"
+            checked={formData.sub_will_invoice}
+            onChange={(e) => updateField("sub_will_invoice", e.target.checked)}
+            className="h-4 w-4 rounded border-input"
+          />
+          <Label htmlFor="sub_will_invoice" className="cursor-pointer text-sm">
+            Sub will invoice for this work (creates a Sub Labor vendor bill)
+          </Label>
+        </div>
+      )}
 
       {!hideNonCrewFields && (
         <>

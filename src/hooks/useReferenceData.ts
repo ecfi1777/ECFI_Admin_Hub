@@ -53,6 +53,7 @@ export interface Crew {
   display_order?: number;
   is_active?: boolean;
   color?: string | null;
+  is_subcontractor?: boolean;
 }
 
 export interface ConcreteMix {
@@ -234,7 +235,7 @@ export function useCrews() {
       if (!organizationId) return [];
       const { data, error } = await supabase
         .from("crews")
-        .select("id, name, is_active")
+        .select("id, name, is_active, is_subcontractor")
         .eq("organization_id", organizationId)
         .eq("is_active", true)
         .order("display_order");
@@ -258,7 +259,7 @@ export function useCrewsAll() {
       if (!organizationId) return [];
       const { data, error } = await supabase
         .from("crews")
-        .select("id, name, display_order, is_active, color")
+        .select("id, name, display_order, is_active, color, is_subcontractor")
         .eq("organization_id", organizationId);
       if (error) throw error;
       return data as Crew[];

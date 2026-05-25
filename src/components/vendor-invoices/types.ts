@@ -1,4 +1,4 @@
-export type VendorTypeFilter = 'all' | 'concrete' | 'stone' | 'pump' | 'inspection';
+export type VendorTypeFilter = 'all' | 'concrete' | 'stone' | 'pump' | 'inspection' | 'sub';
 
 export interface VendorEntry {
   id: string;
@@ -22,6 +22,10 @@ export interface VendorEntry {
   inspection_amount: number | null;
   inspection_no_charge: boolean;
   crew_yards_poured: number | null;
+  // Sub Contractor / 1099 vendor bill fields
+  sub_will_invoice: boolean;
+  sub_invoice_number: string | null;
+  sub_invoice_amount: number | null;
   // Concrete detail fields
   concrete_mix_id: string | null;
   qty_ordered: string | null;
@@ -39,7 +43,7 @@ export interface VendorEntry {
     builders: { name: string; code: string | null } | null;
     locations: { name: string } | null;
   } | null;
-  crews: { name: string } | null;
+  crews: { name: string; is_subcontractor?: boolean } | null;
   suppliers: { name: string; code: string | null } | null;
   stone_suppliers: { name: string; code: string | null } | null;
   pump_vendors: { name: string; code: string | null } | null;
@@ -64,6 +68,6 @@ export interface VendorEntry {
 
 export interface VendorInvoiceRowData {
   entry: VendorEntry;
-  type: 'concrete' | 'stone' | 'pump' | 'inspection';
+  type: 'concrete' | 'stone' | 'pump' | 'inspection' | 'sub';
   vendorName: string;
 }
