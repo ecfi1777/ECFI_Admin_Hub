@@ -284,7 +284,21 @@ export function ReferenceDataTable({ tableName, displayName, hasCode = false, ha
             <span className="w-8" />
             <span className="flex-1">Phase Name</span>
             <span className="w-[160px] text-center">P&amp;L Section</span>
-            <span className="w-[140px] text-center">Phase Type</span>
+            <span className="w-[140px] text-center inline-flex items-center justify-center gap-1">
+              Phase Type
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button type="button" className="inline-flex items-center text-muted-foreground hover:text-foreground">
+                      <Info className="w-3 h-3" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs text-xs">
+                    Only phases set to <strong>Footing Pour</strong>, <strong>Wall Pour</strong>, or <strong>Slab Pour</strong> appear in the Yards Discrepancies report. Set non-pour phases (e.g. Prep Footings, Set Walls, Strip Walls) to <strong>Other</strong> to exclude them.
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </span>
             <span className="w-[60px] text-center">Auto Inv.</span>
             <span className="w-[60px] text-center">Active</span>
             <span className="w-10" />
