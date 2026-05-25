@@ -68,6 +68,6 @@ export interface VendorEntry {
 
 export interface VendorInvoiceRowData {
   entry: VendorEntry;
-  type: 'concrete' | 'stone' | 'pump' | 'inspection';
+  type: 'concrete' | 'stone' | 'pump' | 'inspection' | 'sub';
   vendorName: string;
 }
