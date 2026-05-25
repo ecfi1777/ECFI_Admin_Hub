@@ -99,6 +99,11 @@ export default function Discrepancies() {
 
   const isLoading = loadingIncomplete || loadingComplete;
 
+  // Only concrete-pour phases belong on this report
+  const POUR_PHASE_TYPES = ["footing", "wall", "slab"];
+  const isPourPhase = (entry: ScheduleEntry) =>
+    !!entry.phases?.phase_type && POUR_PHASE_TYPES.includes(entry.phases.phase_type);
+
   // Filter helper
   const matchesFilters = (entry: ScheduleEntry) => {
     const searchLower = searchQuery.toLowerCase();
@@ -124,15 +129,15 @@ export default function Discrepancies() {
     return matchesSearch && matchesBuilder && matchesCrew && matchesLocation;
   };
 
-  // Filtered incomplete
+  // Filtered incomplete (pour phases only)
   const filteredIncomplete = useMemo(
-    () => incompleteEntries.filter(matchesFilters),
+    () => incompleteEntries.filter(isPourPhase).filter(matchesFilters),
     [incompleteEntries, searchQuery, filterBuilder, filterCrew, filterLocation]
   );
 
   // Group complete entries by project
   const projectGroups = useMemo(() => {
-    const filtered = completeEntries.filter(matchesFilters);
+    const filtered = completeEntries.filter(isPourPhase).filter(matchesFilters);
     const grouped = new Map<
       string,
       {
