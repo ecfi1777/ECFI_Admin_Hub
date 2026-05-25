@@ -111,7 +111,9 @@ export function VendorInvoiceRow({
           ? (entry.pump_invoice_number ?? "")
           : type === "inspection"
             ? (entry.inspection_invoice_number ?? "")
-            : ""
+            : type === "sub"
+              ? (entry.sub_invoice_number ?? "")
+              : ""
   );
   const [yards, setYards] = useState(
     type === "concrete"
@@ -129,7 +131,9 @@ export function VendorInvoiceRow({
           ? (entry.pump_invoice_amount?.toString() ?? "")
           : type === "inspection"
             ? (entry.inspection_amount?.toString() ?? "")
-            : ""
+            : type === "sub"
+              ? (entry.sub_invoice_amount?.toString() ?? "")
+              : ""
   );
 
   const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
