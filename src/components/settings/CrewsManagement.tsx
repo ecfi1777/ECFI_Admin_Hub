@@ -457,6 +457,21 @@ export function CrewsManagement() {
     },
   });
 
+  const toggleCrewSubcontractorMutation = useMutation({
+    mutationFn: async ({ id, is_subcontractor }: { id: string; is_subcontractor: boolean }) => {
+      const { error } = await supabase.from("crews").update({ is_subcontractor } as any).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["crews-management"] });
+      queryClient.invalidateQueries({ queryKey: ["crews-all"] });
+      queryClient.invalidateQueries({ queryKey: ["crews-active"] });
+    },
+    onError: (error: Error) => {
+      toast.error(getUserFriendlyError(error));
+    },
+  });
+
   const createMemberMutation = useMutation({
     mutationFn: async ({ name, crew_id, hourly_rate }: { name: string; crew_id: string | null; hourly_rate: number | null }) => {
       if (!organizationId) throw new Error("No organization found");
