@@ -697,6 +697,9 @@ export function CrewsManagement() {
                 onToggleCrewActive={(id, isActive) =>
                   toggleCrewActiveMutation.mutate({ id, is_active: isActive })
                 }
+                onToggleCrewSubcontractor={(id, isSub) =>
+                  toggleCrewSubcontractorMutation.mutate({ id, is_subcontractor: isSub })
+                }
                 onEditMember={(member) => openMemberDialog(member)}
                 onDeleteMember={(member) => {
                   setMemberToDelete(member);
