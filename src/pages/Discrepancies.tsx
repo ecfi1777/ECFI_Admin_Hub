@@ -30,7 +30,7 @@ const ENTRY_SELECT = `
   inspection_type_id, inspector_id, inspection_invoice_number, inspection_amount, inspection_notes,
   to_be_invoiced, invoice_complete, invoice_number,
   additive_hot_water, additive_1_percent_he, additive_2_percent_he,
-  crews(name), phases(name), suppliers(name, code),
+  crews(name), phases(name, phase_type), suppliers(name, code),
   pump_vendors(name, code), inspection_types(name), inspectors(name),
   concrete_mixes(name),
   projects(id, lot_number, builders(name, code), locations(name))

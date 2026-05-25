@@ -81,7 +81,7 @@ export interface ScheduleEntry {
   display_order: number;
   // Nested relations
   crews: { name: string } | null;
-  phases: { name: string } | null;
+  phases: { name: string; phase_type: string | null } | null;
   suppliers: { name: string; code: string | null } | null;
   pump_vendors: { name: string; code: string | null } | null;
   inspection_types: { name: string } | null;
