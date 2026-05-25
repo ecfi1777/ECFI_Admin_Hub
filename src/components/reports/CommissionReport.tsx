@@ -645,13 +645,13 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
           t.laborAllow,
           t.totalInvoice > 0 ? t.laborAllow / t.totalInvoice : null,
           t.totalYards > 0 ? t.laborAllow / t.totalYards : null,
-          t.cogs, t.gross, "—",
+          t.cogs, t.gross, t.totalInvoice > 0 ? t.gross / t.totalInvoice : null,
         ]);
         totRow.font = { bold: true, size: 9 };
         [9, 10, 11, 13, 14, 16, 18, 19, 20].forEach((col) => {
           totRow.getCell(col).numFmt = currencyFmt;
         });
-        [15, 17].forEach((col) => {
+        [15, 17, 21].forEach((col) => {
           totRow.getCell(col).numFmt = pctFmt;
         });
 
