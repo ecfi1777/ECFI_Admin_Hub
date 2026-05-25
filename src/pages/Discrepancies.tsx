@@ -323,7 +323,7 @@ export default function Discrepancies() {
             </div>
 
             {/* Breakdowns */}
-            <YardsSummaryCards entries={completeEntries} />
+            <YardsSummaryCards entries={completeEntries.filter(isPourPhase)} />
           </>
         )}
       </div>
