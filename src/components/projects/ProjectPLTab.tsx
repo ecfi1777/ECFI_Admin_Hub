@@ -384,7 +384,7 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
 // ────────────────────────────────────────────────────────────────
 
 interface SectionData {
-  vendor: { concrete: number; stone: number; pump: number; inspection: number };
+  vendor: { concrete: number; concrete_footing: number; concrete_wall: number; concrete_other: number; stone: number; pump: number; inspection: number; sub: number };
   labor: number;
   sectionOther: OtherCost[];
   otherTotal: number;
