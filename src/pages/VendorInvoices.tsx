@@ -230,6 +230,25 @@ export default function VendorInvoices() {
           });
         }
       }
+
+      // Sub Labor (1099 crew that will invoice)
+      if (
+        entry.sub_will_invoice &&
+        entry.crews?.is_subcontractor &&
+        (typeFilter === "all" || typeFilter === "sub")
+      ) {
+        const needsWork =
+          entry.sub_invoice_number == null ||
+          isMissing(entry.sub_invoice_amount);
+
+        if (isAllView || needsWork) {
+          result.push({
+            entry,
+            type: "sub",
+            vendorName: entry.crews?.name || "-",
+          });
+        }
+      }
     }
 
     // Specific vendor filter
@@ -239,7 +258,7 @@ export default function VendorInvoices() {
         if (row.type === "stone") return row.entry.stone_supplier_id === specificVendor;
         if (row.type === "pump") return row.entry.pump_vendor_id === specificVendor;
         if (row.type === "inspection") return row.entry.inspector_id === specificVendor;
-        
+        if (row.type === "sub") return row.entry.crew_id === specificVendor;
         return true;
       });
     }
