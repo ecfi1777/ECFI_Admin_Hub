@@ -114,6 +114,7 @@ export const DEFAULT_ENTRY_FORM_VALUES: EntryFormValues = {
   crew_hours: "",
   crew_notes: "",
   to_be_invoiced: false,
+  sub_will_invoice: false,
   did_not_work: false,
   not_working_reason: "",
 };
