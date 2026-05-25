@@ -239,11 +239,26 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
       if (!e.pl_section) return false;
       return e.pl_section === section || e.pl_section === "both";
     });
+    const concrete_footing = matching
+      .filter((e) => e.phase_type === "footing")
+      .reduce((s, e) => s + (e.ready_mix_invoice_amount || 0), 0);
+    const concrete_wall = matching
+      .filter((e) => e.phase_type === "wall")
+      .reduce((s, e) => s + (e.ready_mix_invoice_amount || 0), 0);
+    const concrete_other = matching
+      .filter((e) => e.phase_type !== "footing" && e.phase_type !== "wall")
+      .reduce((s, e) => s + (e.ready_mix_invoice_amount || 0), 0);
     return {
       concrete: matching.reduce((s, e) => s + (e.ready_mix_invoice_amount || 0), 0),
+      concrete_footing,
+      concrete_wall,
+      concrete_other,
       stone: matching.reduce((s, e) => s + (e.stone_invoice_amount || 0), 0),
       pump: matching.reduce((s, e) => s + (e.pump_invoice_amount || 0), 0),
       inspection: matching.reduce((s, e) => s + (e.inspection_amount || 0), 0),
+      sub: matching
+        .filter((e) => e.sub_will_invoice)
+        .reduce((s, e) => s + (e.sub_invoice_amount || 0), 0),
     };
   };
 
