@@ -60,6 +60,11 @@ export default function VendorInvoices() {
   const { data: inspectors = [] } = useInspectors();
   
   const { data: stoneSuppliers = [] } = useStoneSuppliers();
+  const { data: allCrews = [] } = useCrews();
+  const subCrews = useMemo(
+    () => allCrews.filter((c: any) => c.is_subcontractor),
+    [allCrews]
+  );
 
   // Fetch entries that have at least one vendor/crew assigned
   const { data: entries = [], isLoading } = useQuery({
