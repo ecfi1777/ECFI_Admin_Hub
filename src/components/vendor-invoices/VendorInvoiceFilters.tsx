@@ -30,6 +30,7 @@ interface VendorInvoiceFiltersProps {
   pumpVendors: PumpVendor[];
   inspectors: Inspector[];
   stoneSuppliers: StoneSupplier[];
+  subCrews?: Crew[];
 }
 
 export function VendorInvoiceFilters({
