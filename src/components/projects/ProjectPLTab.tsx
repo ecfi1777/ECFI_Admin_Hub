@@ -177,6 +177,7 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
         `)
         .eq("project_id", projectId)
         .eq("deleted", false)
+        .eq("is_cancelled", false)
         .not("crew_hours", "is", null);
       if (error) throw error;
       return data || [];
