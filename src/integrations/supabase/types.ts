@@ -823,6 +823,45 @@ export type Database = {
           },
         ]
       }
+      project_materials_costs: {
+        Row: {
+          amount: number
+          created_at: string | null
+          description: string
+          display_order: number | null
+          id: string
+          organization_id: string
+          pl_section: string
+          project_id: string
+          updated_at: string | null
+          vendor: string | null
+        }
+        Insert: {
+          amount?: number
+          created_at?: string | null
+          description: string
+          display_order?: number | null
+          id?: string
+          organization_id: string
+          pl_section: string
+          project_id: string
+          updated_at?: string | null
+          vendor?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          description?: string
+          display_order?: number | null
+          id?: string
+          organization_id?: string
+          pl_section?: string
+          project_id?: string
+          updated_at?: string | null
+          vendor?: string | null
+        }
+        Relationships: []
+      }
       project_other_costs: {
         Row: {
           amount: number

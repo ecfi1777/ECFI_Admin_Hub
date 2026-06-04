@@ -1,25 +1,47 @@
-## Plan
+## Slab P&L Enhancements
 
-Add a small info/note icon with a tooltip to the **Settings → Phases** page so users understand which phase types cause entries to show up in the **Yards Discrepancies** report.
+The Project → P&L tab already has a "Slab" card next to "Footings & Walls". This plan upgrades it so every slab-related cost (especially stone) flows through correctly, is broken out by phase, and leaves room for materials you'll add later.
 
-### Changes
+### 1. Fix multi-supplier stone aggregation
+Today the P&L reads `schedule_entries.stone_invoice_amount`, which only mirrors line 1 of a multi-supplier entry. Switch the Slab (and F&W) aggregator to sum **all** rows in `schedule_entry_stone_lines` for the entries in scope, falling back to the legacy column when no lines exist (older entries).
 
-1. **Import `Info` icon from lucide-react and tooltip components** in `src/components/settings/SortableReferenceRow.tsx`.
-2. **Add info icon to the "Phase Type" column header** in `src/components/settings/ReferenceDataTable.tsx` (line ~286).
-   - Wrap the icon in a `<Tooltip>` component.
-   - Tooltip text: "Footing Pour, Wall Pour, and Slab Pour types include schedule entries in the Yards Discrepancies report. Other types are excluded."
-3. **Add info icon beside each row's Phase Type badge** in `SortableReferenceRow.tsx` when the phase type is `footing`, `wall`, or `slab`.
-   - Same tooltip text as above.
-   - Use a small `Info` icon (size 12 or 14) next to the badge with muted color.
+### 2. Phase-type breakdown for the Slab card
+Mirror what F&W does. Slab costs will be split into named lines based on the entry's `phases.phase_type`:
 
-### Visual
-
+```text
+Slab
+├─ Prep Slabs — Stone           $ ...   (sum of stone lines on prep-slab phase entries)
+├─ Slab Pour — Concrete         $ ...   (ready_mix on slab-pour phase entries)
+├─ Slab Pour — Pump             $ ...
+├─ Other Slab Concrete          $ ...   (if phase_type is neither)
+├─ Inspection                   $ ...
+├─ Sub Labor                    $ ...   (single rolled-up line, as today)
+├─ Labor                        $ ...   (existing crew-hours × rate logic)
+├─ Materials   ◄── NEW          $ ...
+└─ Other Costs (existing)       $ ...
 ```
-Header row:
-  Phase Name | P&L Section | Phase Type [i] | Auto Inv. | Active |
 
-Each row (e.g., "Pour Footings"):
-  Pour Footings | F&W | FTG [i] | — | Active |
-```
+Lines with $0 stay hidden, same convention as F&W.
 
-The `[i]` is a small, muted info icon. Hovering it shows the tooltip. No new dependencies needed — lucide-react and the existing tooltip component are already available.
+### 3. Itemized stone deliveries (expandable)
+Under the "Prep Slabs — Stone" line, add a small expandable list showing each delivery: `Supplier · tons · invoice # · $amount`. Read-only display sourced from `schedule_entry_stone_lines` joined to `suppliers`. Collapsed by default so the card stays compact.
+
+### 4. New "Materials" cost section
+A new repeating cost block per P&L section (like Other Costs) for things like rebar, vapor barrier, finishing materials, equipment rental, etc. Each row: description, vendor (optional free text), amount. Editable inline; deletable; included in Total Costs.
+
+**Schema:** new table `public.project_materials_costs` with columns `project_id`, `organization_id`, `pl_section` (`footings_walls` | `slab`), `description`, `vendor` (nullable text), `amount`, `display_order`, timestamps. Org-scoped RLS mirroring `project_other_costs`, plus the required GRANTs.
+
+Because it's added to both sections, you'll automatically get a Materials line on Footings & Walls too — let me know if you'd rather restrict it to Slab.
+
+### 5. Touch points
+- `src/components/projects/ProjectPLTab.tsx` — query change for stone lines, phase-type aggregation for slab, new "Materials" subcomponent, render itemized stone breakdown.
+- New `ProjectMaterialsCostsSection` component (kept under 300 lines, parent fetches data).
+- One migration for `project_materials_costs`.
+
+### What stays the same
+- Sub Labor remains one rolled-up line per section (per your choice).
+- Vendor Bills, Discrepancies, Daily Schedule UI: unchanged.
+- F&W card: gains the multi-stone fix and a Materials line, otherwise unchanged.
+
+### Open question (won't block)
+The slab card's stone breakdown assumes "Prep Slabs" is the phase_type used for stone deliveries on slabs. If you also do stone on other slab phases, I'll roll them under "Other Slab Stone" the same way F&W handles "Other F&W Concrete".
