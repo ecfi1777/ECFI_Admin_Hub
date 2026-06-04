@@ -76,12 +76,15 @@ interface RevenueRow {
   notes: string | null;
 }
 
-type Section = "footings_walls" | "slab";
+type Section = "footings_walls" | "interior_slab" | "exterior_slab";
 
 const SECTION_LABELS: Record<Section, string> = {
   footings_walls: "Footings & Walls",
-  slab: "Slab",
+  interior_slab: "Interior Slabs",
+  exterior_slab: "Exterior Slabs",
 };
+
+const SECTIONS: Section[] = ["footings_walls", "interior_slab", "exterior_slab"];
 
 // ────────────────────────────────────────────────────────────────
 // Helpers
@@ -291,6 +294,11 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
   });
 
   // ── Aggregate vendor costs per section ──
+  // Stone is bucketed by pl_category (independent of phase), so each card pulls
+  // from ALL entries on the project, filtered by category:
+  //   - footings_walls → no stone on this card
+  //   - interior_slab  → stone lines with pl_category = 'basement_garage'
+  //   - exterior_slab  → stone lines with pl_category = 'exterior'
   const aggregateVendor = (section: Section) => {
     const matching = vendorEntries.filter((e) => {
       if (!e.pl_section) return false;
@@ -308,17 +316,21 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
     const concrete_other = matching
       .filter((e) => e.phase_type !== "footing" && e.phase_type !== "wall" && e.phase_type !== "slab")
       .reduce((s, e) => s + (e.ready_mix_invoice_amount || 0), 0);
-    // Stone deliveries are bucketed by pl_category (not phase): basement_garage → slab card,
-    // exterior → footings_walls card. Pull from ALL entries on the project, not just the
-    // phase-matching ones, so a stone delivery on a slab-pour or footing day still lands
-    // in the right P&L card based on its category.
-    const wantedCategory: "basement_garage" | "exterior" =
-      section === "slab" ? "basement_garage" : "exterior";
-    const stoneDeliveries = vendorEntries.flatMap((e) =>
+
+    // Stone routing by category. F&W card gets no stone now.
+    const wantedCategory: "basement_garage" | "exterior" | null =
+      section === "interior_slab" ? "basement_garage" :
+      section === "exterior_slab" ? "exterior" : null;
+    const stoneDeliveries = wantedCategory == null ? [] : vendorEntries.flatMap((e) =>
       e.stone_lines
         .filter((l) => {
           // Lines without a category fall back to phase-based bucketing for back-compat
-          const cat = l.pl_category ?? (e.phase_type === "slab" || (e.phase_name ?? "").toLowerCase().includes("slab") ? "basement_garage" : "exterior");
+          const cat = l.pl_category ?? (
+            e.pl_section === "interior_slab" || e.phase_type === "slab" ||
+            (e.phase_name ?? "").toLowerCase().includes("slab")
+              ? "basement_garage"
+              : "exterior"
+          );
           return cat === wantedCategory && ((l.invoice_amount || 0) > 0 || (l.tons_billed || 0) > 0);
         })
         .map((l) => ({
@@ -395,13 +407,16 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
   };
 
 
-  const fw = buildSection("footings_walls");
-  const slab = buildSection("slab");
+  const sectionData: Record<Section, ReturnType<typeof buildSection>> = {
+    footings_walls: buildSection("footings_walls"),
+    interior_slab: buildSection("interior_slab"),
+    exterior_slab: buildSection("exterior_slab"),
+  };
 
-  const combinedSales = (fw.salesPrice ?? 0) + (slab.salesPrice ?? 0);
-  const combinedCosts = fw.totalCosts + slab.totalCosts;
+  const combinedSales = SECTIONS.reduce((s, sec) => s + (sectionData[sec].salesPrice ?? 0), 0);
+  const combinedCosts = SECTIONS.reduce((s, sec) => s + sectionData[sec].totalCosts, 0);
   const combinedProfit = combinedSales - combinedCosts;
-  const hasCombinedRevenue = (fw.salesPrice ?? 0) > 0 || (slab.salesPrice ?? 0) > 0;
+  const hasCombinedRevenue = SECTIONS.some((sec) => (sectionData[sec].salesPrice ?? 0) > 0);
 
   return (
     <div className="space-y-4">
@@ -420,8 +435,8 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
       )}
 
       {/* Section Cards */}
-      {(["footings_walls", "slab"] as Section[]).map((section) => {
-        const data = section === "footings_walls" ? fw : slab;
+      {SECTIONS.map((section) => {
+        const data = sectionData[section];
         const { totalHours, count } = getLaborHoursSummary(section);
         const overrideEntry = scheduleEntries.find((e: any) => {
           const s = e.phases?.pl_section;
@@ -445,6 +460,7 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
           />
         );
       })}
+
 
       {/* Overall Totals */}
       <div className="bg-card border border-border rounded-lg p-4 space-y-2">
@@ -582,9 +598,9 @@ function SectionCard({
                   )}
                 </>
               )}
-              {data.vendor.stone > 0 && (
+              {data.vendor.stone > 0 && section !== "footings_walls" && (
                 <StoneCostLine
-                  label={section === "slab" ? "Basement & Garage Stone" : "Exterior Stone"}
+                  label={section === "interior_slab" ? "Interior Slab Stone" : "Exterior Slab Stone"}
                   amount={data.vendor.stone}
                   deliveries={data.vendor.stoneDeliveries}
                 />

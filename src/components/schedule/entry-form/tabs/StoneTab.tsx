@@ -1,7 +1,7 @@
 /**
  * Stone tab for entry form — supports MULTIPLE stone suppliers per entry.
  * Each "line" is one supplier + type + qty/invoice/tons/notes + a required
- * P&L Category (Basement & Garage Stone | Exterior Stone) that drives which
+ * P&L Category (Interior Slab Stone | Exterior Slab Stone) that drives which
  * Project P&L card the cost rolls into.
  */
 
@@ -34,8 +34,8 @@ interface StoneTabProps {
 }
 
 const CATEGORY_OPTIONS: { value: Exclude<StonePlCategory, "">; label: string }[] = [
-  { value: "basement_garage", label: "Basement & Garage Stone" },
-  { value: "exterior", label: "Exterior Stone" },
+  { value: "basement_garage", label: "Interior Slab Stone" },
+  { value: "exterior", label: "Exterior Slab Stone" },
 ];
 
 const emptyLine = (defaultPlCategory: StonePlCategory): StoneLineFormValue => ({
@@ -153,7 +153,7 @@ export function StoneTab({
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
-              Basement &amp; Garage rolls into the Slab P&amp;L. Exterior rolls into Footings &amp; Walls P&amp;L.
+              Interior Slab Stone rolls into the Interior Slabs P&amp;L card. Exterior Slab Stone rolls into the Exterior Slabs P&amp;L card.
             </p>
           </div>
 
