@@ -73,6 +73,7 @@ export function useEntryForm(options: UseEntryFormOptions = {}) {
       id: l.id,
       supplier_id: l.supplier_id || "",
       stone_type_id: l.stone_type_id || "",
+      pl_category: (l.pl_category as StoneLineFormValue["pl_category"]) || "",
       qty_ordered: l.qty_ordered || "",
       order_number: l.order_number || "",
       invoice_number: l.invoice_number || "",
