@@ -127,24 +127,45 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
           inspection_amount,
           sub_will_invoice,
           sub_invoice_amount,
-          phases(pl_section, phase_type),
-          crews(name, is_subcontractor)
+          phases(pl_section, phase_type, name),
+          crews(name, is_subcontractor),
+          stone_lines:schedule_entry_stone_lines(
+            invoice_amount,
+            invoice_number,
+            tons_billed,
+            suppliers:stone_suppliers!supplier_id(name)
+          )
         `)
         .eq("project_id", projectId)
         .eq("deleted", false)
         .eq("is_cancelled", false);
       if (error) throw error;
-      return (data || []).map((d: any) => ({
-        pl_section: d.phases?.pl_section ?? null,
-        phase_type: d.phases?.phase_type ?? null,
-        ready_mix_invoice_amount: d.ready_mix_invoice_amount,
-        stone_invoice_amount: d.stone_invoice_amount,
-        pump_invoice_amount: d.pump_invoice_amount,
-        inspection_amount: d.inspection_amount,
-        sub_will_invoice: !!d.sub_will_invoice && !!d.crews?.is_subcontractor,
-        sub_invoice_amount: d.sub_invoice_amount,
-        crew_name: d.crews?.name ?? null,
-      })) as VendorEntry[];
+      return (data || []).map((d: any) => {
+        const lines: StoneLineLite[] = (d.stone_lines ?? []).map((l: any) => ({
+          supplier_name: l.suppliers?.name ?? null,
+          invoice_number: l.invoice_number ?? null,
+          invoice_amount: l.invoice_amount ?? null,
+          tons_billed: l.tons_billed ?? null,
+        }));
+        // Prefer summing stone_lines (multi-supplier). Fall back to legacy single column when no lines.
+        const stoneFromLines = lines.reduce((s, l) => s + (l.invoice_amount || 0), 0);
+        const stone_total = lines.length > 0 ? stoneFromLines : (d.stone_invoice_amount || 0);
+        return {
+          pl_section: d.phases?.pl_section ?? null,
+          phase_type: d.phases?.phase_type ?? null,
+          phase_name: d.phases?.name ?? null,
+          ready_mix_invoice_amount: d.ready_mix_invoice_amount,
+          stone_invoice_amount: d.stone_invoice_amount,
+          pump_invoice_amount: d.pump_invoice_amount,
+          inspection_amount: d.inspection_amount,
+          sub_will_invoice: !!d.sub_will_invoice && !!d.crews?.is_subcontractor,
+          sub_invoice_amount: d.sub_invoice_amount,
+          crew_name: d.crews?.name ?? null,
+          stone_lines: lines,
+          stone_total,
+        } as VendorEntry;
+      });
+
     },
     enabled: !!projectId,
   });
