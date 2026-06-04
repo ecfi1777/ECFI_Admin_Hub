@@ -24,9 +24,17 @@ interface ProjectPLTabProps {
   readOnly?: boolean;
 }
 
+interface StoneLineLite {
+  supplier_name: string | null;
+  invoice_number: string | null;
+  invoice_amount: number | null;
+  tons_billed: number | null;
+}
+
 interface VendorEntry {
   pl_section: string | null;
   phase_type: string | null;
+  phase_name: string | null;
   ready_mix_invoice_amount: number | null;
   stone_invoice_amount: number | null;
   pump_invoice_amount: number | null;
@@ -34,6 +42,8 @@ interface VendorEntry {
   sub_will_invoice: boolean;
   sub_invoice_amount: number | null;
   crew_name: string | null;
+  stone_lines: StoneLineLite[];
+  stone_total: number;
 }
 
 
@@ -46,6 +56,16 @@ interface OtherCost {
   amount: number;
   display_order: number;
 }
+
+interface MaterialsCost {
+  id: string;
+  pl_section: string;
+  description: string;
+  vendor: string | null;
+  amount: number;
+  display_order: number;
+}
+
 
 interface RevenueRow {
   id: string;
@@ -107,24 +127,45 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
           inspection_amount,
           sub_will_invoice,
           sub_invoice_amount,
-          phases(pl_section, phase_type),
-          crews(name, is_subcontractor)
+          phases(pl_section, phase_type, name),
+          crews(name, is_subcontractor),
+          stone_lines:schedule_entry_stone_lines(
+            invoice_amount,
+            invoice_number,
+            tons_billed,
+            suppliers:stone_suppliers!supplier_id(name)
+          )
         `)
         .eq("project_id", projectId)
         .eq("deleted", false)
         .eq("is_cancelled", false);
       if (error) throw error;
-      return (data || []).map((d: any) => ({
-        pl_section: d.phases?.pl_section ?? null,
-        phase_type: d.phases?.phase_type ?? null,
-        ready_mix_invoice_amount: d.ready_mix_invoice_amount,
-        stone_invoice_amount: d.stone_invoice_amount,
-        pump_invoice_amount: d.pump_invoice_amount,
-        inspection_amount: d.inspection_amount,
-        sub_will_invoice: !!d.sub_will_invoice && !!d.crews?.is_subcontractor,
-        sub_invoice_amount: d.sub_invoice_amount,
-        crew_name: d.crews?.name ?? null,
-      })) as VendorEntry[];
+      return (data || []).map((d: any) => {
+        const lines: StoneLineLite[] = (d.stone_lines ?? []).map((l: any) => ({
+          supplier_name: l.suppliers?.name ?? null,
+          invoice_number: l.invoice_number ?? null,
+          invoice_amount: l.invoice_amount ?? null,
+          tons_billed: l.tons_billed ?? null,
+        }));
+        // Prefer summing stone_lines (multi-supplier). Fall back to legacy single column when no lines.
+        const stoneFromLines = lines.reduce((s, l) => s + (l.invoice_amount || 0), 0);
+        const stone_total = lines.length > 0 ? stoneFromLines : (d.stone_invoice_amount || 0);
+        return {
+          pl_section: d.phases?.pl_section ?? null,
+          phase_type: d.phases?.phase_type ?? null,
+          phase_name: d.phases?.name ?? null,
+          ready_mix_invoice_amount: d.ready_mix_invoice_amount,
+          stone_invoice_amount: d.stone_invoice_amount,
+          pump_invoice_amount: d.pump_invoice_amount,
+          inspection_amount: d.inspection_amount,
+          sub_will_invoice: !!d.sub_will_invoice && !!d.crews?.is_subcontractor,
+          sub_invoice_amount: d.sub_invoice_amount,
+          crew_name: d.crews?.name ?? null,
+          stone_lines: lines,
+          stone_total,
+        } as VendorEntry;
+      });
+
     },
     enabled: !!projectId,
   });
@@ -218,6 +259,24 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
     enabled: !!projectId,
   });
 
+  // ── Materials costs ──
+  const { data: materialsCosts = [] } = useQuery({
+    queryKey: ["pl-materials-costs", projectId],
+    queryFn: async () => {
+      if (!projectId) return [];
+      const { data, error } = await supabase
+        .from("project_materials_costs")
+        .select("*")
+        .eq("project_id", projectId)
+        .order("display_order")
+        .order("created_at");
+      if (error) throw error;
+      return data as MaterialsCost[];
+    },
+    enabled: !!projectId,
+  });
+
+
   // ── Revenue ──
   const { data: revenueRows = [] } = useQuery({
     queryKey: ["pl-revenue", projectId],
@@ -245,15 +304,43 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
     const concrete_wall = matching
       .filter((e) => e.phase_type === "wall")
       .reduce((s, e) => s + (e.ready_mix_invoice_amount || 0), 0);
-    const concrete_other = matching
-      .filter((e) => e.phase_type !== "footing" && e.phase_type !== "wall")
+    const concrete_slab = matching
+      .filter((e) => e.phase_type === "slab")
       .reduce((s, e) => s + (e.ready_mix_invoice_amount || 0), 0);
+    const concrete_other = matching
+      .filter((e) => e.phase_type !== "footing" && e.phase_type !== "wall" && e.phase_type !== "slab")
+      .reduce((s, e) => s + (e.ready_mix_invoice_amount || 0), 0);
+    // Stone deliveries (multi-supplier aware via stone_lines)
+    const stoneEntries = matching.filter((e) => e.stone_total > 0);
+    const stoneDeliveries = matching.flatMap((e) =>
+      e.stone_lines.length > 0
+        ? e.stone_lines
+            .filter((l) => (l.invoice_amount || 0) > 0 || (l.tons_billed || 0) > 0)
+            .map((l) => ({
+              supplier_name: l.supplier_name,
+              invoice_number: l.invoice_number,
+              invoice_amount: l.invoice_amount,
+              tons_billed: l.tons_billed,
+              phase_name: e.phase_name,
+            }))
+        : (e.stone_invoice_amount || 0) > 0
+        ? [{
+            supplier_name: null,
+            invoice_number: null,
+            invoice_amount: e.stone_invoice_amount,
+            tons_billed: null,
+            phase_name: e.phase_name,
+          }]
+        : []
+    );
     return {
       concrete: matching.reduce((s, e) => s + (e.ready_mix_invoice_amount || 0), 0),
       concrete_footing,
       concrete_wall,
+      concrete_slab,
       concrete_other,
-      stone: matching.reduce((s, e) => s + (e.stone_invoice_amount || 0), 0),
+      stone: stoneEntries.reduce((s, e) => s + e.stone_total, 0),
+      stoneDeliveries,
       pump: matching.reduce((s, e) => s + (e.pump_invoice_amount || 0), 0),
       inspection: matching.reduce((s, e) => s + (e.inspection_amount || 0), 0),
       sub: matching
@@ -261,6 +348,7 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
         .reduce((s, e) => s + (e.sub_invoice_amount || 0), 0),
     };
   };
+
 
   // ── Aggregate labor per section from schedule entry hours ──
   const getCrewRate = (crewId: string | null) => {
@@ -299,12 +387,15 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
     const labor = aggregateLabor(section);
     const sectionOther = otherCosts.filter((c) => c.pl_section === section);
     const otherTotal = sectionOther.reduce((s, c) => s + (c.amount || 0), 0);
-    const totalCosts = vendor.concrete + vendor.stone + vendor.pump + vendor.inspection + vendor.sub + labor + otherTotal;
+    const sectionMaterials = materialsCosts.filter((c) => c.pl_section === section);
+    const materialsTotal = sectionMaterials.reduce((s, c) => s + (c.amount || 0), 0);
+    const totalCosts = vendor.concrete + vendor.stone + vendor.pump + vendor.inspection + vendor.sub + labor + otherTotal + materialsTotal;
     const rev = revenueRows.find((r) => r.section === section);
     const salesPrice = rev?.sales_price ?? null;
     const grossProfit = salesPrice != null ? salesPrice - totalCosts : null;
-    return { vendor, labor, sectionOther, otherTotal, totalCosts, salesPrice, grossProfit, rev };
+    return { vendor, labor, sectionOther, otherTotal, sectionMaterials, materialsTotal, totalCosts, salesPrice, grossProfit, rev };
   };
+
 
   const fw = buildSection("footings_walls");
   const slab = buildSection("slab");
@@ -383,16 +474,38 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
 // Section Card
 // ────────────────────────────────────────────────────────────────
 
+interface StoneDelivery {
+  supplier_name: string | null;
+  invoice_number: string | null;
+  invoice_amount: number | null;
+  tons_billed: number | null;
+  phase_name: string | null;
+}
+
 interface SectionData {
-  vendor: { concrete: number; concrete_footing: number; concrete_wall: number; concrete_other: number; stone: number; pump: number; inspection: number; sub: number };
+  vendor: {
+    concrete: number;
+    concrete_footing: number;
+    concrete_wall: number;
+    concrete_slab: number;
+    concrete_other: number;
+    stone: number;
+    stoneDeliveries: StoneDelivery[];
+    pump: number;
+    inspection: number;
+    sub: number;
+  };
   labor: number;
   sectionOther: OtherCost[];
   otherTotal: number;
+  sectionMaterials: MaterialsCost[];
+  materialsTotal: number;
   totalCosts: number;
   salesPrice: number | null;
   grossProfit: number | null;
   rev: RevenueRow | undefined;
 }
+
 
 interface SectionCardProps {
   section: Section;
@@ -458,12 +571,29 @@ function SectionCard({
                   )}
                 </>
               ) : (
-                <CostLine label="Concrete" amount={data.vendor.concrete} />
+                <>
+                  {data.vendor.concrete_slab > 0 && (
+                    <CostLine label="Slab Pour — Concrete" amount={data.vendor.concrete_slab} />
+                  )}
+                  {data.vendor.concrete_other > 0 && (
+                    <CostLine label="Other Slab Concrete" amount={data.vendor.concrete_other} />
+                  )}
+                  {data.vendor.concrete_slab === 0 && data.vendor.concrete_other === 0 && data.vendor.concrete > 0 && (
+                    <CostLine label="Concrete" amount={data.vendor.concrete} />
+                  )}
+                </>
               )}
-              {data.vendor.stone > 0 && <CostLine label="Stone / Gravel" amount={data.vendor.stone} />}
+              {data.vendor.stone > 0 && (
+                <StoneCostLine
+                  label={section === "slab" ? "Stone (Prep Slabs)" : "Stone / Gravel"}
+                  amount={data.vendor.stone}
+                  deliveries={data.vendor.stoneDeliveries}
+                />
+              )}
               {data.vendor.pump > 0 && <CostLine label="Pump" amount={data.vendor.pump} />}
               {data.vendor.inspection > 0 && <CostLine label="Inspection" amount={data.vendor.inspection} />}
               {data.vendor.sub > 0 && <CostLine label="Sub Labor" amount={data.vendor.sub} />}
+
               {/* Labor */}
               <div className="flex items-start justify-between py-1 text-sm">
                 <div>
@@ -573,6 +703,16 @@ function SectionCard({
               </div>
             </div>
 
+            {/* Materials */}
+            <MaterialsCostsSection
+              section={section}
+              projectId={projectId}
+              organizationId={organizationId}
+              costs={data.sectionMaterials}
+              readOnly={readOnly}
+              queryClient={queryClient}
+            />
+
             {/* Other Costs */}
             <OtherCostsSection
               section={section}
@@ -582,6 +722,7 @@ function SectionCard({
               readOnly={readOnly}
               queryClient={queryClient}
             />
+
 
             {/* Totals */}
             <div className="border-t border-border pt-2 space-y-1">
@@ -916,3 +1057,230 @@ function OtherCostRow({
     </div>
   );
 }
+
+// ────────────────────────────────────────────────────────────────
+// Stone Cost Line (expandable)
+// ────────────────────────────────────────────────────────────────
+
+function StoneCostLine({
+  label,
+  amount,
+  deliveries,
+}: {
+  label: string;
+  amount: number;
+  deliveries: StoneDelivery[];
+}) {
+  const [open, setOpen] = useState(false);
+  const hasDetails = deliveries.length > 0;
+  return (
+    <div className="space-y-0.5">
+      <div className="flex justify-between text-sm items-center">
+        {hasDetails ? (
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            className="flex items-center gap-1 text-muted-foreground hover:text-foreground"
+          >
+            {open ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+            <span>{label}</span>
+            <span className="text-xs opacity-70">({deliveries.length})</span>
+          </button>
+        ) : (
+          <span className="text-muted-foreground">{label}</span>
+        )}
+        <span className={amount > 0 ? "text-foreground" : "text-muted-foreground"}>{fmt(amount)}</span>
+      </div>
+      {open && hasDetails && (
+        <div className="pl-5 space-y-0.5 border-l border-border ml-1">
+          {deliveries.map((d, i) => (
+            <div key={i} className="flex justify-between text-xs text-muted-foreground">
+              <span className="truncate">
+                {d.supplier_name ?? "—"}
+                {d.tons_billed != null && d.tons_billed > 0 ? ` · ${d.tons_billed} tons` : ""}
+                {d.invoice_number ? ` · inv ${d.invoice_number}` : ""}
+                {d.phase_name ? ` · ${d.phase_name}` : ""}
+              </span>
+              <span>{fmt(d.invoice_amount)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────
+// Materials Costs Section
+// ────────────────────────────────────────────────────────────────
+
+function MaterialsCostsSection({
+  section,
+  projectId,
+  organizationId,
+  costs,
+  readOnly,
+  queryClient,
+}: {
+  section: Section;
+  projectId: string | null;
+  organizationId: string | null;
+  costs: MaterialsCost[];
+  readOnly: boolean;
+  queryClient: ReturnType<typeof useQueryClient>;
+}) {
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["pl-materials-costs", projectId] });
+
+  const addMutation = useMutation({
+    mutationFn: async () => {
+      if (!projectId || !organizationId) throw new Error("Missing context");
+      const { error } = await supabase.from("project_materials_costs").insert({
+        organization_id: organizationId,
+        project_id: projectId,
+        pl_section: section,
+        description: "New material",
+        vendor: null,
+        amount: 0,
+        display_order: costs.length,
+      } as any);
+      if (error) throw error;
+    },
+    onSuccess: invalidate,
+    onError: (e: Error) => toast.error(getUserFriendlyError(e)),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("project_materials_costs").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      invalidate();
+      toast.success("Material removed");
+    },
+    onError: (e: Error) => toast.error(getUserFriendlyError(e)),
+  });
+
+  const updateCost = async (id: string, updates: Partial<MaterialsCost>) => {
+    const { error } = await supabase
+      .from("project_materials_costs")
+      .update(updates as any)
+      .eq("id", id);
+    if (error) {
+      toast.error(getUserFriendlyError(error));
+    } else {
+      invalidate();
+    }
+  };
+
+  return (
+    <div className="space-y-1">
+      <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Materials</h4>
+      {costs.map((cost) => (
+        <MaterialsCostRow
+          key={cost.id}
+          cost={cost}
+          readOnly={readOnly}
+          onUpdate={updateCost}
+          onDelete={() => deleteMutation.mutate(cost.id)}
+        />
+      ))}
+      {costs.length === 0 && (
+        <p className="text-xs text-muted-foreground">No materials.</p>
+      )}
+      {!readOnly && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => addMutation.mutate()}
+          disabled={addMutation.isPending}
+          className="text-muted-foreground"
+        >
+          <Plus className="w-3 h-3 mr-1" />
+          Add Material
+        </Button>
+      )}
+    </div>
+  );
+}
+
+function MaterialsCostRow({
+  cost,
+  readOnly,
+  onUpdate,
+  onDelete,
+}: {
+  cost: MaterialsCost;
+  readOnly: boolean;
+  onUpdate: (id: string, updates: Partial<MaterialsCost>) => void;
+  onDelete: () => void;
+}) {
+  const [desc, setDesc] = useState(cost.description);
+  const [vendor, setVendor] = useState(cost.vendor ?? "");
+  const [amount, setAmount] = useState(cost.amount?.toString() ?? "0");
+
+  useEffect(() => {
+    setDesc(cost.description);
+    setVendor(cost.vendor ?? "");
+    setAmount(cost.amount?.toString() ?? "0");
+  }, [cost]);
+
+  return (
+    <div className="flex items-center gap-2">
+      {readOnly ? (
+        <>
+          <span className="flex-1 text-sm text-muted-foreground">
+            {cost.description}
+            {cost.vendor ? <span className="text-xs ml-2 opacity-70">({cost.vendor})</span> : null}
+          </span>
+          <span className="text-sm text-foreground">{fmt(cost.amount)}</span>
+        </>
+      ) : (
+        <>
+          <Input
+            value={desc}
+            onChange={(e) => setDesc(e.target.value)}
+            onBlur={() => {
+              if (desc !== cost.description) onUpdate(cost.id, { description: desc });
+            }}
+            className="flex-1 h-7 text-sm"
+            placeholder="Description"
+          />
+          <Input
+            value={vendor}
+            onChange={(e) => setVendor(e.target.value)}
+            onBlur={() => {
+              const v = vendor.trim() || null;
+              if (v !== (cost.vendor ?? null)) onUpdate(cost.id, { vendor: v });
+            }}
+            className="w-32 h-7 text-sm"
+            placeholder="Vendor"
+          />
+          <div className="relative w-24">
+            <DollarSign className="absolute left-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
+            <Input
+              type="number"
+              step="0.01"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              onBlur={() => {
+                const n = parseFloat(amount) || 0;
+                if (n !== cost.amount) onUpdate(cost.id, { amount: n });
+              }}
+              className="h-7 text-sm pl-5"
+            />
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-muted-foreground hover:text-destructive"
+            onClick={onDelete}
+          >
+            <Trash2 className="w-3 h-3" />
+          </Button>
+        </>
+      )}
+    </div>
+  );
+}
+
