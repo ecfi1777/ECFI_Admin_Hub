@@ -703,6 +703,16 @@ function SectionCard({
               </div>
             </div>
 
+            {/* Materials */}
+            <MaterialsCostsSection
+              section={section}
+              projectId={projectId}
+              organizationId={organizationId}
+              costs={data.sectionMaterials}
+              readOnly={readOnly}
+              queryClient={queryClient}
+            />
+
             {/* Other Costs */}
             <OtherCostsSection
               section={section}
@@ -712,6 +722,7 @@ function SectionCard({
               readOnly={readOnly}
               queryClient={queryClient}
             />
+
 
             {/* Totals */}
             <div className="border-t border-border pt-2 space-y-1">
