@@ -153,7 +153,7 @@ export function StoneTab({
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
-              Basement &amp; Garage rolls into the Slab P&amp;L. Exterior rolls into Footings &amp; Walls P&amp;L.
+              Interior Slab Stone rolls into the Interior Slabs P&amp;L card. Exterior Slab Stone rolls into the Exterior Slabs P&amp;L card.
             </p>
           </div>
 
