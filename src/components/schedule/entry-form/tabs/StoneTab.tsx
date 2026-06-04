@@ -1,7 +1,7 @@
 /**
  * Stone tab for entry form — supports MULTIPLE stone suppliers per entry.
  * Each "line" is one supplier + type + qty/invoice/tons/notes + a required
- * P&L Category (Basement & Garage Stone | Exterior Stone) that drives which
+ * P&L Category (Interior Slab Stone | Exterior Slab Stone) that drives which
  * Project P&L card the cost rolls into.
  */
 
