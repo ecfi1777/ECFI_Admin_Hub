@@ -22,7 +22,9 @@ interface ReferenceItem {
 
 const PL_SECTION_CONFIG: Record<string, { label: string; badge: string; variant: string }> = {
   footings_walls: { label: "Footings & Walls", badge: "F&W", variant: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200" },
-  slab: { label: "Slab", badge: "Slab", variant: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" },
+  interior_slab: { label: "Interior Slabs", badge: "Int Slab", variant: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" },
+  exterior_slab: { label: "Exterior Slabs", badge: "Ext Slab", variant: "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200" },
+  slab: { label: "Slab (legacy)", badge: "Slab", variant: "bg-muted text-muted-foreground" },
   both: { label: "Both", badge: "Both", variant: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200" },
   overhead: { label: "Overhead / Other", badge: "OH", variant: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200" },
 };
