@@ -34,8 +34,8 @@ interface StoneTabProps {
 }
 
 const CATEGORY_OPTIONS: { value: Exclude<StonePlCategory, "">; label: string }[] = [
-  { value: "basement_garage", label: "Basement & Garage Stone" },
-  { value: "exterior", label: "Exterior Stone" },
+  { value: "basement_garage", label: "Interior Slab Stone" },
+  { value: "exterior", label: "Exterior Slab Stone" },
 ];
 
 const emptyLine = (defaultPlCategory: StonePlCategory): StoneLineFormValue => ({
