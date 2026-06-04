@@ -140,7 +140,7 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
         .filter(l => !l.id && !isEmpty(l))
         .map((l, idx) => ({
           schedule_entry_id: entry.id,
-          organization_id: entry.organization_id,
+          organization_id: (fullEntry as any)?.organization_id ?? (fullEntry as any)?.projects?.organization_id ?? (entry as any).organization_id,
           supplier_id: l.supplier_id || null,
           stone_type_id: l.stone_type_id || null,
           pl_category: l.pl_category || "exterior",
