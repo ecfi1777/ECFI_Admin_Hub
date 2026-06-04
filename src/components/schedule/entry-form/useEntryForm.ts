@@ -11,9 +11,10 @@ interface UseEntryFormOptions {
   initialValues?: Partial<EntryFormValues>;
 }
 
-const emptyStoneLine = (): StoneLineFormValue => ({
+const emptyStoneLine = (defaultPlCategory: StoneLineFormValue["pl_category"] = ""): StoneLineFormValue => ({
   supplier_id: "",
   stone_type_id: "",
+  pl_category: defaultPlCategory,
   qty_ordered: "",
   order_number: "",
   invoice_number: "",
