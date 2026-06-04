@@ -175,7 +175,8 @@ export function SortableReferenceRow({
           <SelectContent>
             <SelectItem value="__unset__">— Not set —</SelectItem>
             <SelectItem value="footings_walls">Footings & Walls</SelectItem>
-            <SelectItem value="slab">Slab</SelectItem>
+            <SelectItem value="interior_slab">Interior Slabs</SelectItem>
+            <SelectItem value="exterior_slab">Exterior Slabs</SelectItem>
             <SelectItem value="both">Both</SelectItem>
             <SelectItem value="overhead">Overhead / Other</SelectItem>
           </SelectContent>
