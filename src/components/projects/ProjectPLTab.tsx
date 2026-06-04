@@ -294,6 +294,11 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
   });
 
   // ── Aggregate vendor costs per section ──
+  // Stone is bucketed by pl_category (independent of phase), so each card pulls
+  // from ALL entries on the project, filtered by category:
+  //   - footings_walls → no stone on this card
+  //   - interior_slab  → stone lines with pl_category = 'basement_garage'
+  //   - exterior_slab  → stone lines with pl_category = 'exterior'
   const aggregateVendor = (section: Section) => {
     const matching = vendorEntries.filter((e) => {
       if (!e.pl_section) return false;
@@ -311,17 +316,21 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
     const concrete_other = matching
       .filter((e) => e.phase_type !== "footing" && e.phase_type !== "wall" && e.phase_type !== "slab")
       .reduce((s, e) => s + (e.ready_mix_invoice_amount || 0), 0);
-    // Stone deliveries are bucketed by pl_category (not phase): basement_garage → slab card,
-    // exterior → footings_walls card. Pull from ALL entries on the project, not just the
-    // phase-matching ones, so a stone delivery on a slab-pour or footing day still lands
-    // in the right P&L card based on its category.
-    const wantedCategory: "basement_garage" | "exterior" =
-      section === "slab" ? "basement_garage" : "exterior";
-    const stoneDeliveries = vendorEntries.flatMap((e) =>
+
+    // Stone routing by category. F&W card gets no stone now.
+    const wantedCategory: "basement_garage" | "exterior" | null =
+      section === "interior_slab" ? "basement_garage" :
+      section === "exterior_slab" ? "exterior" : null;
+    const stoneDeliveries = wantedCategory == null ? [] : vendorEntries.flatMap((e) =>
       e.stone_lines
         .filter((l) => {
           // Lines without a category fall back to phase-based bucketing for back-compat
-          const cat = l.pl_category ?? (e.phase_type === "slab" || (e.phase_name ?? "").toLowerCase().includes("slab") ? "basement_garage" : "exterior");
+          const cat = l.pl_category ?? (
+            e.pl_section === "interior_slab" || e.phase_type === "slab" ||
+            (e.phase_name ?? "").toLowerCase().includes("slab")
+              ? "basement_garage"
+              : "exterior"
+          );
           return cat === wantedCategory && ((l.invoice_amount || 0) > 0 || (l.tons_billed || 0) > 0);
         })
         .map((l) => ({
