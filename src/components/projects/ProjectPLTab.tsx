@@ -133,6 +133,7 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
             invoice_amount,
             invoice_number,
             tons_billed,
+            pl_category,
             suppliers:stone_suppliers!supplier_id(name)
           )
         `)
@@ -146,10 +147,8 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
           invoice_number: l.invoice_number ?? null,
           invoice_amount: l.invoice_amount ?? null,
           tons_billed: l.tons_billed ?? null,
+          pl_category: (l.pl_category as "basement_garage" | "exterior" | null) ?? null,
         }));
-        // Prefer summing stone_lines (multi-supplier). Fall back to legacy single column when no lines.
-        const stoneFromLines = lines.reduce((s, l) => s + (l.invoice_amount || 0), 0);
-        const stone_total = lines.length > 0 ? stoneFromLines : (d.stone_invoice_amount || 0);
         return {
           pl_section: d.phases?.pl_section ?? null,
           phase_type: d.phases?.phase_type ?? null,
@@ -162,7 +161,6 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
           sub_invoice_amount: d.sub_invoice_amount,
           crew_name: d.crews?.name ?? null,
           stone_lines: lines,
-          stone_total,
         } as VendorEntry;
       });
 
