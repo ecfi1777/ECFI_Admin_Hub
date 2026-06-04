@@ -1434,6 +1434,7 @@ export type Database = {
           notes: string | null
           order_number: string | null
           organization_id: string
+          pl_category: string
           qty_ordered: string | null
           schedule_entry_id: string
           stone_type_id: string | null
@@ -1450,6 +1451,7 @@ export type Database = {
           notes?: string | null
           order_number?: string | null
           organization_id: string
+          pl_category?: string
           qty_ordered?: string | null
           schedule_entry_id: string
           stone_type_id?: string | null
@@ -1466,6 +1468,7 @@ export type Database = {
           notes?: string | null
           order_number?: string | null
           organization_id?: string
+          pl_category?: string
           qty_ordered?: string | null
           schedule_entry_id?: string
           stone_type_id?: string | null
