@@ -407,13 +407,16 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
   };
 
 
-  const fw = buildSection("footings_walls");
-  const slab = buildSection("slab");
+  const sectionData: Record<Section, ReturnType<typeof buildSection>> = {
+    footings_walls: buildSection("footings_walls"),
+    interior_slab: buildSection("interior_slab"),
+    exterior_slab: buildSection("exterior_slab"),
+  };
 
-  const combinedSales = (fw.salesPrice ?? 0) + (slab.salesPrice ?? 0);
-  const combinedCosts = fw.totalCosts + slab.totalCosts;
+  const combinedSales = SECTIONS.reduce((s, sec) => s + (sectionData[sec].salesPrice ?? 0), 0);
+  const combinedCosts = SECTIONS.reduce((s, sec) => s + sectionData[sec].totalCosts, 0);
   const combinedProfit = combinedSales - combinedCosts;
-  const hasCombinedRevenue = (fw.salesPrice ?? 0) > 0 || (slab.salesPrice ?? 0) > 0;
+  const hasCombinedRevenue = SECTIONS.some((sec) => (sectionData[sec].salesPrice ?? 0) > 0);
 
   return (
     <div className="space-y-4">
@@ -432,8 +435,8 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
       )}
 
       {/* Section Cards */}
-      {(["footings_walls", "slab"] as Section[]).map((section) => {
-        const data = section === "footings_walls" ? fw : slab;
+      {SECTIONS.map((section) => {
+        const data = sectionData[section];
         const { totalHours, count } = getLaborHoursSummary(section);
         const overrideEntry = scheduleEntries.find((e: any) => {
           const s = e.phases?.pl_section;
@@ -457,6 +460,7 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
           />
         );
       })}
+
 
       {/* Overall Totals */}
       <div className="bg-card border border-border rounded-lg p-4 space-y-2">
