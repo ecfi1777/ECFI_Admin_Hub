@@ -88,6 +88,7 @@ export function useEntryForm(options: UseEntryFormOptions = {}) {
       stoneLines = [{
         supplier_id: legacyStoneId || "",
         stone_type_id: (entry as any).stone_type_id || "",
+        pl_category: "",
         qty_ordered: entry.qty_ordered || "",
         order_number: entry.order_number || "",
         invoice_number: (entry as any).stone_invoice_number || "",
