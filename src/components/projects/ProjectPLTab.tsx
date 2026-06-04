@@ -24,9 +24,17 @@ interface ProjectPLTabProps {
   readOnly?: boolean;
 }
 
+interface StoneLineLite {
+  supplier_name: string | null;
+  invoice_number: string | null;
+  invoice_amount: number | null;
+  tons_billed: number | null;
+}
+
 interface VendorEntry {
   pl_section: string | null;
   phase_type: string | null;
+  phase_name: string | null;
   ready_mix_invoice_amount: number | null;
   stone_invoice_amount: number | null;
   pump_invoice_amount: number | null;
@@ -34,6 +42,8 @@ interface VendorEntry {
   sub_will_invoice: boolean;
   sub_invoice_amount: number | null;
   crew_name: string | null;
+  stone_lines: StoneLineLite[];
+  stone_total: number;
 }
 
 
@@ -46,6 +56,16 @@ interface OtherCost {
   amount: number;
   display_order: number;
 }
+
+interface MaterialsCost {
+  id: string;
+  pl_section: string;
+  description: string;
+  vendor: string | null;
+  amount: number;
+  display_order: number;
+}
+
 
 interface RevenueRow {
   id: string;
