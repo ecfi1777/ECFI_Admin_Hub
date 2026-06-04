@@ -1,47 +1,33 @@
-## Slab P&L Enhancements
+## Add Stone Category (Basement & Garage / Exterior) to drive P&L mapping
 
-The Project → P&L tab already has a "Slab" card next to "Footings & Walls". This plan upgrades it so every slab-related cost (especially stone) flows through correctly, is broken out by phase, and leaves room for materials you'll add later.
+### What changes
 
-### 1. Fix multi-supplier stone aggregation
-Today the P&L reads `schedule_entries.stone_invoice_amount`, which only mirrors line 1 of a multi-supplier entry. Switch the Slab (and F&W) aggregator to sum **all** rows in `schedule_entry_stone_lines` for the entries in scope, falling back to the legacy column when no lines exist (older entries).
+1. **New required field on every stone line:** **Category** — a two-option toggle/select:
+   - **Basement & Garage Stone**
+   - **Exterior Stone**
 
-### 2. Phase-type breakdown for the Slab card
-Mirror what F&W does. Slab costs will be split into named lines based on the entry's `phases.phase_type`:
+2. **Stone Type becomes optional** — the existing dropdown (Recycled 57's, CR6, Washed 3/4 Gravel, Blue 57) stays, but is no longer required. Category is what drives P&L.
 
-```text
-Slab
-├─ Prep Slabs — Stone           $ ...   (sum of stone lines on prep-slab phase entries)
-├─ Slab Pour — Concrete         $ ...   (ready_mix on slab-pour phase entries)
-├─ Slab Pour — Pump             $ ...
-├─ Other Slab Concrete          $ ...   (if phase_type is neither)
-├─ Inspection                   $ ...
-├─ Sub Labor                    $ ...   (single rolled-up line, as today)
-├─ Labor                        $ ...   (existing crew-hours × rate logic)
-├─ Materials   ◄── NEW          $ ...
-└─ Other Costs (existing)       $ ...
-```
+3. **P&L mapping driven by Category (not phase):**
+   - **Basement & Garage Stone** → rolls into the **Slab** P&L card.
+   - **Exterior Stone** → rolls into the **Footings & Walls** P&L card.
+   - This replaces the current phase-based stone bucketing (Prep Slabs → Slab, Prep Footings → F&W, off-phase → "Other …"). The "Other Slab Stone" / "Other F&W Stone" lines go away — every stone line lands in exactly one card based on its category.
 
-Lines with $0 stay hidden, same convention as F&W.
+4. **Stone tab in entry form (Add & Edit dialogs):** each supplier line gets a Category selector at the top of the line, with a sensible default based on phase (Prep Slabs / Slab Pour default → Basement & Garage; Prep Footings / Footing / Wall Pour default → Exterior). User can override per line. Saving requires Category set.
 
-### 3. Itemized stone deliveries (expandable)
-Under the "Prep Slabs — Stone" line, add a small expandable list showing each delivery: `Supplier · tons · invoice # · $amount`. Read-only display sourced from `schedule_entry_stone_lines` joined to `suppliers`. Collapsed by default so the card stays compact.
+5. **Vendor Bills:** unchanged — stone still surfaces under the Stone filter. Category will be shown as a small label next to the stone line so you can tell at a glance which P&L it hits.
 
-### 4. New "Materials" cost section
-A new repeating cost block per P&L section (like Other Costs) for things like rebar, vapor barrier, finishing materials, equipment rental, etc. Each row: description, vendor (optional free text), amount. Editable inline; deletable; included in Total Costs.
+6. **Itemized Stone deliveries in P&L:** the expandable list under the stone row will show Supplier · Tons · Invoice # · **Category**.
 
-**Schema:** new table `public.project_materials_costs` with columns `project_id`, `organization_id`, `pl_section` (`footings_walls` | `slab`), `description`, `vendor` (nullable text), `amount`, `display_order`, timestamps. Org-scoped RLS mirroring `project_other_costs`, plus the required GRANTs.
+### Technical details
 
-Because it's added to both sections, you'll automatically get a Materials line on Footings & Walls too — let me know if you'd rather restrict it to Slab.
+- Migration: add `pl_category text` to `schedule_entry_stone_lines` (values `basement_garage` | `exterior`), nullable for now, plus a validation trigger. Backfill existing rows from phase (Prep Slabs / slab_pour → `basement_garage`; everything else → `exterior`). After backfill, mark NOT NULL.
+- `ProjectPLTab.tsx`: replace phase-keyed stone aggregation with category-keyed aggregation across all entries on the project.
+- `StoneTab.tsx`: add Category selector per line, default from phase, mark required.
+- `AddEntryDialog` / `EditEntryDialog`: pass current phase to StoneTab so it can default the category; include `pl_category` in save payloads.
+- `types.ts` (form values) + `useEntryForm.ts`: add `pl_category` to `StoneLineFormValue`.
 
-### 5. Touch points
-- `src/components/projects/ProjectPLTab.tsx` — query change for stone lines, phase-type aggregation for slab, new "Materials" subcomponent, render itemized stone breakdown.
-- New `ProjectMaterialsCostsSection` component (kept under 300 lines, parent fetches data).
-- One migration for `project_materials_costs`.
+### Out of scope (confirm if you want it)
 
-### What stays the same
-- Sub Labor remains one rolled-up line per section (per your choice).
-- Vendor Bills, Discrepancies, Daily Schedule UI: unchanged.
-- F&W card: gains the multi-stone fix and a Materials line, otherwise unchanged.
-
-### Open question (won't block)
-The slab card's stone breakdown assumes "Prep Slabs" is the phase_type used for stone deliveries on slabs. If you also do stone on other slab phases, I'll roll them under "Other Slab Stone" the same way F&W handles "Other F&W Concrete".
+- No new Settings page — the two categories are hard-coded (you said only two, ever). If later you want them editable, we'd promote to a reference-data table.
+- Stone Types reference list stays as-is.

@@ -29,6 +29,7 @@ interface StoneLineLite {
   invoice_number: string | null;
   invoice_amount: number | null;
   tons_billed: number | null;
+  pl_category: "basement_garage" | "exterior" | null;
 }
 
 interface VendorEntry {
@@ -43,7 +44,6 @@ interface VendorEntry {
   sub_invoice_amount: number | null;
   crew_name: string | null;
   stone_lines: StoneLineLite[];
-  stone_total: number;
 }
 
 
@@ -133,6 +133,7 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
             invoice_amount,
             invoice_number,
             tons_billed,
+            pl_category,
             suppliers:stone_suppliers!supplier_id(name)
           )
         `)
@@ -146,10 +147,8 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
           invoice_number: l.invoice_number ?? null,
           invoice_amount: l.invoice_amount ?? null,
           tons_billed: l.tons_billed ?? null,
+          pl_category: (l.pl_category as "basement_garage" | "exterior" | null) ?? null,
         }));
-        // Prefer summing stone_lines (multi-supplier). Fall back to legacy single column when no lines.
-        const stoneFromLines = lines.reduce((s, l) => s + (l.invoice_amount || 0), 0);
-        const stone_total = lines.length > 0 ? stoneFromLines : (d.stone_invoice_amount || 0);
         return {
           pl_section: d.phases?.pl_section ?? null,
           phase_type: d.phases?.phase_type ?? null,
@@ -162,7 +161,6 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
           sub_invoice_amount: d.sub_invoice_amount,
           crew_name: d.crews?.name ?? null,
           stone_lines: lines,
-          stone_total,
         } as VendorEntry;
       });
 
@@ -310,36 +308,36 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
     const concrete_other = matching
       .filter((e) => e.phase_type !== "footing" && e.phase_type !== "wall" && e.phase_type !== "slab")
       .reduce((s, e) => s + (e.ready_mix_invoice_amount || 0), 0);
-    // Stone deliveries (multi-supplier aware via stone_lines)
-    const stoneEntries = matching.filter((e) => e.stone_total > 0);
-    const stoneDeliveries = matching.flatMap((e) =>
-      e.stone_lines.length > 0
-        ? e.stone_lines
-            .filter((l) => (l.invoice_amount || 0) > 0 || (l.tons_billed || 0) > 0)
-            .map((l) => ({
-              supplier_name: l.supplier_name,
-              invoice_number: l.invoice_number,
-              invoice_amount: l.invoice_amount,
-              tons_billed: l.tons_billed,
-              phase_name: e.phase_name,
-            }))
-        : (e.stone_invoice_amount || 0) > 0
-        ? [{
-            supplier_name: null,
-            invoice_number: null,
-            invoice_amount: e.stone_invoice_amount,
-            tons_billed: null,
-            phase_name: e.phase_name,
-          }]
-        : []
+    // Stone deliveries are bucketed by pl_category (not phase): basement_garage → slab card,
+    // exterior → footings_walls card. Pull from ALL entries on the project, not just the
+    // phase-matching ones, so a stone delivery on a slab-pour or footing day still lands
+    // in the right P&L card based on its category.
+    const wantedCategory: "basement_garage" | "exterior" =
+      section === "slab" ? "basement_garage" : "exterior";
+    const stoneDeliveries = vendorEntries.flatMap((e) =>
+      e.stone_lines
+        .filter((l) => {
+          // Lines without a category fall back to phase-based bucketing for back-compat
+          const cat = l.pl_category ?? (e.phase_type === "slab" || (e.phase_name ?? "").toLowerCase().includes("slab") ? "basement_garage" : "exterior");
+          return cat === wantedCategory && ((l.invoice_amount || 0) > 0 || (l.tons_billed || 0) > 0);
+        })
+        .map((l) => ({
+          supplier_name: l.supplier_name,
+          invoice_number: l.invoice_number,
+          invoice_amount: l.invoice_amount,
+          tons_billed: l.tons_billed,
+          phase_name: e.phase_name,
+          pl_category: l.pl_category ?? null,
+        }))
     );
+    const stoneTotal = stoneDeliveries.reduce((s, d) => s + (d.invoice_amount || 0), 0);
     return {
       concrete: matching.reduce((s, e) => s + (e.ready_mix_invoice_amount || 0), 0),
       concrete_footing,
       concrete_wall,
       concrete_slab,
       concrete_other,
-      stone: stoneEntries.reduce((s, e) => s + e.stone_total, 0),
+      stone: stoneTotal,
       stoneDeliveries,
       pump: matching.reduce((s, e) => s + (e.pump_invoice_amount || 0), 0),
       inspection: matching.reduce((s, e) => s + (e.inspection_amount || 0), 0),
@@ -480,6 +478,7 @@ interface StoneDelivery {
   invoice_amount: number | null;
   tons_billed: number | null;
   phase_name: string | null;
+  pl_category: "basement_garage" | "exterior" | null;
 }
 
 interface SectionData {
@@ -585,7 +584,7 @@ function SectionCard({
               )}
               {data.vendor.stone > 0 && (
                 <StoneCostLine
-                  label={section === "slab" ? "Stone (Prep Slabs)" : "Stone / Gravel"}
+                  label={section === "slab" ? "Basement & Garage Stone" : "Exterior Stone"}
                   amount={data.vendor.stone}
                   deliveries={data.vendor.stoneDeliveries}
                 />

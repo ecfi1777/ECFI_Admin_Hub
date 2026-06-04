@@ -90,7 +90,7 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
           stone_suppliers:stone_supplier_id ( id, name, code ),
           stone_types:stone_type_id ( id, name ),
           stone_lines:schedule_entry_stone_lines (
-            id, supplier_id, stone_type_id, qty_ordered, order_number,
+            id, supplier_id, stone_type_id, pl_category, qty_ordered, order_number,
             invoice_number, invoice_amount, tons_billed, notes, display_order
           )
         `)
@@ -143,6 +143,7 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
           organization_id: entry.organization_id,
           supplier_id: l.supplier_id || null,
           stone_type_id: l.stone_type_id || null,
+          pl_category: l.pl_category || "exterior",
           qty_ordered: l.qty_ordered || null,
           order_number: l.order_number || null,
           invoice_number: l.invoice_number || null,
@@ -159,6 +160,7 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
           id: l.id as string,
           supplier_id: l.supplier_id || null,
           stone_type_id: l.stone_type_id || null,
+          pl_category: l.pl_category || "exterior",
           qty_ordered: l.qty_ordered || null,
           order_number: l.order_number || null,
           invoice_number: l.invoice_number || null,
