@@ -598,9 +598,9 @@ function SectionCard({
                   )}
                 </>
               )}
-              {data.vendor.stone > 0 && (
+              {data.vendor.stone > 0 && section !== "footings_walls" && (
                 <StoneCostLine
-                  label={section === "slab" ? "Basement & Garage Stone" : "Exterior Stone"}
+                  label={section === "interior_slab" ? "Interior Slab Stone" : "Exterior Slab Stone"}
                   amount={data.vendor.stone}
                   deliveries={data.vendor.stoneDeliveries}
                 />
