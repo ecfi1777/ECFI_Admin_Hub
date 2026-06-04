@@ -259,6 +259,24 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
     enabled: !!projectId,
   });
 
+  // ── Materials costs ──
+  const { data: materialsCosts = [] } = useQuery({
+    queryKey: ["pl-materials-costs", projectId],
+    queryFn: async () => {
+      if (!projectId) return [];
+      const { data, error } = await supabase
+        .from("project_materials_costs")
+        .select("*")
+        .eq("project_id", projectId)
+        .order("display_order")
+        .order("created_at");
+      if (error) throw error;
+      return data as MaterialsCost[];
+    },
+    enabled: !!projectId,
+  });
+
+
   // ── Revenue ──
   const { data: revenueRows = [] } = useQuery({
     queryKey: ["pl-revenue", projectId],
