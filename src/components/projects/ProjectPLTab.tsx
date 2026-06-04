@@ -304,15 +304,43 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
     const concrete_wall = matching
       .filter((e) => e.phase_type === "wall")
       .reduce((s, e) => s + (e.ready_mix_invoice_amount || 0), 0);
-    const concrete_other = matching
-      .filter((e) => e.phase_type !== "footing" && e.phase_type !== "wall")
+    const concrete_slab = matching
+      .filter((e) => e.phase_type === "slab")
       .reduce((s, e) => s + (e.ready_mix_invoice_amount || 0), 0);
+    const concrete_other = matching
+      .filter((e) => e.phase_type !== "footing" && e.phase_type !== "wall" && e.phase_type !== "slab")
+      .reduce((s, e) => s + (e.ready_mix_invoice_amount || 0), 0);
+    // Stone deliveries (multi-supplier aware via stone_lines)
+    const stoneEntries = matching.filter((e) => e.stone_total > 0);
+    const stoneDeliveries = matching.flatMap((e) =>
+      e.stone_lines.length > 0
+        ? e.stone_lines
+            .filter((l) => (l.invoice_amount || 0) > 0 || (l.tons_billed || 0) > 0)
+            .map((l) => ({
+              supplier_name: l.supplier_name,
+              invoice_number: l.invoice_number,
+              invoice_amount: l.invoice_amount,
+              tons_billed: l.tons_billed,
+              phase_name: e.phase_name,
+            }))
+        : (e.stone_invoice_amount || 0) > 0
+        ? [{
+            supplier_name: null,
+            invoice_number: null,
+            invoice_amount: e.stone_invoice_amount,
+            tons_billed: null,
+            phase_name: e.phase_name,
+          }]
+        : []
+    );
     return {
       concrete: matching.reduce((s, e) => s + (e.ready_mix_invoice_amount || 0), 0),
       concrete_footing,
       concrete_wall,
+      concrete_slab,
       concrete_other,
-      stone: matching.reduce((s, e) => s + (e.stone_invoice_amount || 0), 0),
+      stone: stoneEntries.reduce((s, e) => s + e.stone_total, 0),
+      stoneDeliveries,
       pump: matching.reduce((s, e) => s + (e.pump_invoice_amount || 0), 0),
       inspection: matching.reduce((s, e) => s + (e.inspection_amount || 0), 0),
       sub: matching
@@ -320,6 +348,7 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
         .reduce((s, e) => s + (e.sub_invoice_amount || 0), 0),
     };
   };
+
 
   // ── Aggregate labor per section from schedule entry hours ──
   const getCrewRate = (crewId: string | null) => {
