@@ -474,16 +474,38 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
 // Section Card
 // ────────────────────────────────────────────────────────────────
 
+interface StoneDelivery {
+  supplier_name: string | null;
+  invoice_number: string | null;
+  invoice_amount: number | null;
+  tons_billed: number | null;
+  phase_name: string | null;
+}
+
 interface SectionData {
-  vendor: { concrete: number; concrete_footing: number; concrete_wall: number; concrete_other: number; stone: number; pump: number; inspection: number; sub: number };
+  vendor: {
+    concrete: number;
+    concrete_footing: number;
+    concrete_wall: number;
+    concrete_slab: number;
+    concrete_other: number;
+    stone: number;
+    stoneDeliveries: StoneDelivery[];
+    pump: number;
+    inspection: number;
+    sub: number;
+  };
   labor: number;
   sectionOther: OtherCost[];
   otherTotal: number;
+  sectionMaterials: MaterialsCost[];
+  materialsTotal: number;
   totalCosts: number;
   salesPrice: number | null;
   grossProfit: number | null;
   rev: RevenueRow | undefined;
 }
+
 
 interface SectionCardProps {
   section: Section;
