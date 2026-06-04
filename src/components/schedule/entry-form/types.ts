@@ -2,10 +2,13 @@
  * Shared types for entry form used by AddEntryDialog and EditEntryDialog
  */
 
+export type StonePlCategory = "basement_garage" | "exterior" | "";
+
 export interface StoneLineFormValue {
   id?: string; // present if row exists in DB
   supplier_id: string;
   stone_type_id: string;
+  pl_category: StonePlCategory; // required at save time; drives P&L bucketing
   qty_ordered: string;
   order_number: string;
   invoice_number: string;
