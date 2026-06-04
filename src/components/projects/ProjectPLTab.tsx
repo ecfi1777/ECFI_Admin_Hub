@@ -478,6 +478,7 @@ interface StoneDelivery {
   invoice_amount: number | null;
   tons_billed: number | null;
   phase_name: string | null;
+  pl_category: "basement_garage" | "exterior" | null;
 }
 
 interface SectionData {
