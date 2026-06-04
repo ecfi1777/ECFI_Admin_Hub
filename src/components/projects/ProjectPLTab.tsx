@@ -29,6 +29,7 @@ interface StoneLineLite {
   invoice_number: string | null;
   invoice_amount: number | null;
   tons_billed: number | null;
+  pl_category: "basement_garage" | "exterior" | null;
 }
 
 interface VendorEntry {
@@ -43,7 +44,6 @@ interface VendorEntry {
   sub_invoice_amount: number | null;
   crew_name: string | null;
   stone_lines: StoneLineLite[];
-  stone_total: number;
 }
 
 
