@@ -571,12 +571,29 @@ function SectionCard({
                   )}
                 </>
               ) : (
-                <CostLine label="Concrete" amount={data.vendor.concrete} />
+                <>
+                  {data.vendor.concrete_slab > 0 && (
+                    <CostLine label="Slab Pour — Concrete" amount={data.vendor.concrete_slab} />
+                  )}
+                  {data.vendor.concrete_other > 0 && (
+                    <CostLine label="Other Slab Concrete" amount={data.vendor.concrete_other} />
+                  )}
+                  {data.vendor.concrete_slab === 0 && data.vendor.concrete_other === 0 && data.vendor.concrete > 0 && (
+                    <CostLine label="Concrete" amount={data.vendor.concrete} />
+                  )}
+                </>
               )}
-              {data.vendor.stone > 0 && <CostLine label="Stone / Gravel" amount={data.vendor.stone} />}
+              {data.vendor.stone > 0 && (
+                <StoneCostLine
+                  label={section === "slab" ? "Stone (Prep Slabs)" : "Stone / Gravel"}
+                  amount={data.vendor.stone}
+                  deliveries={data.vendor.stoneDeliveries}
+                />
+              )}
               {data.vendor.pump > 0 && <CostLine label="Pump" amount={data.vendor.pump} />}
               {data.vendor.inspection > 0 && <CostLine label="Inspection" amount={data.vendor.inspection} />}
               {data.vendor.sub > 0 && <CostLine label="Sub Labor" amount={data.vendor.sub} />}
+
               {/* Labor */}
               <div className="flex items-start justify-between py-1 text-sm">
                 <div>
