@@ -1057,3 +1057,230 @@ function OtherCostRow({
     </div>
   );
 }
+
+// ────────────────────────────────────────────────────────────────
+// Stone Cost Line (expandable)
+// ────────────────────────────────────────────────────────────────
+
+function StoneCostLine({
+  label,
+  amount,
+  deliveries,
+}: {
+  label: string;
+  amount: number;
+  deliveries: StoneDelivery[];
+}) {
+  const [open, setOpen] = useState(false);
+  const hasDetails = deliveries.length > 0;
+  return (
+    <div className="space-y-0.5">
+      <div className="flex justify-between text-sm items-center">
+        {hasDetails ? (
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            className="flex items-center gap-1 text-muted-foreground hover:text-foreground"
+          >
+            {open ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+            <span>{label}</span>
+            <span className="text-xs opacity-70">({deliveries.length})</span>
+          </button>
+        ) : (
+          <span className="text-muted-foreground">{label}</span>
+        )}
+        <span className={amount > 0 ? "text-foreground" : "text-muted-foreground"}>{fmt(amount)}</span>
+      </div>
+      {open && hasDetails && (
+        <div className="pl-5 space-y-0.5 border-l border-border ml-1">
+          {deliveries.map((d, i) => (
+            <div key={i} className="flex justify-between text-xs text-muted-foreground">
+              <span className="truncate">
+                {d.supplier_name ?? "—"}
+                {d.tons_billed != null && d.tons_billed > 0 ? ` · ${d.tons_billed} tons` : ""}
+                {d.invoice_number ? ` · inv ${d.invoice_number}` : ""}
+                {d.phase_name ? ` · ${d.phase_name}` : ""}
+              </span>
+              <span>{fmt(d.invoice_amount)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────
+// Materials Costs Section
+// ────────────────────────────────────────────────────────────────
+
+function MaterialsCostsSection({
+  section,
+  projectId,
+  organizationId,
+  costs,
+  readOnly,
+  queryClient,
+}: {
+  section: Section;
+  projectId: string | null;
+  organizationId: string | null;
+  costs: MaterialsCost[];
+  readOnly: boolean;
+  queryClient: ReturnType<typeof useQueryClient>;
+}) {
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["pl-materials-costs", projectId] });
+
+  const addMutation = useMutation({
+    mutationFn: async () => {
+      if (!projectId || !organizationId) throw new Error("Missing context");
+      const { error } = await supabase.from("project_materials_costs").insert({
+        organization_id: organizationId,
+        project_id: projectId,
+        pl_section: section,
+        description: "New material",
+        vendor: null,
+        amount: 0,
+        display_order: costs.length,
+      } as any);
+      if (error) throw error;
+    },
+    onSuccess: invalidate,
+    onError: (e: Error) => toast.error(getUserFriendlyError(e)),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("project_materials_costs").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      invalidate();
+      toast.success("Material removed");
+    },
+    onError: (e: Error) => toast.error(getUserFriendlyError(e)),
+  });
+
+  const updateCost = async (id: string, updates: Partial<MaterialsCost>) => {
+    const { error } = await supabase
+      .from("project_materials_costs")
+      .update(updates as any)
+      .eq("id", id);
+    if (error) {
+      toast.error(getUserFriendlyError(error));
+    } else {
+      invalidate();
+    }
+  };
+
+  return (
+    <div className="space-y-1">
+      <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Materials</h4>
+      {costs.map((cost) => (
+        <MaterialsCostRow
+          key={cost.id}
+          cost={cost}
+          readOnly={readOnly}
+          onUpdate={updateCost}
+          onDelete={() => deleteMutation.mutate(cost.id)}
+        />
+      ))}
+      {costs.length === 0 && (
+        <p className="text-xs text-muted-foreground">No materials.</p>
+      )}
+      {!readOnly && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => addMutation.mutate()}
+          disabled={addMutation.isPending}
+          className="text-muted-foreground"
+        >
+          <Plus className="w-3 h-3 mr-1" />
+          Add Material
+        </Button>
+      )}
+    </div>
+  );
+}
+
+function MaterialsCostRow({
+  cost,
+  readOnly,
+  onUpdate,
+  onDelete,
+}: {
+  cost: MaterialsCost;
+  readOnly: boolean;
+  onUpdate: (id: string, updates: Partial<MaterialsCost>) => void;
+  onDelete: () => void;
+}) {
+  const [desc, setDesc] = useState(cost.description);
+  const [vendor, setVendor] = useState(cost.vendor ?? "");
+  const [amount, setAmount] = useState(cost.amount?.toString() ?? "0");
+
+  useEffect(() => {
+    setDesc(cost.description);
+    setVendor(cost.vendor ?? "");
+    setAmount(cost.amount?.toString() ?? "0");
+  }, [cost]);
+
+  return (
+    <div className="flex items-center gap-2">
+      {readOnly ? (
+        <>
+          <span className="flex-1 text-sm text-muted-foreground">
+            {cost.description}
+            {cost.vendor ? <span className="text-xs ml-2 opacity-70">({cost.vendor})</span> : null}
+          </span>
+          <span className="text-sm text-foreground">{fmt(cost.amount)}</span>
+        </>
+      ) : (
+        <>
+          <Input
+            value={desc}
+            onChange={(e) => setDesc(e.target.value)}
+            onBlur={() => {
+              if (desc !== cost.description) onUpdate(cost.id, { description: desc });
+            }}
+            className="flex-1 h-7 text-sm"
+            placeholder="Description"
+          />
+          <Input
+            value={vendor}
+            onChange={(e) => setVendor(e.target.value)}
+            onBlur={() => {
+              const v = vendor.trim() || null;
+              if (v !== (cost.vendor ?? null)) onUpdate(cost.id, { vendor: v });
+            }}
+            className="w-32 h-7 text-sm"
+            placeholder="Vendor"
+          />
+          <div className="relative w-24">
+            <DollarSign className="absolute left-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
+            <Input
+              type="number"
+              step="0.01"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              onBlur={() => {
+                const n = parseFloat(amount) || 0;
+                if (n !== cost.amount) onUpdate(cost.id, { amount: n });
+              }}
+              className="h-7 text-sm pl-5"
+            />
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-muted-foreground hover:text-destructive"
+            onClick={onDelete}
+          >
+            <Trash2 className="w-3 h-3" />
+          </Button>
+        </>
+      )}
+    </div>
+  );
+}
+
