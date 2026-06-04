@@ -76,12 +76,15 @@ interface RevenueRow {
   notes: string | null;
 }
 
-type Section = "footings_walls" | "slab";
+type Section = "footings_walls" | "interior_slab" | "exterior_slab";
 
 const SECTION_LABELS: Record<Section, string> = {
   footings_walls: "Footings & Walls",
-  slab: "Slab",
+  interior_slab: "Interior Slabs",
+  exterior_slab: "Exterior Slabs",
 };
+
+const SECTIONS: Section[] = ["footings_walls", "interior_slab", "exterior_slab"];
 
 // ────────────────────────────────────────────────────────────────
 // Helpers
