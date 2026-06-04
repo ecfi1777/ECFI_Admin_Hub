@@ -1,33 +1,71 @@
-## Add Stone Category (Basement & Garage / Exterior) to drive P&L mapping
+## Goal
 
-### What changes
+Replace the single **Slab** P&L card with two independent cards — **Interior Slabs** and **Exterior Slabs** — so exterior stone (and exterior phase costs like Driveways, Sidewalks, etc.) stop bleeding into Footings & Walls.
 
-1. **New required field on every stone line:** **Category** — a two-option toggle/select:
-   - **Basement & Garage Stone**
-   - **Exterior Stone**
+Final card lineup per project: **Footings & Walls · Interior Slabs · Exterior Slabs** (Overhead/Service stays as-is).
 
-2. **Stone Type becomes optional** — the existing dropdown (Recycled 57's, CR6, Washed 3/4 Gravel, Blue 57) stays, but is no longer required. Category is what drives P&L.
+## 1. Phase remap (Settings → Phases)
 
-3. **P&L mapping driven by Category (not phase):**
-   - **Basement & Garage Stone** → rolls into the **Slab** P&L card.
-   - **Exterior Stone** → rolls into the **Footings & Walls** P&L card.
-   - This replaces the current phase-based stone bucketing (Prep Slabs → Slab, Prep Footings → F&W, off-phase → "Other …"). The "Other Slab Stone" / "Other F&W Stone" lines go away — every stone line lands in exactly one card based on its category.
+Repoint these existing phases' `pl_section`:
 
-4. **Stone tab in entry form (Add & Edit dialogs):** each supplier line gets a Category selector at the top of the line, with a sensible default based on phase (Prep Slabs / Slab Pour default → Basement & Garage; Prep Footings / Footing / Wall Pour default → Exterior). User can override per line. Saving requires Category set.
+**Interior Slabs (`interior_slab`)** — Basement Slab, Garage Slab, Prep Slabs, Prep B&G Slabs, Interior Slabs
 
-5. **Vendor Bills:** unchanged — stone still surfaces under the Stone filter. Category will be shown as a small label next to the stone line so you can tell at a glance which P&L it hits.
+**Exterior Slabs (`exterior_slab`)** — Exterior Flatwork, Driveways, Sidewalks, Stoops, Leadwalks, Prep Exterior Slabs
 
-6. **Itemized Stone deliveries in P&L:** the expandable list under the stone row will show Supplier · Tons · Invoice # · **Category**.
+Footings & Walls phases unchanged. Anything still tagged `slab` after migration gets defaulted to `interior_slab` (safety net for orgs other than ECFI).
 
-### Technical details
+The Phases settings UI gets two new `pl_section` options ("Interior Slab", "Exterior Slab") and drops the old "Slab" option (existing rows are migrated, so it disappears cleanly).
 
-- Migration: add `pl_category text` to `schedule_entry_stone_lines` (values `basement_garage` | `exterior`), nullable for now, plus a validation trigger. Backfill existing rows from phase (Prep Slabs / slab_pour → `basement_garage`; everything else → `exterior`). After backfill, mark NOT NULL.
-- `ProjectPLTab.tsx`: replace phase-keyed stone aggregation with category-keyed aggregation across all entries on the project.
-- `StoneTab.tsx`: add Category selector per line, default from phase, mark required.
-- `AddEntryDialog` / `EditEntryDialog`: pass current phase to StoneTab so it can default the category; include `pl_category` in save payloads.
-- `types.ts` (form values) + `useEntryForm.ts`: add `pl_category` to `StoneLineFormValue`.
+## 2. Stone categories renamed
 
-### Out of scope (confirm if you want it)
+In the entry form's Stone tab the two category options become:
+- **Interior Slab Stone** (value `basement_garage` — kept as-is in DB to avoid a second data migration)
+- **Exterior Slab Stone** (value `exterior`)
 
-- No new Settings page — the two categories are hard-coded (you said only two, ever). If later you want them editable, we'd promote to a reference-data table.
-- Stone Types reference list stays as-is.
+Routing: Interior Slab Stone → Interior Slabs card · Exterior Slab Stone → Exterior Slabs card. Vendor Bills label updated to match.
+
+## 3. Revenue, labor, materials, other costs
+
+Each of the three cards is fully independent (own Base House / Extras / Total Invoice / Labor override / Materials list / Other Costs list).
+
+Data migration:
+- `project_pl_revenue` rows with `section='slab'` → `section='interior_slab'`
+- `project_labor_entries` rows with `pl_section='slab'` → `pl_section='interior_slab'`
+- `project_materials_costs` rows with `pl_section='slab'` → `pl_section='interior_slab'`
+- `project_other_costs` rows with `pl_section='slab'` → `pl_section='interior_slab'`
+
+Exterior Slabs starts blank for every project; user enters revenue/labor/etc. going forward.
+
+## 4. P&L computation
+
+`ProjectPLTab.tsx` switches from two sections to three:
+
+```text
+Section = "footings_walls" | "interior_slab" | "exterior_slab"
+```
+
+- Vendor concrete/pump/sub/stone bucketed by phase `pl_section` (using the new values).
+- Stone cost is split by `pl_category`:
+  - `basement_garage` → Interior Slabs card, row labeled "Interior Slab Stone"
+  - `exterior` → Exterior Slabs card, row labeled "Exterior Slab Stone"
+- Footings & Walls card no longer shows any stone row.
+- Concrete labels: "Slab Pour — Concrete" / "Other Slab Concrete" stay on Interior Slabs; the same two rows appear on Exterior Slabs (driven by phase, so exterior flatwork pours land there).
+
+## 5. Commissions
+
+`ProjectCommissionTab` and Commission report aggregate yards by phase `pl_section`. If they currently key off `"slab"`, they'll be updated to sum `interior_slab + exterior_slab` wherever the current behavior was "all slab yards" — preserving existing commission math.
+
+## 6. Files changed
+
+- **Migration** — update phases, revenue, labor, materials, other_costs rows; no schema changes.
+- `src/components/projects/ProjectPLTab.tsx` — three-section model, new labels, stone routing by category, no stone on F&W.
+- `src/components/schedule/entry-form/tabs/StoneTab.tsx` — relabel options to "Interior Slab Stone" / "Exterior Slab Stone".
+- `src/components/settings/ReferenceDataTable.tsx` (or phases editor) — new `pl_section` dropdown options, remove "Slab".
+- `src/components/projects/ProjectCommissionTab.tsx` + `src/components/reports/CommissionReport.tsx` — include both new sections wherever "slab" was summed.
+- `src/components/vendor-invoices/*` — label tweak for stone category badge.
+
+## Out of scope
+
+- No new tables or columns.
+- Stone `pl_category` DB values stay `basement_garage` / `exterior` (UI labels only change).
+- Other orgs' phases that still say `slab` get auto-mapped to `interior_slab`; they can re-tag specific phases as exterior themselves later.
