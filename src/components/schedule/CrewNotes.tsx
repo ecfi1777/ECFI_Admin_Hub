@@ -87,13 +87,22 @@ export function CrewNotes({ crewId, dateStr, canManage }: CrewNotesProps) {
               className="min-h-[60px] bg-background text-sm"
               autoFocus
             />
-          ) : (
+          ) : hasNote ? (
             <div className="text-sm text-muted-foreground whitespace-pre-wrap flex-1">
-              {hasNote ? data!.notes : "Add Note"}
+              {data!.notes}
             </div>
-          )}
+          ) : canManage ? (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setEditing(true)}
+              className="text-muted-foreground hover:text-foreground h-7 -mt-1 px-2"
+            >
+              Add Note
+            </Button>
+          ) : null}
         </div>
-        {canManage && (
+        {canManage && (editing || hasNote) && (
           <div className="flex items-center gap-1 shrink-0">
             {editing ? (
               <>
@@ -124,7 +133,7 @@ export function CrewNotes({ crewId, dateStr, canManage }: CrewNotesProps) {
                 onClick={() => setEditing(true)}
                 className="text-muted-foreground hover:text-foreground h-7"
               >
-                {hasNote ? "Edit" : "Add Note"}
+                Edit
               </Button>
             )}
           </div>
@@ -133,3 +142,4 @@ export function CrewNotes({ crewId, dateStr, canManage }: CrewNotesProps) {
     </div>
   );
 }
+

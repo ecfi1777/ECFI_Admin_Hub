@@ -1,16 +1,23 @@
-# Plan: Crew Note Placeholder Text Update
+## Summary
+Move the empty-state "Add Note" button from the right side of `CrewNotes.tsx` to the left, placing it directly beside the `FileText` icon.
 
-## Change
-In `src/components/schedule/CrewNotes.tsx`, replace the empty-state text:
-- **From:** `"No crew note for this day."`
-- **To:** `"Add Note"` (keeping the `FileText` icon)
+## Current Layout (no note)
+```
+[Icon] "Add Note" ........................ [Add Note]
+```
+
+## Target Layout (no note)
+```
+[Icon] [Add Note]
+```
 
 ## Details
-- The `FileText` icon already appears in the left corner of the component.
-- The right-side button already reads "Add Note" when no note exists.
-- This change removes the duplicate/unnecessary "No crew note..." message and lets the icon + "Add Note" button serve as the empty state.
 
-## Files Modified
-- `src/components/schedule/CrewNotes.tsx` (1 line change)
+**File:** `src/components/schedule/CrewNotes.tsx`
 
-## No database changes required
+**Change:**
+- When `hasNote` is false and `editing` is false, replace the left-side text `"Add Note"` with the actual `Button` component that currently lives on the right.
+- Remove that button from the right-side button group so it no longer appears duplicated.
+- The right side remains empty when there is no note.
+- When a note exists, layout stays as-is: `[Icon] Note text ........ [Edit]`.
+- No database or logic changes.
