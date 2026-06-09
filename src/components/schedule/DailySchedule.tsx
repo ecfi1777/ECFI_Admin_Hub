@@ -288,6 +288,7 @@ export function DailySchedule() {
               </CardHeader>
               <CardContent className="p-0">
                 <ScheduleTable entries={entriesByCrew[crew.id] || []} readOnly={!canManage} onRescheduled={(newDate) => setSelectedDate(new Date(newDate + "T12:00:00"))} />
+                <CrewNotes crewId={crew.id} dateStr={dateStr} canManage={canManage} />
               </CardContent>
             </Card>
           ))}
