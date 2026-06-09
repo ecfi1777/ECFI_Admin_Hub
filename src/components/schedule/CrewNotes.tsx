@@ -89,7 +89,7 @@ export function CrewNotes({ crewId, dateStr, canManage }: CrewNotesProps) {
             />
           ) : (
             <div className="text-sm text-muted-foreground whitespace-pre-wrap flex-1">
-              {hasNote ? data!.notes : "No crew note for this day."}
+              {hasNote ? data!.notes : "Add Note"}
             </div>
           )}
         </div>
