@@ -11,6 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { ScheduleTable } from "./ScheduleTable";
 import { AddEntryDialog } from "./AddEntryDialog";
+import { CrewNotes } from "./CrewNotes";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useOrganization } from "@/hooks/useOrganization";
