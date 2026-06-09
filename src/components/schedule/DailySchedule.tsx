@@ -11,6 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { ScheduleTable } from "./ScheduleTable";
 import { AddEntryDialog } from "./AddEntryDialog";
+import { CrewNotes } from "./CrewNotes";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -287,6 +288,7 @@ export function DailySchedule() {
               </CardHeader>
               <CardContent className="p-0">
                 <ScheduleTable entries={entriesByCrew[crew.id] || []} readOnly={!canManage} onRescheduled={(newDate) => setSelectedDate(new Date(newDate + "T12:00:00"))} />
+                <CrewNotes crewId={crew.id} dateStr={dateStr} canManage={canManage} />
               </CardContent>
             </Card>
           ))}
