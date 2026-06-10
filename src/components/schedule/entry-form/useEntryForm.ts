@@ -136,6 +136,8 @@ export function useEntryForm(options: UseEntryFormOptions = {}) {
       crew_notes: (entry as any).crew_notes || "",
       to_be_invoiced: entry.to_be_invoiced,
       sub_will_invoice: (entry as any).sub_will_invoice || false,
+      sub_invoice_number: (entry as any).sub_invoice_number || "",
+      sub_invoice_amount: (entry as any).sub_invoice_amount?.toString() || "",
       did_not_work: (entry as any).did_not_work || false,
       not_working_reason: (entry as any).not_working_reason || "",
     });
@@ -183,6 +185,8 @@ export function useEntryForm(options: UseEntryFormOptions = {}) {
       crew_notes: formData.crew_notes || null,
       to_be_invoiced: formData.to_be_invoiced,
       sub_will_invoice: formData.sub_will_invoice,
+      sub_invoice_number: formData.sub_will_invoice ? (formData.sub_invoice_number || null) : null,
+      sub_invoice_amount: formData.sub_will_invoice && formData.sub_invoice_amount ? parseFloat(formData.sub_invoice_amount) : null,
       did_not_work: formData.did_not_work,
       not_working_reason: formData.did_not_work ? (formData.not_working_reason || null) : null,
     };

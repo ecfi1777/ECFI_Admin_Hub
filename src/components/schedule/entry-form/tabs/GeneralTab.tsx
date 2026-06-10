@@ -68,17 +68,48 @@ export function GeneralTab({ formData, updateField, showCrew = true, hideNonCrew
       </div>
 
       {isSubCrew && !hideNonCrewFields && (
-        <div className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2">
-          <input
-            type="checkbox"
-            id="sub_will_invoice"
-            checked={formData.sub_will_invoice}
-            onChange={(e) => updateField("sub_will_invoice", e.target.checked)}
-            className="h-4 w-4 rounded border-input"
-          />
-          <Label htmlFor="sub_will_invoice" className="cursor-pointer text-sm">
-            Sub will invoice for this work (creates a Sub Labor vendor bill)
-          </Label>
+        <div className="space-y-3 rounded-md border border-border bg-muted/40 px-3 py-2">
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="sub_will_invoice"
+              checked={formData.sub_will_invoice}
+              onChange={(e) => updateField("sub_will_invoice", e.target.checked)}
+              className="h-4 w-4 rounded border-input"
+            />
+            <Label htmlFor="sub_will_invoice" className="cursor-pointer text-sm">
+              Sub will invoice for this work (creates a Sub Labor vendor bill)
+            </Label>
+          </div>
+          {formData.sub_will_invoice && (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="sub_invoice_number">Sub Invoice #</Label>
+                <Input
+                  id="sub_invoice_number"
+                  value={formData.sub_invoice_number}
+                  onChange={(e) => updateField("sub_invoice_number", e.target.value)}
+                  placeholder="Invoice number"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="sub_invoice_amount">Sub Invoice Amount</Label>
+                <div className="relative">
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
+                  <Input
+                    id="sub_invoice_amount"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.sub_invoice_amount}
+                    onChange={(e) => updateField("sub_invoice_amount", e.target.value)}
+                    placeholder="0.00"
+                    className="pl-7"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
