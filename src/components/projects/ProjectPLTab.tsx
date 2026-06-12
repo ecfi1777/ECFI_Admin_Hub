@@ -657,12 +657,12 @@ function SectionCard({
                   <div className="flex items-center gap-2">
                     {hasOverride && (
                       <span className="text-xs text-muted-foreground line-through">
-                        {fmtTotal(data.labor)}
+                        {fmtTotal(data.calculatedLabor)}
                       </span>
                     )}
                     {readOnly ? (
                       <span className={data.labor > 0 ? "text-foreground" : "text-muted-foreground"}>
-                        {fmt(hasOverride ? (overrideValue ?? 0) : data.labor)}
+                        {fmt(data.labor)}
                       </span>
                     ) : (
                       <div className="relative w-32">
@@ -671,11 +671,14 @@ function SectionCard({
                           type="number"
                           step="0.01"
                           min="0"
-                          defaultValue={hasOverride ? (overrideValue ?? 0) : data.labor.toFixed(2)}
-                          key={`${section}-${hasOverride}-${overrideValue}-${data.labor}`}
+                          defaultValue={data.labor ? data.labor.toFixed(2) : ""}
+                          key={`${section}-${hasOverride}-${overrideValue}-${data.calculatedLabor}`}
                           onBlur={async (e) => {
-                            const val = parseFloat(e.target.value);
-                            if (isNaN(val)) return;
+                            if (!projectId || !organizationId) return;
+                            const raw = e.target.value;
+                            const val = raw === "" ? null : parseFloat(raw);
+                            if (val !== null && isNaN(val)) return;
+                            // Clear any legacy per-entry overrides for this section
                             const sectionIds = scheduleEntries
                               .filter((se: any) => {
                                 const s = se.phases?.pl_section;
@@ -687,14 +690,23 @@ function SectionCard({
                                 .from("schedule_entries")
                                 .update({ crew_labor_cost_override: null } as any)
                                 .in("id", sectionIds);
-                              await supabase
-                                .from("schedule_entries")
-                                .update({ crew_labor_cost_override: val } as any)
-                                .eq("id", sectionIds[0]);
-                              queryClient.invalidateQueries({
-                                queryKey: ["pl-schedule-hours", projectId],
-                              });
                             }
+                            const { error } = await supabase
+                              .from("project_pl_revenue")
+                              .upsert({
+                                ...(data.rev?.id ? { id: data.rev.id } : {}),
+                                organization_id: organizationId,
+                                project_id: projectId,
+                                section,
+                                labor_override: val,
+                                updated_at: new Date().toISOString(),
+                              } as any, { onConflict: "project_id,section" });
+                            if (error) {
+                              toast.error(getUserFriendlyError(error));
+                              return;
+                            }
+                            queryClient.invalidateQueries({ queryKey: ["pl-revenue", projectId] });
+                            queryClient.invalidateQueries({ queryKey: ["pl-schedule-hours", projectId] });
                           }}
                           className="h-7 text-sm pl-5 pr-2 text-right w-32 border border-input rounded-md bg-background"
                         />
@@ -705,6 +717,7 @@ function SectionCard({
                     <button
                       className="text-xs text-muted-foreground hover:text-foreground underline"
                       onClick={async () => {
+                        if (!projectId || !organizationId) return;
                         const sectionIds = scheduleEntries
                           .filter((se: any) => {
                             const s = se.phases?.pl_section;
@@ -716,16 +729,22 @@ function SectionCard({
                             .from("schedule_entries")
                             .update({ crew_labor_cost_override: null } as any)
                             .in("id", sectionIds);
-                          queryClient.invalidateQueries({
-                            queryKey: ["pl-schedule-hours", projectId],
-                          });
                         }
+                        if (data.rev?.id) {
+                          await supabase
+                            .from("project_pl_revenue")
+                            .update({ labor_override: null } as any)
+                            .eq("id", data.rev.id);
+                        }
+                        queryClient.invalidateQueries({ queryKey: ["pl-revenue", projectId] });
+                        queryClient.invalidateQueries({ queryKey: ["pl-schedule-hours", projectId] });
                       }}
                     >
                       Reset to calculated
                     </button>
                   )}
                 </div>
+
               </div>
             </div>
 
