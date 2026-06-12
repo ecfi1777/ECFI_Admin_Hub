@@ -970,6 +970,7 @@ export type Database = {
           created_at: string | null
           extras: number | null
           id: string
+          labor_override: number | null
           notes: string | null
           organization_id: string
           project_id: string
@@ -982,6 +983,7 @@ export type Database = {
           created_at?: string | null
           extras?: number | null
           id?: string
+          labor_override?: number | null
           notes?: string | null
           organization_id: string
           project_id: string
@@ -994,6 +996,7 @@ export type Database = {
           created_at?: string | null
           extras?: number | null
           id?: string
+          labor_override?: number | null
           notes?: string | null
           organization_id?: string
           project_id?: string

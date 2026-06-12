@@ -1,0 +1,1 @@
+ALTER TABLE public.project_pl_revenue ADD COLUMN IF NOT EXISTS labor_override numeric(12,2);
