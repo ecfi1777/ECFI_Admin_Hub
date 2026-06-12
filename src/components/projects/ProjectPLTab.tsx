@@ -396,16 +396,25 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
 
   const buildSection = (section: Section) => {
     const vendor = aggregateVendor(section);
-    const labor = aggregateLabor(section);
+    const calculatedLabor = aggregateLabor(section);
     const sectionOther = otherCosts.filter((c) => c.pl_section === section);
     const otherTotal = sectionOther.reduce((s, c) => s + (c.amount || 0), 0);
     const sectionMaterials = materialsCosts.filter((c) => c.pl_section === section);
     const materialsTotal = sectionMaterials.reduce((s, c) => s + (c.amount || 0), 0);
-    const totalCosts = vendor.concrete + vendor.stone + vendor.pump + vendor.inspection + vendor.sub + labor + otherTotal + materialsTotal;
     const rev = revenueRows.find((r) => r.section === section);
+    // Legacy override on schedule entries (kept as fallback for older data)
+    const legacyOverrideEntry = scheduleEntries.find((e: any) => {
+      const s = e.phases?.pl_section;
+      return (s === section || s === "both") && e.crew_labor_cost_override != null;
+    });
+    const legacyOverride = legacyOverrideEntry?.crew_labor_cost_override ?? null;
+    const revOverride = rev?.labor_override ?? null;
+    const effectiveOverride = revOverride ?? legacyOverride;
+    const labor = effectiveOverride ?? calculatedLabor;
+    const totalCosts = vendor.concrete + vendor.stone + vendor.pump + vendor.inspection + vendor.sub + labor + otherTotal + materialsTotal;
     const salesPrice = rev?.sales_price ?? null;
     const grossProfit = salesPrice != null ? salesPrice - totalCosts : null;
-    return { vendor, labor, sectionOther, otherTotal, sectionMaterials, materialsTotal, totalCosts, salesPrice, grossProfit, rev };
+    return { vendor, labor, calculatedLabor, effectiveOverride, sectionOther, otherTotal, sectionMaterials, materialsTotal, totalCosts, salesPrice, grossProfit, rev };
   };
 
 
@@ -440,10 +449,6 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
       {SECTIONS.map((section) => {
         const data = sectionData[section];
         const { totalHours, count } = getLaborHoursSummary(section);
-        const overrideEntry = scheduleEntries.find((e: any) => {
-          const s = e.phases?.pl_section;
-          return (s === section || s === "both") && e.crew_labor_cost_override != null;
-        });
         return (
           <SectionCard
             key={section}
@@ -455,13 +460,14 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
             queryClient={queryClient}
             laborHours={totalHours}
             laborEntryCount={count}
-            hasOverride={overrideEntry != null}
-            overrideValue={overrideEntry?.crew_labor_cost_override ?? null}
+            hasOverride={data.effectiveOverride != null}
+            overrideValue={data.effectiveOverride}
             scheduleEntries={scheduleEntries}
             crewMemberRates={crewMemberRates}
           />
         );
       })}
+
 
 
       {/* Overall Totals */}
