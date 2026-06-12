@@ -519,6 +519,9 @@ interface SectionData {
     sub: number;
   };
   labor: number;
+  calculatedLabor: number;
+  effectiveOverride: number | null;
+
   sectionOther: OtherCost[];
   otherTotal: number;
   sectionMaterials: MaterialsCost[];
