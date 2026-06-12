@@ -411,7 +411,7 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
     const revOverride = rev?.labor_override ?? null;
     const effectiveOverride = revOverride ?? legacyOverride;
     const labor = effectiveOverride ?? calculatedLabor;
-    const totalCosts = vendor.concrete + vendor.stone + vendor.pump + vendor.inspection + vendor.sub + labor + otherTotal + materialsTotal;
+    const totalCosts = vendor.concrete + vendor.stone + vendor.inspection + vendor.sub + labor + otherTotal + materialsTotal;
     const salesPrice = rev?.sales_price ?? null;
     const grossProfit = salesPrice != null ? salesPrice - totalCosts : null;
     return { vendor, labor, calculatedLabor, effectiveOverride, sectionOther, otherTotal, sectionMaterials, materialsTotal, totalCosts, salesPrice, grossProfit, rev };
