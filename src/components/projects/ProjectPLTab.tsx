@@ -616,7 +616,7 @@ function SectionCard({
                   deliveries={data.vendor.stoneDeliveries}
                 />
               )}
-              {data.vendor.pump > 0 && <CostLine label="Pump" amount={data.vendor.pump} />}
+              
               {data.vendor.inspection > 0 && <CostLine label="Inspection" amount={data.vendor.inspection} />}
               {data.vendor.sub > 0 && <CostLine label="Sub Labor" amount={data.vendor.sub} />}
 
