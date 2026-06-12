@@ -74,7 +74,9 @@ interface RevenueRow {
   base_house: number | null;
   extras: number | null;
   notes: string | null;
+  labor_override: number | null;
 }
+
 
 type Section = "footings_walls" | "interior_slab" | "exterior_slab";
 
@@ -394,16 +396,25 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
 
   const buildSection = (section: Section) => {
     const vendor = aggregateVendor(section);
-    const labor = aggregateLabor(section);
+    const calculatedLabor = aggregateLabor(section);
     const sectionOther = otherCosts.filter((c) => c.pl_section === section);
     const otherTotal = sectionOther.reduce((s, c) => s + (c.amount || 0), 0);
     const sectionMaterials = materialsCosts.filter((c) => c.pl_section === section);
     const materialsTotal = sectionMaterials.reduce((s, c) => s + (c.amount || 0), 0);
-    const totalCosts = vendor.concrete + vendor.stone + vendor.pump + vendor.inspection + vendor.sub + labor + otherTotal + materialsTotal;
     const rev = revenueRows.find((r) => r.section === section);
+    // Legacy override on schedule entries (kept as fallback for older data)
+    const legacyOverrideEntry = scheduleEntries.find((e: any) => {
+      const s = e.phases?.pl_section;
+      return (s === section || s === "both") && e.crew_labor_cost_override != null;
+    });
+    const legacyOverride = legacyOverrideEntry?.crew_labor_cost_override ?? null;
+    const revOverride = rev?.labor_override ?? null;
+    const effectiveOverride = revOverride ?? legacyOverride;
+    const labor = effectiveOverride ?? calculatedLabor;
+    const totalCosts = vendor.concrete + vendor.stone + vendor.pump + vendor.inspection + vendor.sub + labor + otherTotal + materialsTotal;
     const salesPrice = rev?.sales_price ?? null;
     const grossProfit = salesPrice != null ? salesPrice - totalCosts : null;
-    return { vendor, labor, sectionOther, otherTotal, sectionMaterials, materialsTotal, totalCosts, salesPrice, grossProfit, rev };
+    return { vendor, labor, calculatedLabor, effectiveOverride, sectionOther, otherTotal, sectionMaterials, materialsTotal, totalCosts, salesPrice, grossProfit, rev };
   };
 
 
@@ -438,10 +449,6 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
       {SECTIONS.map((section) => {
         const data = sectionData[section];
         const { totalHours, count } = getLaborHoursSummary(section);
-        const overrideEntry = scheduleEntries.find((e: any) => {
-          const s = e.phases?.pl_section;
-          return (s === section || s === "both") && e.crew_labor_cost_override != null;
-        });
         return (
           <SectionCard
             key={section}
@@ -453,13 +460,14 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
             queryClient={queryClient}
             laborHours={totalHours}
             laborEntryCount={count}
-            hasOverride={overrideEntry != null}
-            overrideValue={overrideEntry?.crew_labor_cost_override ?? null}
+            hasOverride={data.effectiveOverride != null}
+            overrideValue={data.effectiveOverride}
             scheduleEntries={scheduleEntries}
             crewMemberRates={crewMemberRates}
           />
         );
       })}
+
 
 
       {/* Overall Totals */}
@@ -511,6 +519,9 @@ interface SectionData {
     sub: number;
   };
   labor: number;
+  calculatedLabor: number;
+  effectiveOverride: number | null;
+
   sectionOther: OtherCost[];
   otherTotal: number;
   sectionMaterials: MaterialsCost[];
@@ -646,12 +657,12 @@ function SectionCard({
                   <div className="flex items-center gap-2">
                     {hasOverride && (
                       <span className="text-xs text-muted-foreground line-through">
-                        {fmtTotal(data.labor)}
+                        {fmtTotal(data.calculatedLabor)}
                       </span>
                     )}
                     {readOnly ? (
                       <span className={data.labor > 0 ? "text-foreground" : "text-muted-foreground"}>
-                        {fmt(hasOverride ? (overrideValue ?? 0) : data.labor)}
+                        {fmt(data.labor)}
                       </span>
                     ) : (
                       <div className="relative w-32">
@@ -660,11 +671,14 @@ function SectionCard({
                           type="number"
                           step="0.01"
                           min="0"
-                          defaultValue={hasOverride ? (overrideValue ?? 0) : data.labor.toFixed(2)}
-                          key={`${section}-${hasOverride}-${overrideValue}-${data.labor}`}
+                          defaultValue={data.labor ? data.labor.toFixed(2) : ""}
+                          key={`${section}-${hasOverride}-${overrideValue}-${data.calculatedLabor}`}
                           onBlur={async (e) => {
-                            const val = parseFloat(e.target.value);
-                            if (isNaN(val)) return;
+                            if (!projectId || !organizationId) return;
+                            const raw = e.target.value;
+                            const val = raw === "" ? null : parseFloat(raw);
+                            if (val !== null && isNaN(val)) return;
+                            // Clear any legacy per-entry overrides for this section
                             const sectionIds = scheduleEntries
                               .filter((se: any) => {
                                 const s = se.phases?.pl_section;
@@ -676,14 +690,23 @@ function SectionCard({
                                 .from("schedule_entries")
                                 .update({ crew_labor_cost_override: null } as any)
                                 .in("id", sectionIds);
-                              await supabase
-                                .from("schedule_entries")
-                                .update({ crew_labor_cost_override: val } as any)
-                                .eq("id", sectionIds[0]);
-                              queryClient.invalidateQueries({
-                                queryKey: ["pl-schedule-hours", projectId],
-                              });
                             }
+                            const { error } = await supabase
+                              .from("project_pl_revenue")
+                              .upsert({
+                                ...(data.rev?.id ? { id: data.rev.id } : {}),
+                                organization_id: organizationId,
+                                project_id: projectId,
+                                section,
+                                labor_override: val,
+                                updated_at: new Date().toISOString(),
+                              } as any, { onConflict: "project_id,section" });
+                            if (error) {
+                              toast.error(getUserFriendlyError(error));
+                              return;
+                            }
+                            queryClient.invalidateQueries({ queryKey: ["pl-revenue", projectId] });
+                            queryClient.invalidateQueries({ queryKey: ["pl-schedule-hours", projectId] });
                           }}
                           className="h-7 text-sm pl-5 pr-2 text-right w-32 border border-input rounded-md bg-background"
                         />
@@ -694,6 +717,7 @@ function SectionCard({
                     <button
                       className="text-xs text-muted-foreground hover:text-foreground underline"
                       onClick={async () => {
+                        if (!projectId || !organizationId) return;
                         const sectionIds = scheduleEntries
                           .filter((se: any) => {
                             const s = se.phases?.pl_section;
@@ -705,16 +729,22 @@ function SectionCard({
                             .from("schedule_entries")
                             .update({ crew_labor_cost_override: null } as any)
                             .in("id", sectionIds);
-                          queryClient.invalidateQueries({
-                            queryKey: ["pl-schedule-hours", projectId],
-                          });
                         }
+                        if (data.rev?.id) {
+                          await supabase
+                            .from("project_pl_revenue")
+                            .update({ labor_override: null } as any)
+                            .eq("id", data.rev.id);
+                        }
+                        queryClient.invalidateQueries({ queryKey: ["pl-revenue", projectId] });
+                        queryClient.invalidateQueries({ queryKey: ["pl-schedule-hours", projectId] });
                       }}
                     >
                       Reset to calculated
                     </button>
                   )}
                 </div>
+
               </div>
             </div>
 
