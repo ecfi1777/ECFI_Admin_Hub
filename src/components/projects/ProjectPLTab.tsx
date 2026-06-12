@@ -74,7 +74,9 @@ interface RevenueRow {
   base_house: number | null;
   extras: number | null;
   notes: string | null;
+  labor_override: number | null;
 }
+
 
 type Section = "footings_walls" | "interior_slab" | "exterior_slab";
 
