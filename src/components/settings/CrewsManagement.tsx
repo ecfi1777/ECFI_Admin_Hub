@@ -366,21 +366,34 @@ export function CrewsManagement() {
   // Use local drag override if set, otherwise fall through to query-derived data
   const orderedCrews = localOrder ?? sortedCrews;
 
-  // Fetch crew members
+  // Fetch crew members (rates joined separately; only managers+ can read rates)
   const { data: members = [] } = useQuery({
     queryKey: ["crew-members-management", organizationId],
     queryFn: async () => {
-      if (!organizationId) return [];
+      if (!organizationId) return [] as CrewMember[];
       const { data, error } = await supabase
         .from("crew_members")
-        .select("id, name, crew_id, is_active, hourly_rate")
+        .select("id, name, crew_id, is_active")
         .eq("organization_id", organizationId)
         .order("name");
       if (error) throw error;
-      return data as CrewMember[];
+
+      const { data: rates } = await supabase
+        .from("crew_member_rates" as any)
+        .select("crew_member_id, hourly_rate")
+        .eq("organization_id", organizationId);
+      const rateMap = new Map<string, number>(
+        ((rates as any[]) ?? []).map((r) => [r.crew_member_id, Number(r.hourly_rate)])
+      );
+
+      return (data ?? []).map((m: any) => ({
+        ...m,
+        hourly_rate: rateMap.has(m.id) ? rateMap.get(m.id)! : null,
+      })) as CrewMember[];
     },
     enabled: !!organizationId,
   });
+
 
   // Mutations
   const saveOrderMutation = useMutation({
@@ -475,8 +488,18 @@ export function CrewsManagement() {
   const createMemberMutation = useMutation({
     mutationFn: async ({ name, crew_id, hourly_rate }: { name: string; crew_id: string | null; hourly_rate: number | null }) => {
       if (!organizationId) throw new Error("No organization found");
-      const { error } = await supabase.from("crew_members").insert({ organization_id: organizationId, name, crew_id, hourly_rate } as any);
+      const { data: inserted, error } = await supabase
+        .from("crew_members")
+        .insert({ organization_id: organizationId, name, crew_id })
+        .select("id")
+        .single();
       if (error) throw error;
+      if (hourly_rate != null && inserted?.id) {
+        const { error: rateError } = await supabase
+          .from("crew_member_rates" as any)
+          .insert({ crew_member_id: inserted.id, organization_id: organizationId, hourly_rate });
+        if (rateError) throw rateError;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["crew-members-management"] });
@@ -490,8 +513,24 @@ export function CrewsManagement() {
 
   const updateMemberMutation = useMutation({
     mutationFn: async ({ id, name, hourly_rate }: { id: string; name: string; hourly_rate: number | null }) => {
-      const { error } = await supabase.from("crew_members").update({ name, hourly_rate } as any).eq("id", id);
+      if (!organizationId) throw new Error("No organization found");
+      const { error } = await supabase.from("crew_members").update({ name }).eq("id", id);
       if (error) throw error;
+      if (hourly_rate == null) {
+        const { error: delErr } = await supabase
+          .from("crew_member_rates" as any)
+          .delete()
+          .eq("crew_member_id", id);
+        if (delErr) throw delErr;
+      } else {
+        const { error: upErr } = await supabase
+          .from("crew_member_rates" as any)
+          .upsert(
+            { crew_member_id: id, organization_id: organizationId, hourly_rate },
+            { onConflict: "crew_member_id" }
+          );
+        if (upErr) throw upErr;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["crew-members-management"] });
@@ -502,6 +541,7 @@ export function CrewsManagement() {
       toast.error(getUserFriendlyError(error));
     },
   });
+
 
   const toggleMemberActiveMutation = useMutation({
     mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {

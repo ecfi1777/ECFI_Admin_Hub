@@ -60,7 +60,7 @@ export function CrewMembersTable() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("crew_members")
-        .select("*, crews(name)")
+        .select("id, name, crew_id, is_active, crews(name)")
         .order("name");
       if (error) throw error;
       return data as CrewMember[];
