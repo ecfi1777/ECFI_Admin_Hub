@@ -233,17 +233,27 @@ export function ProjectPLTab({ projectId, readOnly = false }: ProjectPLTabProps)
     queryKey: ["crew-member-rates", organizationId],
     queryFn: async () => {
       if (!organizationId) return [];
-      const { data, error } = await supabase
+      const { data: members, error } = await supabase
         .from("crew_members")
-        .select("crew_id, hourly_rate")
+        .select("id, crew_id")
         .eq("organization_id", organizationId)
-        .eq("is_active", true)
-        .not("hourly_rate", "is", null);
+        .eq("is_active", true);
       if (error) throw error;
-      return data || [];
+      const { data: rates, error: ratesError } = await supabase
+        .from("crew_member_rates" as any)
+        .select("crew_member_id, hourly_rate")
+        .eq("organization_id", organizationId);
+      if (ratesError) throw ratesError;
+      const rateMap = new Map<string, number>(
+        ((rates as any[]) ?? []).map((r) => [r.crew_member_id, Number(r.hourly_rate)])
+      );
+      return (members ?? [])
+        .filter((m: any) => rateMap.has(m.id))
+        .map((m: any) => ({ crew_id: m.crew_id, hourly_rate: rateMap.get(m.id) }));
     },
     enabled: !!organizationId,
   });
+
 
   // ── Other costs ──
   const { data: otherCosts = [] } = useQuery({
