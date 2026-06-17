@@ -194,11 +194,42 @@ export type Database = {
           },
         ]
       }
+      crew_member_rates: {
+        Row: {
+          created_at: string
+          crew_member_id: string
+          hourly_rate: number
+          organization_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          crew_member_id: string
+          hourly_rate: number
+          organization_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          crew_member_id?: string
+          hourly_rate?: number
+          organization_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crew_member_rates_crew_member_id_fkey"
+            columns: ["crew_member_id"]
+            isOneToOne: true
+            referencedRelation: "crew_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crew_members: {
         Row: {
           created_at: string
           crew_id: string | null
-          hourly_rate: number | null
           id: string
           is_active: boolean
           name: string
@@ -208,7 +239,6 @@ export type Database = {
         Insert: {
           created_at?: string
           crew_id?: string | null
-          hourly_rate?: number | null
           id?: string
           is_active?: boolean
           name: string
@@ -218,7 +248,6 @@ export type Database = {
         Update: {
           created_at?: string
           crew_id?: string | null
-          hourly_rate?: number | null
           id?: string
           is_active?: boolean
           name?: string
