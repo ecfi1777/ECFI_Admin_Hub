@@ -1,0 +1,25 @@
+REVOKE EXECUTE ON FUNCTION public.get_user_organization_id(uuid) FROM anon, public;
+REVOKE EXECUTE ON FUNCTION public.user_is_org_owner(uuid, uuid) FROM anon, public;
+REVOKE EXECUTE ON FUNCTION public.user_belongs_to_organization(uuid, uuid) FROM anon, public;
+REVOKE EXECUTE ON FUNCTION public.user_has_manage_access(uuid, uuid) FROM anon, public;
+REVOKE EXECUTE ON FUNCTION public.user_has_organization_access(uuid, uuid) FROM anon, public;
+REVOKE EXECUTE ON FUNCTION public.lookup_organization_by_invite_code(text) FROM anon, public;
+REVOKE EXECUTE ON FUNCTION public.join_organization_by_invite_code(text) FROM anon, public;
+REVOKE EXECUTE ON FUNCTION public.get_invite_code(uuid) FROM anon, public;
+REVOKE EXECUTE ON FUNCTION public.get_my_role(uuid) FROM anon, public;
+REVOKE EXECUTE ON FUNCTION public.get_storage_usage() FROM anon, public;
+REVOKE EXECUTE ON FUNCTION public.seed_organization_defaults(uuid) FROM anon, public;
+REVOKE EXECUTE ON FUNCTION public.log_restore_action(text, uuid, text, uuid, jsonb, jsonb) FROM anon, public;
+
+GRANT EXECUTE ON FUNCTION public.get_user_organization_id(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.user_is_org_owner(uuid, uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.user_belongs_to_organization(uuid, uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.user_has_manage_access(uuid, uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.user_has_organization_access(uuid, uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.lookup_organization_by_invite_code(text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.join_organization_by_invite_code(text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_invite_code(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_my_role(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_storage_usage() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.seed_organization_defaults(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.log_restore_action(text, uuid, text, uuid, jsonb, jsonb) TO authenticated;
