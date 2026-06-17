@@ -366,21 +366,34 @@ export function CrewsManagement() {
   // Use local drag override if set, otherwise fall through to query-derived data
   const orderedCrews = localOrder ?? sortedCrews;
 
-  // Fetch crew members
+  // Fetch crew members (rates joined separately; only managers+ can read rates)
   const { data: members = [] } = useQuery({
     queryKey: ["crew-members-management", organizationId],
     queryFn: async () => {
-      if (!organizationId) return [];
+      if (!organizationId) return [] as CrewMember[];
       const { data, error } = await supabase
         .from("crew_members")
-        .select("id, name, crew_id, is_active, hourly_rate")
+        .select("id, name, crew_id, is_active")
         .eq("organization_id", organizationId)
         .order("name");
       if (error) throw error;
-      return data as CrewMember[];
+
+      const { data: rates } = await supabase
+        .from("crew_member_rates" as any)
+        .select("crew_member_id, hourly_rate")
+        .eq("organization_id", organizationId);
+      const rateMap = new Map<string, number>(
+        ((rates as any[]) ?? []).map((r) => [r.crew_member_id, Number(r.hourly_rate)])
+      );
+
+      return (data ?? []).map((m: any) => ({
+        ...m,
+        hourly_rate: rateMap.has(m.id) ? rateMap.get(m.id)! : null,
+      })) as CrewMember[];
     },
     enabled: !!organizationId,
   });
+
 
   // Mutations
   const saveOrderMutation = useMutation({
