@@ -1,13 +1,15 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { Download, Loader2, EyeOff, Eye } from "lucide-react";
 import { format, startOfMonth, endOfMonth, parseISO } from "date-fns";
 import { toast } from "sonner";
 import ExcelJS from "exceljs";
 import { cn } from "@/lib/utils";
 import { ProjectDetailsSheet } from "@/components/projects/ProjectDetailsSheet";
+import { useUserRole } from "@/hooks/useUserRole";
 
 interface CommissionReportProps {
   month: number;
@@ -181,6 +183,46 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
       toast.error("Failed to restore project");
     },
   });
+  const { canManage } = useUserRole();
+
+  // ── Notes per crew, per month ──
+  const { data: notesData } = useQuery({
+    queryKey: ["commission-report-notes", organizationId, month, year],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("commission_report_notes" as any)
+        .select("crew_id, notes")
+        .eq("organization_id", organizationId)
+        .eq("month", month)
+        .eq("year", year);
+      if (error) throw error;
+      return ((data || []) as unknown) as Array<{ crew_id: string; notes: string }>;
+    },
+    enabled: !!organizationId,
+  });
+
+  const notesByCrew = useMemo(() => {
+    const m: Record<string, string> = {};
+    (notesData || []).forEach((n) => { m[n.crew_id] = n.notes ?? ""; });
+    return m;
+  }, [notesData]);
+
+  const saveNoteMutation = useMutation({
+    mutationFn: async ({ crewId, notes }: { crewId: string; notes: string }) => {
+      const { error } = await supabase
+        .from("commission_report_notes" as any)
+        .upsert(
+          { organization_id: organizationId, crew_id: crewId, month, year, notes },
+          { onConflict: "organization_id,crew_id,month,year" }
+        );
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["commission-report-notes", organizationId, month, year] });
+    },
+    onError: () => toast.error("Failed to save note"),
+  });
+
   const [overrides, setOverrides] = useState<Record<string, {
     base_house?: number | null;
     extras?: number | null;
@@ -655,6 +697,17 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
           totRow.getCell(col).numFmt = pctFmt;
         });
 
+        // Notes (if any)
+        const noteText = notesByCrew[group.crewId];
+        if (noteText && noteText.trim()) {
+          const labelRow = sheet.addRow(["Notes:"]);
+          labelRow.font = { bold: true, size: 9 };
+          const noteRow = sheet.addRow([noteText]);
+          noteRow.font = { size: 9 };
+          noteRow.alignment = { wrapText: true, vertical: "top" };
+          sheet.mergeCells(noteRow.number, 1, noteRow.number, COLUMNS.length);
+        }
+
         // Blank spacer
         sheet.addRow([]);
       }
@@ -883,6 +936,13 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
                 </tr>
               </tbody>
             </table>
+            <CrewNotesBlock
+              crewId={group.crewId}
+              crewName={group.crewName}
+              initialValue={notesByCrew[group.crewId] ?? ""}
+              canManage={canManage}
+              onSave={(notes) => saveNoteMutation.mutate({ crewId: group.crewId, notes })}
+            />
           </div>
           {gi < crewGroups.length - 1 && <div className="py-3" />}
         </div>
@@ -933,6 +993,47 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
           setIsProjectSheetOpen(false);
           setSelectedProjectId(null);
         }}
+      />
+    </div>
+  );
+}
+
+// ── Crew Notes Block (per crew, per month) ──
+function CrewNotesBlock({
+  crewId,
+  crewName,
+  initialValue,
+  canManage,
+  onSave,
+}: {
+  crewId: string;
+  crewName: string;
+  initialValue: string;
+  canManage: boolean;
+  onSave: (notes: string) => void;
+}) {
+  const [value, setValue] = useState(initialValue);
+
+  // Sync local state when the fetched value changes (e.g., after month switch)
+  useEffect(() => {
+    setValue(initialValue);
+  }, [initialValue, crewId]);
+
+  return (
+    <div className="border-t border-border bg-muted/20 px-3 py-2">
+      <div className="text-xs font-semibold text-muted-foreground mb-1">
+        Notes — Crew {crewName}
+      </div>
+      <Textarea
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={() => {
+          if (value !== initialValue) onSave(value);
+        }}
+        placeholder={canManage ? "Add notes for this crew this month…" : "No notes."}
+        readOnly={!canManage}
+        rows={2}
+        className="text-xs resize-y bg-background"
       />
     </div>
   );

@@ -1,25 +1,32 @@
-## Goal
+## Add Commission Report Notes (per crew, per month)
 
-When the "Sub will invoice for this work" checkbox is checked in the Edit/Add Entry dialog (General tab), let the user enter the sub contractor's invoice number and amount right there — instead of having to go to the Vendor Invoices page.
+### New table: `commission_report_notes`
+Columns:
+- `organization_id` (uuid, FK organizations)
+- `crew_id` (uuid, FK crews)
+- `month` (int, 1-12)
+- `year` (int)
+- `notes` (text)
+- standard id / created_at / updated_at
+- Unique constraint on (organization_id, crew_id, month, year)
 
-## Changes
+RLS: members of the org can SELECT; managers/owners (`user_has_manage_access`) can INSERT/UPDATE/DELETE. GRANTs for authenticated + service_role. `updated_at` trigger.
 
-1. **`src/components/schedule/entry-form/types.ts`** — Add two fields to `EntryFormValues`:
-   - `sub_invoice_number: string`
-   - `sub_invoice_amount: string`
-   Add empty-string defaults in `DEFAULT_ENTRY_FORM_VALUES`.
+### UI changes — `src/components/reports/CommissionReport.tsx`
+- Fetch notes for the visible (org, month, year) keyed by `crew_id`.
+- Below each crew's "Total - Crew X" / percentages rows (still inside the bordered card), render a Notes block:
+  - Small "Notes" label
+  - `<Textarea>` bound to local state, seeded from fetched value
+  - Auto-save on blur via an upsert mutation (on conflict update notes), with a `sonner` success toast and React Query invalidation
+  - Read-only textarea for viewers (no manage access) — gated with `useUserRole`
+- Local optimistic state per crew so typing isn't laggy.
 
-2. **`src/components/schedule/entry-form/useEntryForm.ts`**
-   - `loadFromEntry`: populate `sub_invoice_number` and `sub_invoice_amount` from the entry.
-   - `getInsertPayload`: include `sub_invoice_number` (null if empty) and `sub_invoice_amount` (parsed float or null).
+### Excel export
+In `handleExport`, after each crew's totals row, if the crew has notes, add:
+- A bold "Notes:" cell
+- A row with the notes text, merged across all columns, wrap enabled, top-aligned
+- Then the existing blank spacer
 
-3. **`src/components/schedule/entry-form/tabs/GeneralTab.tsx`**
-   - Directly below the existing "Sub will invoice…" checkbox, when `sub_will_invoice` is true, render a two-column row:
-     - **Sub Invoice #** (text input)
-     - **Sub Invoice Amount** (number input with `$` prefix, matching the vendor bill pattern noted in project memory)
-   - Fields are optional (user can save without filling, just like the Vendor Invoices page allows).
-
-## Notes
-- No DB migration needed — columns `sub_invoice_number` and `sub_invoice_amount` already exist on the entries table.
-- The Vendor Invoices "Sub Labor" row will automatically reflect the values entered here.
-- No changes to P&L logic; it already reads `sub_invoice_amount` when `sub_will_invoice` is true.
+### Out of scope
+- No new permissions model — reuses existing manager+ checks.
+- No history/versioning of notes.
