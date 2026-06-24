@@ -936,6 +936,13 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
                 </tr>
               </tbody>
             </table>
+            <CrewNotesBlock
+              crewId={group.crewId}
+              crewName={group.crewName}
+              initialValue={notesByCrew[group.crewId] ?? ""}
+              canManage={canManage}
+              onSave={(notes) => saveNoteMutation.mutate({ crewId: group.crewId, notes })}
+            />
           </div>
           {gi < crewGroups.length - 1 && <div className="py-3" />}
         </div>
