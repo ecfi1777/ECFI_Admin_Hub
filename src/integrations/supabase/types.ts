@@ -105,6 +105,54 @@ export type Database = {
           },
         ]
       }
+      commission_report_notes: {
+        Row: {
+          created_at: string
+          crew_id: string
+          id: string
+          month: number
+          notes: string
+          organization_id: string
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          crew_id: string
+          id?: string
+          month: number
+          notes?: string
+          organization_id: string
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          created_at?: string
+          crew_id?: string
+          id?: string
+          month?: number
+          notes?: string
+          organization_id?: string
+          updated_at?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_report_notes_crew_id_fkey"
+            columns: ["crew_id"]
+            isOneToOne: false
+            referencedRelation: "crews"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_report_notes_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       concrete_mixes: {
         Row: {
           created_at: string
