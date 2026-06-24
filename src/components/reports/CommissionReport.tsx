@@ -1,13 +1,15 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { Download, Loader2, EyeOff, Eye } from "lucide-react";
 import { format, startOfMonth, endOfMonth, parseISO } from "date-fns";
 import { toast } from "sonner";
 import ExcelJS from "exceljs";
 import { cn } from "@/lib/utils";
 import { ProjectDetailsSheet } from "@/components/projects/ProjectDetailsSheet";
+import { useUserRole } from "@/hooks/useUserRole";
 
 interface CommissionReportProps {
   month: number;
