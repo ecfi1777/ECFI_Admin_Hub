@@ -997,3 +997,44 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
     </div>
   );
 }
+
+// ── Crew Notes Block (per crew, per month) ──
+function CrewNotesBlock({
+  crewId,
+  crewName,
+  initialValue,
+  canManage,
+  onSave,
+}: {
+  crewId: string;
+  crewName: string;
+  initialValue: string;
+  canManage: boolean;
+  onSave: (notes: string) => void;
+}) {
+  const [value, setValue] = useState(initialValue);
+
+  // Sync local state when the fetched value changes (e.g., after month switch)
+  useEffect(() => {
+    setValue(initialValue);
+  }, [initialValue, crewId]);
+
+  return (
+    <div className="border-t border-border bg-muted/20 px-3 py-2">
+      <div className="text-xs font-semibold text-muted-foreground mb-1">
+        Notes — Crew {crewName}
+      </div>
+      <Textarea
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={() => {
+          if (value !== initialValue) onSave(value);
+        }}
+        placeholder={canManage ? "Add notes for this crew this month…" : "No notes."}
+        readOnly={!canManage}
+        rows={2}
+        className="text-xs resize-y bg-background"
+      />
+    </div>
+  );
+}
