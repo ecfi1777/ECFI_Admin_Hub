@@ -196,7 +196,7 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
         .eq("month", month)
         .eq("year", year);
       if (error) throw error;
-      return (data || []) as Array<{ crew_id: string; notes: string }>;
+      return ((data || []) as unknown) as Array<{ crew_id: string; notes: string }>;
     },
     enabled: !!organizationId,
   });
