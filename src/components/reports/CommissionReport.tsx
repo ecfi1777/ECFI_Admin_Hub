@@ -697,6 +697,17 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
           totRow.getCell(col).numFmt = pctFmt;
         });
 
+        // Notes (if any)
+        const noteText = notesByCrew[group.crewId];
+        if (noteText && noteText.trim()) {
+          const labelRow = sheet.addRow(["Notes:"]);
+          labelRow.font = { bold: true, size: 9 };
+          const noteRow = sheet.addRow([noteText]);
+          noteRow.font = { size: 9 };
+          noteRow.alignment = { wrapText: true, vertical: "top" };
+          sheet.mergeCells(noteRow.number, 1, noteRow.number, COLUMNS.length);
+        }
+
         // Blank spacer
         sheet.addRow([]);
       }
