@@ -517,9 +517,6 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
     projectMap.forEach((entries, pid) => {
       const first = entries[0];
       const project = first.projects;
-      const crewEntry = entries.find((e: any) => e.crew_id);
-      const crewId = crewEntry?.crew_id ?? "unknown";
-      const crewName = crewEntry?.crews?.name ?? "Unknown";
 
       const ftgEntry = entries.find((e: any) => e.phases?.phase_type === "footing");
 
@@ -532,6 +529,19 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
         (s: number, e: any) => s + (e.crew_yards_poured ?? 0),
         0
       );
+
+      // Crew attribution: anchor to the wall entry that falls inside the report
+      // month, then fall back to the latest wall, then footing, then any entry.
+      const wallInMonth = wallEntries.find(
+        (e: any) => e.scheduled_date >= startDate && e.scheduled_date <= endDate && e.crew_id
+      );
+      const anchorEntry =
+        wallInMonth ??
+        (lastWallEntry?.crew_id ? lastWallEntry : null) ??
+        (ftgEntry?.crew_id ? ftgEntry : null) ??
+        entries.find((e: any) => e.crew_id);
+      const crewId = anchorEntry?.crew_id ?? "unknown";
+      const crewName = anchorEntry?.crews?.name ?? "Unknown";
 
       const ov = overrides[pid];
       const ftgYards = ov?.ftg_total ?? ftgEntry?.crew_yards_poured ?? null;
