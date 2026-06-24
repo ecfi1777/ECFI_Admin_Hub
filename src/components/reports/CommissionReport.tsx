@@ -183,6 +183,46 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
       toast.error("Failed to restore project");
     },
   });
+  const { canManage } = useUserRole();
+
+  // ── Notes per crew, per month ──
+  const { data: notesData } = useQuery({
+    queryKey: ["commission-report-notes", organizationId, month, year],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("commission_report_notes" as any)
+        .select("crew_id, notes")
+        .eq("organization_id", organizationId)
+        .eq("month", month)
+        .eq("year", year);
+      if (error) throw error;
+      return (data || []) as Array<{ crew_id: string; notes: string }>;
+    },
+    enabled: !!organizationId,
+  });
+
+  const notesByCrew = useMemo(() => {
+    const m: Record<string, string> = {};
+    (notesData || []).forEach((n) => { m[n.crew_id] = n.notes ?? ""; });
+    return m;
+  }, [notesData]);
+
+  const saveNoteMutation = useMutation({
+    mutationFn: async ({ crewId, notes }: { crewId: string; notes: string }) => {
+      const { error } = await supabase
+        .from("commission_report_notes" as any)
+        .upsert(
+          { organization_id: organizationId, crew_id: crewId, month, year, notes },
+          { onConflict: "organization_id,crew_id,month,year" }
+        );
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["commission-report-notes", organizationId, month, year] });
+    },
+    onError: () => toast.error("Failed to save note"),
+  });
+
   const [overrides, setOverrides] = useState<Record<string, {
     base_house?: number | null;
     extras?: number | null;
