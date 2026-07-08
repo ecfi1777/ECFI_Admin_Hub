@@ -559,7 +559,11 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
           .filter((c: any) => c.project_id === pid)
           .reduce((s: number, c: any) => s + (c.amount ?? 0), 0);
 
-      const comm = commissions.find((c: any) => c.project_id === pid && c.crew_id === crewId);
+      // Prefer commission stored under the anchor crew; otherwise fall back to
+      // any commission for this project (crew attribution may have shifted).
+      const comm =
+        commissions.find((c: any) => c.project_id === pid && c.crew_id === crewId) ??
+        commissions.find((c: any) => c.project_id === pid);
 
       let laborAllow = 0;
       if (ov?.labor_allow != null) {
