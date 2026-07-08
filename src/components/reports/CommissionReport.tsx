@@ -452,21 +452,35 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
         }
         toast.success("Saved");
       } else if (field === "labor_allow") {
-        const comm = (commissionsData || []).find(
-          (c: any) => c.project_id === projectId && c.crew_id === crewId
-        );
-        const { error } = await supabase.from("project_commissions").upsert(
-          {
-            organization_id: organizationId,
-            project_id: projectId,
-            crew_id: crewId,
-            override_amount: value,
-            calc_method: (comm?.calc_method ?? "per_cy") as any,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "project_id,crew_id" }
-        );
-        if (error) throw error;
+        // Prefer updating the existing commission row for this project (regardless
+        // of stored crew_id) so we don't create a duplicate under the anchor crew.
+        const existingComm =
+          (commissionsData || []).find(
+            (c: any) => c.project_id === projectId && c.crew_id === crewId
+          ) ?? (commissionsData || []).find((c: any) => c.project_id === projectId);
+        if (existingComm) {
+          const { error } = await supabase
+            .from("project_commissions")
+            .update({
+              override_amount: value,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", (existingComm as any).id);
+          if (error) throw error;
+        } else {
+          const { error } = await supabase.from("project_commissions").upsert(
+            {
+              organization_id: organizationId,
+              project_id: projectId,
+              crew_id: crewId,
+              override_amount: value,
+              calc_method: "per_cy" as any,
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: "project_id,crew_id" }
+          );
+          if (error) throw error;
+        }
         toast.success("Saved");
       } else if (field === "ftg_total" || field === "wall_total") {
         if (!entryId) {
