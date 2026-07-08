@@ -143,11 +143,21 @@ export function ProjectCommissionTab({ projectId, readOnly = false }: ProjectCom
   const fwOtherTotal = otherCosts.reduce((s: number, c: any) => s + (c.amount ?? 0), 0);
   const fwInvoiceTotal = ((revenue as any)?.base_house ?? 0) + ((revenue as any)?.extras ?? 0);
 
-  // Find crew
-  const crewEntry = fwEntries.find((e: any) => e.crew_id);
+  // Crew anchor: latest wall entry with a crew, then footing, then any F&W entry.
+  const wallEntriesSorted = [...fwEntries]
+    .filter((e: any) => e.phases?.phase_type === "wall" && e.crew_id)
+    .sort((a: any, b: any) => (b.scheduled_date ?? "").localeCompare(a.scheduled_date ?? ""));
+  const footingWithCrew = fwEntries.find(
+    (e: any) => e.phases?.phase_type === "footing" && e.crew_id
+  );
+  const anyWithCrew = fwEntries.find((e: any) => e.crew_id);
+  const crewEntry = wallEntriesSorted[0] ?? footingWithCrew ?? anyWithCrew;
   const crewId = (crewEntry as any)?.crew_id ?? null;
   const crewName = (crewEntry as any)?.crews?.name ?? "Unknown Crew";
-  const commission = commissions.find((c: any) => c.crew_id === crewId);
+  // Prefer commission stored for the anchor crew; fall back to any commission
+  // for the project (crew attribution may have shifted since it was created).
+  const commission =
+    commissions.find((c: any) => c.crew_id === crewId) ?? commissions[0];
 
   // ── Local form state ──
   const [calcMethod, setCalcMethod] = useState<string>("per_cy");
