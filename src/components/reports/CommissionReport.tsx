@@ -608,6 +608,8 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
         laborAllow = ov.labor_allow;
       } else if (comm?.override_amount != null) {
         laborAllow = comm.override_amount;
+      } else if ((rev as any)?.labor_override != null) {
+        laborAllow = (rev as any).labor_override;
       } else if (comm?.calc_method === "per_cy" && comm?.rate_per_cy) {
         laborAllow = totalYards * comm.rate_per_cy;
       } else if (comm?.calc_method === "pct_invoice" && comm?.pct_of_invoice) {
