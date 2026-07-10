@@ -199,21 +199,60 @@ export function ProjectCommissionTab({ projectId, readOnly = false }: ProjectCom
   const [notes, setNotes] = useState("");
   const [saveStatus, setSaveStatus] = useState<"idle" | "saved">("idle");
 
+  // Suggested rates derived from P&L labor
+  const suggestedRatePerCy = totalFWYards > 0 ? crewLabor / totalFWYards : 0;
+  const suggestedPctOfInvoice = fwInvoiceTotal > 0 ? (crewLabor / fwInvoiceTotal) * 100 : 0;
+
   useEffect(() => {
-    if (commission) {
-      setCalcMethod(commission.calc_method ?? "per_cy");
-      setRatePerCy(commission.rate_per_cy?.toString() ?? "");
-      setPctOfInvoice(commission.pct_of_invoice?.toString() ?? "");
-      setOverrideAmount(commission.override_amount?.toString() ?? "");
-      setNotes(commission.notes ?? "");
-    } else {
-      setCalcMethod("per_cy");
-      setRatePerCy("");
-      setPctOfInvoice("");
-      setOverrideAmount("");
-      setNotes("");
+    const savedRate = commission?.rate_per_cy;
+    const savedPct = commission?.pct_of_invoice;
+    const rateVal =
+      savedRate != null
+        ? savedRate.toString()
+        : suggestedRatePerCy > 0
+          ? suggestedRatePerCy.toFixed(2)
+          : "";
+    const pctVal =
+      savedPct != null
+        ? savedPct.toString()
+        : suggestedPctOfInvoice > 0
+          ? suggestedPctOfInvoice.toFixed(2)
+          : "";
+
+    setCalcMethod(commission?.calc_method ?? "per_cy");
+    setRatePerCy(rateVal);
+    setPctOfInvoice(pctVal);
+    setOverrideAmount(commission?.override_amount?.toString() ?? "");
+    setNotes(commission?.notes ?? "");
+
+    // Persist auto-filled suggestions so the P&L labor flows into saved commission data
+    const filledFromSuggestion =
+      (savedRate == null && suggestedRatePerCy > 0) ||
+      (savedPct == null && suggestedPctOfInvoice > 0);
+    if (filledFromSuggestion && projectId && organizationId && crewId) {
+      const payload: any = {
+        ...(commission?.id ? { id: commission.id } : {}),
+        organization_id: organizationId,
+        project_id: projectId,
+        crew_id: crewId,
+        calc_method: commission?.calc_method ?? "per_cy",
+        rate_per_cy: rateVal ? parseFloat(rateVal) : null,
+        pct_of_invoice: pctVal ? parseFloat(pctVal) : null,
+        override_amount: commission?.override_amount ?? null,
+        notes: commission?.notes ?? null,
+        updated_at: new Date().toISOString(),
+      };
+      supabase
+        .from("project_commissions")
+        .upsert(payload, { onConflict: "project_id,crew_id" })
+        .then(({ error }) => {
+          if (!error) {
+            queryClient.invalidateQueries({ queryKey: ["commission-saved", projectId] });
+          }
+        });
     }
-  }, [commission]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [commission, suggestedRatePerCy, suggestedPctOfInvoice, crewId, projectId, organizationId]);
 
   const getFinalAllowance = () => {
     const ov = parseFloat(overrideAmount);
