@@ -301,7 +301,7 @@ export function ProjectCommissionTab({ projectId, readOnly = false }: ProjectCom
   };
 
   // ── Summary ──
-  const cogs = fwConcreteTotal + fwOtherTotal + allowance;
+  const cogs = fwConcreteTotal + fwOtherTotal + allowance + crewLabor;
   const grossProfit = fwInvoiceTotal - cogs;
   const hasRevenue = fwInvoiceTotal > 0;
 
