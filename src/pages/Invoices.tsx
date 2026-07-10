@@ -476,20 +476,32 @@ export default function Invoices() {
         </Card>
 
         <Tabs defaultValue="pending">
-          <TabsList className="bg-muted border border-border mb-4">
-            <TabsTrigger value="pending" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-muted-foreground">
-              <FileText className="w-4 h-4 mr-2" />
-              Pending ({filterEntries(pendingEntries).length})
-            </TabsTrigger>
-            <TabsTrigger value="completed" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-muted-foreground">
-              <Check className="w-4 h-4 mr-2" />
-              Completed
-            </TabsTrigger>
-          </TabsList>
+          <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+            <TabsList className="bg-muted border border-border">
+              <TabsTrigger value="pending" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-muted-foreground">
+                <FileText className="w-4 h-4 mr-2" />
+                Pending ({filterEntries(pendingEntries).length})
+              </TabsTrigger>
+              <TabsTrigger value="completed" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-muted-foreground">
+                <Check className="w-4 h-4 mr-2" />
+                Completed
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="pending">
             <Card>
               <CardContent className="p-0">
+                <div className="flex justify-end p-3 border-b border-border">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleExport("pending", pendingEntries)}
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Export to Excel
+                  </Button>
+                </div>
                 {renderTable(pendingEntries, loadingPending)}
               </CardContent>
             </Card>
@@ -498,6 +510,16 @@ export default function Invoices() {
           <TabsContent value="completed">
             <Card>
               <CardContent className="p-0">
+                <div className="flex justify-end p-3 border-b border-border">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleExport("completed", completedEntries)}
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Export to Excel
+                  </Button>
+                </div>
                 {renderTable(completedEntries, loadingCompleted)}
               </CardContent>
             </Card>
