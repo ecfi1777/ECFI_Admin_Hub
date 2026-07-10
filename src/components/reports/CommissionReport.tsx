@@ -308,7 +308,7 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
       if (projectIds.length === 0) return [];
       const { data, error } = await supabase
         .from("project_pl_revenue")
-        .select("project_id, section, base_house, extras, sales_price")
+        .select("project_id, section, base_house, extras, sales_price, labor_override")
         .in("project_id", projectIds)
         .eq("section", "footings_walls");
       if (error) throw error;
