@@ -72,7 +72,7 @@ export function ProjectCommissionTab({ projectId, readOnly = false }: ProjectCom
         .from("schedule_entries")
         .select(`
           id, crew_id, crew_yards_poured, ready_mix_yards_billed, ready_mix_invoice_amount,
-          scheduled_date,
+          crew_hours, crew_labor_cost_override, scheduled_date,
           crews(id, name),
           phases(pl_section, phase_type)
         `)
@@ -86,6 +86,21 @@ export function ProjectCommissionTab({ projectId, readOnly = false }: ProjectCom
       });
     },
     enabled: !!projectId,
+  });
+
+  // ── Query: Crew member rates (for labor calculation, mirrors P&L tab) ──
+  const { data: crewMemberRates = [] } = useQuery({
+    queryKey: ["commission-crew-rates", organizationId],
+    queryFn: async () => {
+      if (!organizationId) return [];
+      const { data, error } = await supabase
+        .from("crew_member_rates")
+        .select("crew_id, hourly_rate")
+        .eq("organization_id", organizationId);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!organizationId,
   });
 
   // ── Query 2: Saved commissions ──
@@ -127,7 +142,7 @@ export function ProjectCommissionTab({ projectId, readOnly = false }: ProjectCom
       if (!projectId) return null;
       const { data, error } = await supabase
         .from("project_pl_revenue")
-        .select("base_house, extras, sales_price")
+        .select("base_house, extras, sales_price, labor_override")
         .eq("project_id", projectId)
         .eq("section", "footings_walls")
         .maybeSingle();
@@ -142,6 +157,23 @@ export function ProjectCommissionTab({ projectId, readOnly = false }: ProjectCom
   const fwConcreteTotal = fwEntries.reduce((s: number, e: any) => s + (e.ready_mix_invoice_amount ?? 0), 0);
   const fwOtherTotal = otherCosts.reduce((s: number, c: any) => s + (c.amount ?? 0), 0);
   const fwInvoiceTotal = ((revenue as any)?.base_house ?? 0) + ((revenue as any)?.extras ?? 0);
+
+  // ── Crew Labor (mirrors P&L tab logic) ──
+  const getCrewRate = (crewId: string | null) => {
+    if (!crewId) return 0;
+    return crewMemberRates
+      .filter((m: any) => m.crew_id === crewId)
+      .reduce((sum: number, m: any) => sum + (m.hourly_rate ?? 0), 0);
+  };
+  const calculatedLabor = fwEntries.reduce((sum: number, e: any) => {
+    if (e.crew_labor_cost_override != null) return sum + e.crew_labor_cost_override;
+    return sum + (e.crew_hours ?? 0) * getCrewRate(e.crew_id);
+  }, 0);
+  const legacyOverrideEntry = fwEntries.find((e: any) => e.crew_labor_cost_override != null);
+  const legacyOverride = (legacyOverrideEntry as any)?.crew_labor_cost_override ?? null;
+  const revLaborOverride = (revenue as any)?.labor_override ?? null;
+  const crewLabor = revLaborOverride ?? legacyOverride ?? calculatedLabor;
+
 
   // Crew anchor: latest wall entry with a crew, then footing, then any F&W entry.
   const wallEntriesSorted = [...fwEntries]
@@ -269,7 +301,7 @@ export function ProjectCommissionTab({ projectId, readOnly = false }: ProjectCom
   };
 
   // ── Summary ──
-  const cogs = fwConcreteTotal + fwOtherTotal + allowance;
+  const cogs = fwConcreteTotal + fwOtherTotal + allowance + crewLabor;
   const grossProfit = fwInvoiceTotal - cogs;
   const hasRevenue = fwInvoiceTotal > 0;
 
@@ -524,6 +556,10 @@ export function ProjectCommissionTab({ projectId, readOnly = false }: ProjectCom
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Other Costs</span>
           <span className="text-foreground">{fmt(fwOtherTotal)}</span>
+        </div>
+        <div className="flex justify-between text-sm">
+          <span className="text-muted-foreground">Crew Labor (P&amp;L)</span>
+          <span className="text-foreground">{fmt(crewLabor)}</span>
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Labor Allowance</span>
