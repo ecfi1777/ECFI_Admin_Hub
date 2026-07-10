@@ -490,6 +490,11 @@ export function ProjectCommissionTab({ projectId, readOnly = false }: ProjectCom
                 = {fmt(fwInvoiceTotal * (parseFloat(pctOfInvoice) || 0) / 100)}
               </p>
             )}
+            {suggestedPctOfInvoice > 0 && (
+              <p className="text-xs text-muted-foreground italic">
+                Suggested from P&L Labor: {suggestedPctOfInvoice.toFixed(2)}%
+              </p>
+            )}
           </div>
         )}
 
