@@ -786,8 +786,24 @@ function SectionCard({
                             .update({ labor_override: null } as any)
                             .eq("id", data.rev.id);
                         }
+                        if (section === "footings_walls") {
+                          const { data: existingComm } = await supabase
+                            .from("project_commissions")
+                            .select("id")
+                            .eq("project_id", projectId)
+                            .limit(1)
+                            .maybeSingle();
+                          if (existingComm?.id) {
+                            await supabase
+                              .from("project_commissions")
+                              .update({ override_amount: null, updated_at: new Date().toISOString() } as any)
+                              .eq("id", existingComm.id);
+                          }
+                        }
                         queryClient.invalidateQueries({ queryKey: ["pl-revenue", projectId] });
                         queryClient.invalidateQueries({ queryKey: ["pl-schedule-hours", projectId] });
+                        queryClient.invalidateQueries({ queryKey: ["commission-saved", projectId] });
+                        queryClient.invalidateQueries({ queryKey: ["commission-report-commissions"] });
                       }}
                     >
                       Reset to calculated
