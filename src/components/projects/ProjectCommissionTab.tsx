@@ -454,6 +454,11 @@ export function ProjectCommissionTab({ projectId, readOnly = false }: ProjectCom
                 = {fmt(totalFWYards * (parseFloat(ratePerCy) || 0))} ({totalFWYards.toFixed(1)} yd × ${parseFloat(ratePerCy)?.toFixed(2)})
               </p>
             )}
+            {suggestedRatePerCy > 0 && (
+              <p className="text-xs text-muted-foreground italic">
+                Suggested from P&L Labor: ${suggestedRatePerCy.toFixed(2)}
+              </p>
+            )}
           </div>
         )}
 
