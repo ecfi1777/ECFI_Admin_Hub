@@ -214,6 +214,60 @@ export default function Invoices() {
     navigate(`/?date=${date}`);
   };
 
+  const handleExport = async (
+    tab: "pending" | "completed",
+    entries: InvoiceEntry[]
+  ) => {
+    const filtered = filterEntries(entries);
+    if (filtered.length === 0) {
+      toast.error("No entries to export");
+      return;
+    }
+    try {
+      const ExcelJS = (await import("exceljs")).default;
+      const wb = new ExcelJS.Workbook();
+      const ws = wb.addWorksheet(tab === "pending" ? "Pending" : "Completed");
+      ws.columns = [
+        { header: "Inv Complete", key: "complete", width: 14 },
+        { header: "Date Completed", key: "date", width: 15 },
+        { header: "Builder", key: "builder", width: 20 },
+        { header: "Location", key: "location", width: 25 },
+        { header: "Lot", key: "lot", width: 12 },
+        { header: "Phase", key: "phase", width: 18 },
+        { header: "Crew", key: "crew", width: 12 },
+        { header: "Invoice #", key: "invoice", width: 16 },
+      ];
+      ws.getRow(1).font = { bold: true };
+      filtered.forEach((e) => {
+        ws.addRow({
+          complete: e.invoice_complete ? "Yes" : "No",
+          date: format(new Date(e.scheduled_date + "T00:00:00"), "M/d/yyyy"),
+          builder:
+            e.projects?.builders?.code || e.projects?.builders?.name || "",
+          location: e.projects?.locations?.name || "",
+          lot: e.projects?.lot_number || "",
+          phase: e.phases?.name || "",
+          crew: e.crews?.name || "",
+          invoice: e.invoice_number || "",
+        });
+      });
+      const buf = await wb.xlsx.writeBuffer();
+      const blob = new Blob([buf], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `invoice-tracking-${tab}-${format(new Date(), "yyyy-MM-dd")}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Export downloaded");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to export");
+    }
+  };
+
   const renderTable = (entries: InvoiceEntry[], isLoading: boolean) => {
     const filtered = filterEntries(entries);
     
