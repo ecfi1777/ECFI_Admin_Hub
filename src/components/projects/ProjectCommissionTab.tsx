@@ -558,6 +558,10 @@ export function ProjectCommissionTab({ projectId, readOnly = false }: ProjectCom
           <span className="text-foreground">{fmt(fwOtherTotal)}</span>
         </div>
         <div className="flex justify-between text-sm">
+          <span className="text-muted-foreground">Crew Labor (P&amp;L)</span>
+          <span className="text-foreground">{fmt(crewLabor)}</span>
+        </div>
+        <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Labor Allowance</span>
           <span className="text-foreground">{fmt(allowance)}</span>
         </div>
