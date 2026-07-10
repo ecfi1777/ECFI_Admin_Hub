@@ -142,7 +142,7 @@ export function ProjectCommissionTab({ projectId, readOnly = false }: ProjectCom
       if (!projectId) return null;
       const { data, error } = await supabase
         .from("project_pl_revenue")
-        .select("base_house, extras, sales_price")
+        .select("base_house, extras, sales_price, labor_override")
         .eq("project_id", projectId)
         .eq("section", "footings_walls")
         .maybeSingle();
@@ -157,6 +157,23 @@ export function ProjectCommissionTab({ projectId, readOnly = false }: ProjectCom
   const fwConcreteTotal = fwEntries.reduce((s: number, e: any) => s + (e.ready_mix_invoice_amount ?? 0), 0);
   const fwOtherTotal = otherCosts.reduce((s: number, c: any) => s + (c.amount ?? 0), 0);
   const fwInvoiceTotal = ((revenue as any)?.base_house ?? 0) + ((revenue as any)?.extras ?? 0);
+
+  // ── Crew Labor (mirrors P&L tab logic) ──
+  const getCrewRate = (crewId: string | null) => {
+    if (!crewId) return 0;
+    return crewMemberRates
+      .filter((m: any) => m.crew_id === crewId)
+      .reduce((sum: number, m: any) => sum + (m.hourly_rate ?? 0), 0);
+  };
+  const calculatedLabor = fwEntries.reduce((sum: number, e: any) => {
+    if (e.crew_labor_cost_override != null) return sum + e.crew_labor_cost_override;
+    return sum + (e.crew_hours ?? 0) * getCrewRate(e.crew_id);
+  }, 0);
+  const legacyOverrideEntry = fwEntries.find((e: any) => e.crew_labor_cost_override != null);
+  const legacyOverride = (legacyOverrideEntry as any)?.crew_labor_cost_override ?? null;
+  const revLaborOverride = (revenue as any)?.labor_override ?? null;
+  const crewLabor = revLaborOverride ?? legacyOverride ?? calculatedLabor;
+
 
   // Crew anchor: latest wall entry with a crew, then footing, then any F&W entry.
   const wallEntriesSorted = [...fwEntries]
