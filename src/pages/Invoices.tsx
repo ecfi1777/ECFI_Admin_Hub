@@ -24,7 +24,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, Check, Search, X } from "lucide-react";
+import { FileText, Check, Search, X, Download } from "lucide-react";
 import { toast } from "sonner";
 import { ProjectDetailsSheet } from "@/components/projects/ProjectDetailsSheet";
 import { useOrganization } from "@/hooks/useOrganization";
