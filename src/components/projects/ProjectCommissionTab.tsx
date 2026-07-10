@@ -72,7 +72,7 @@ export function ProjectCommissionTab({ projectId, readOnly = false }: ProjectCom
         .from("schedule_entries")
         .select(`
           id, crew_id, crew_yards_poured, ready_mix_yards_billed, ready_mix_invoice_amount,
-          scheduled_date,
+          crew_hours, crew_labor_cost_override, scheduled_date,
           crews(id, name),
           phases(pl_section, phase_type)
         `)
@@ -86,6 +86,21 @@ export function ProjectCommissionTab({ projectId, readOnly = false }: ProjectCom
       });
     },
     enabled: !!projectId,
+  });
+
+  // ── Query: Crew member rates (for labor calculation, mirrors P&L tab) ──
+  const { data: crewMemberRates = [] } = useQuery({
+    queryKey: ["commission-crew-rates", organizationId],
+    queryFn: async () => {
+      if (!organizationId) return [];
+      const { data, error } = await supabase
+        .from("crew_member_rates")
+        .select("crew_id, hourly_rate")
+        .eq("organization_id", organizationId);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!organizationId,
   });
 
   // ── Query 2: Saved commissions ──
