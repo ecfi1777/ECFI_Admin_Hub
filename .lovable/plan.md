@@ -1,31 +1,28 @@
-## Auto-fill Crew Allowance rates from P&L Labor
+## Problem
 
-When labor is entered on the P&L tab (stored in `project_pl_revenue.labor_override`), the Commission tab's Crew Allowance window will pre-populate the Rate per CY and % of Invoice inputs from that labor value — but only when the user hasn't already saved their own values. The user can still override either input, and their overrides win.
+Editing "Labor Allow." in the Commission Report only writes to `project_commissions.override_amount`. That value shows up as the Override Amount / Crew Allowance on the Commission tab, but the P&L tab's Labor field stays empty because it reads from `project_pl_revenue.labor_override` — a separate column.
 
-### Change: `src/components/projects/ProjectCommissionTab.tsx`
+Result on Westridge 59-63V: the $4,275 entered in the report appears on the Commission tab (as override) but the P&L Labor input is blank, so Total Costs on the P&L excludes it.
 
-1. **Derive suggested rates from `crewLabor`** (already computed in the file):
-   - `suggestedRatePerCy = totalFWYards > 0 ? crewLabor / totalFWYards : 0`
-   - `suggestedPctOfInvoice = fwInvoiceTotal > 0 ? (crewLabor / fwInvoiceTotal) * 100 : 0`
+## Fix
 
-2. **Update the `useEffect` that hydrates form state from `commission`**:
-   - If `commission.rate_per_cy` is null/empty AND `suggestedRatePerCy > 0`, set `ratePerCy` to the suggested value (rounded to 2 decimals).
-   - Same for `pctOfInvoice`.
-   - If `commission` doesn't exist yet (new project), also seed both fields from the suggestions.
-   - Any saved non-null value from the DB always wins over the suggestion.
-   - Add `crewLabor`, `totalFWYards`, `fwInvoiceTotal` to the effect deps so the pre-fill re-runs after P&L labor changes.
+Make the Commission Report's "Labor Allow." edit write to **both** places in a single save:
 
-3. **Persist the auto-filled values**: after the effect pre-fills, the existing `onBlur={handleSave}` on the inputs already writes to `project_commissions`. To make sure the auto-filled value is saved even without the user touching the input, trigger a one-time `handleSave` right after seeding (guarded so it only fires when we actually filled from a suggestion, not on every render).
+1. `project_commissions.override_amount` (already happens — drives Commission tab).
+2. `project_pl_revenue.labor_override` for `section = 'footings_walls'` (new — drives P&L tab Labor field and the auto-suggested Rate per CY / % of Invoice on the Commission tab).
 
-4. **Small helper hint under each input** (subtle, muted): `"Suggested from P&L Labor: $X.XX"` / `"Suggested from P&L Labor: Y.YY%"` — visible whenever a suggestion exists, so the user knows where the number came from and can reset to it.
+### File to change
 
-### What this does not change
-- P&L tab, labor storage, commission report grouping, and the `crewLabor` calculation itself.
-- Manual Override Amount field — still wins over both calc methods.
-- Commissions already saved with explicit rate/% values are untouched.
+`src/components/reports/CommissionReport.tsx` — inside `handleSave`, in the `field === "labor_allow"` branch (around line 454), add an `upsert` to `project_pl_revenue` mirroring the value into `labor_override`, using the same `onConflict: "project_id,section"` pattern already used for base_house/extras above.
 
-### Result
-On a project where the user enters, say, `$5,000` labor on the P&L tab and has `100 yd` F&W and `$50,000` F&W invoice:
-- Rate per CY auto-fills to `$50.00`
-- % of Invoice auto-fills to `10.00%`
-- Crew Allowance immediately reflects the P&L labor across both calculation methods.
+Also invalidate the P&L / commission caches after save so open tabs refresh:
+- `["pl-revenue", projectId]`
+- `["commission-saved", projectId]`
+
+No schema changes. No changes to P&L or Commission tab components — they already read from these columns.
+
+## Verification
+
+Re-open Westridge 59-63V after saving $4,275 in the report:
+- P&L tab → Labor field shows 4275, Total Costs includes it.
+- Commission tab → Override Amount still 4275, Crew Allowance $4,275; Rate per CY suggestion now populated from P&L labor.
