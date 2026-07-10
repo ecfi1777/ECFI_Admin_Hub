@@ -24,7 +24,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, Check, Search, X } from "lucide-react";
+import { FileText, Check, Search, X, Download } from "lucide-react";
 import { toast } from "sonner";
 import { ProjectDetailsSheet } from "@/components/projects/ProjectDetailsSheet";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -212,6 +212,60 @@ export default function Invoices() {
 
   const handleDateClick = (date: string) => {
     navigate(`/?date=${date}`);
+  };
+
+  const handleExport = async (
+    tab: "pending" | "completed",
+    entries: InvoiceEntry[]
+  ) => {
+    const filtered = filterEntries(entries);
+    if (filtered.length === 0) {
+      toast.error("No entries to export");
+      return;
+    }
+    try {
+      const ExcelJS = (await import("exceljs")).default;
+      const wb = new ExcelJS.Workbook();
+      const ws = wb.addWorksheet(tab === "pending" ? "Pending" : "Completed");
+      ws.columns = [
+        { header: "Inv Complete", key: "complete", width: 14 },
+        { header: "Date Completed", key: "date", width: 15 },
+        { header: "Builder", key: "builder", width: 20 },
+        { header: "Location", key: "location", width: 25 },
+        { header: "Lot", key: "lot", width: 12 },
+        { header: "Phase", key: "phase", width: 18 },
+        { header: "Crew", key: "crew", width: 12 },
+        { header: "Invoice #", key: "invoice", width: 16 },
+      ];
+      ws.getRow(1).font = { bold: true };
+      filtered.forEach((e) => {
+        ws.addRow({
+          complete: e.invoice_complete ? "Yes" : "No",
+          date: format(new Date(e.scheduled_date + "T00:00:00"), "M/d/yyyy"),
+          builder:
+            e.projects?.builders?.code || e.projects?.builders?.name || "",
+          location: e.projects?.locations?.name || "",
+          lot: e.projects?.lot_number || "",
+          phase: e.phases?.name || "",
+          crew: e.crews?.name || "",
+          invoice: e.invoice_number || "",
+        });
+      });
+      const buf = await wb.xlsx.writeBuffer();
+      const blob = new Blob([buf], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `invoice-tracking-${tab}-${format(new Date(), "yyyy-MM-dd")}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Export downloaded");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to export");
+    }
   };
 
   const renderTable = (entries: InvoiceEntry[], isLoading: boolean) => {
@@ -422,20 +476,32 @@ export default function Invoices() {
         </Card>
 
         <Tabs defaultValue="pending">
-          <TabsList className="bg-muted border border-border mb-4">
-            <TabsTrigger value="pending" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-muted-foreground">
-              <FileText className="w-4 h-4 mr-2" />
-              Pending ({filterEntries(pendingEntries).length})
-            </TabsTrigger>
-            <TabsTrigger value="completed" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-muted-foreground">
-              <Check className="w-4 h-4 mr-2" />
-              Completed
-            </TabsTrigger>
-          </TabsList>
+          <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+            <TabsList className="bg-muted border border-border">
+              <TabsTrigger value="pending" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-muted-foreground">
+                <FileText className="w-4 h-4 mr-2" />
+                Pending ({filterEntries(pendingEntries).length})
+              </TabsTrigger>
+              <TabsTrigger value="completed" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-muted-foreground">
+                <Check className="w-4 h-4 mr-2" />
+                Completed
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="pending">
             <Card>
               <CardContent className="p-0">
+                <div className="flex justify-end p-3 border-b border-border">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleExport("pending", pendingEntries)}
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Export to Excel
+                  </Button>
+                </div>
                 {renderTable(pendingEntries, loadingPending)}
               </CardContent>
             </Card>
@@ -444,6 +510,16 @@ export default function Invoices() {
           <TabsContent value="completed">
             <Card>
               <CardContent className="p-0">
+                <div className="flex justify-end p-3 border-b border-border">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleExport("completed", completedEntries)}
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Export to Excel
+                  </Button>
+                </div>
                 {renderTable(completedEntries, loadingCompleted)}
               </CardContent>
             </Card>
