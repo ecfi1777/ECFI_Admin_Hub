@@ -481,6 +481,30 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
           );
           if (error) throw error;
         }
+
+        // Mirror into P&L labor_override for footings_walls so the P&L tab
+        // (and its auto-suggested Rate per CY / % of Invoice) stay in sync.
+        const rev = (revenueData || []).find((r: any) => r.project_id === projectId);
+        const currentOverrides = overrides[projectId] || {};
+        const baseHouse = currentOverrides.base_house ?? (rev as any)?.base_house ?? 0;
+        const extras = currentOverrides.extras ?? (rev as any)?.extras ?? 0;
+        const { error: plError } = await supabase.from("project_pl_revenue").upsert(
+          {
+            organization_id: organizationId,
+            project_id: projectId,
+            section: "footings_walls" as any,
+            base_house: baseHouse,
+            extras: extras,
+            sales_price: (baseHouse ?? 0) + (extras ?? 0),
+            labor_override: value,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "project_id,section" }
+        );
+        if (plError) throw plError;
+
+        queryClient.invalidateQueries({ queryKey: ["pl-revenue", projectId] });
+        queryClient.invalidateQueries({ queryKey: ["commission-saved", projectId] });
         toast.success("Saved");
       } else if (field === "ftg_total" || field === "wall_total") {
         if (!entryId) {
