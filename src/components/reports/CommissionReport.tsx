@@ -308,7 +308,7 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
       if (projectIds.length === 0) return [];
       const { data, error } = await supabase
         .from("project_pl_revenue")
-        .select("project_id, section, base_house, extras, sales_price")
+        .select("project_id, section, base_house, extras, sales_price, labor_override")
         .in("project_id", projectIds)
         .eq("section", "footings_walls");
       if (error) throw error;
@@ -608,6 +608,8 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
         laborAllow = ov.labor_allow;
       } else if (comm?.override_amount != null) {
         laborAllow = comm.override_amount;
+      } else if ((rev as any)?.labor_override != null) {
+        laborAllow = (rev as any).labor_override;
       } else if (comm?.calc_method === "per_cy" && comm?.rate_per_cy) {
         laborAllow = totalYards * comm.rate_per_cy;
       } else if (comm?.calc_method === "pct_invoice" && comm?.pct_of_invoice) {

@@ -715,8 +715,48 @@ function SectionCard({
                               toast.error(getUserFriendlyError(error));
                               return;
                             }
+                            // Mirror F&W labor into project_commissions.override_amount so
+                            // the Commission Report and Commission tab stay in sync.
+                            if (section === "footings_walls") {
+                              const { data: existingComm } = await supabase
+                                .from("project_commissions")
+                                .select("id")
+                                .eq("project_id", projectId)
+                                .limit(1)
+                                .maybeSingle();
+                              if (existingComm?.id) {
+                                await supabase
+                                  .from("project_commissions")
+                                  .update({ override_amount: val, updated_at: new Date().toISOString() } as any)
+                                  .eq("id", existingComm.id);
+                              } else {
+                                // Anchor to the crew from the latest wall entry for this project
+                                const wallEntry = scheduleEntries
+                                  .filter((se: any) => se.phases?.phase_type === "wall" && se.crew_id)
+                                  .sort((a: any, b: any) =>
+                                    (b.scheduled_date ?? "").localeCompare(a.scheduled_date ?? "")
+                                  )[0];
+                                const anchorCrewId = wallEntry?.crew_id;
+                                if (anchorCrewId && val != null) {
+                                  await supabase.from("project_commissions").upsert(
+                                    {
+                                      organization_id: organizationId,
+                                      project_id: projectId,
+                                      crew_id: anchorCrewId,
+                                      override_amount: val,
+                                      calc_method: "per_cy" as any,
+                                      updated_at: new Date().toISOString(),
+                                    } as any,
+                                    { onConflict: "project_id,crew_id" }
+                                  );
+                                }
+                              }
+                            }
                             queryClient.invalidateQueries({ queryKey: ["pl-revenue", projectId] });
                             queryClient.invalidateQueries({ queryKey: ["pl-schedule-hours", projectId] });
+                            queryClient.invalidateQueries({ queryKey: ["commission-saved", projectId] });
+                            queryClient.invalidateQueries({ queryKey: ["commission-report-commissions"] });
+                            queryClient.invalidateQueries({ queryKey: ["commission-report-revenue"] });
                           }}
                           className="h-7 text-sm pl-5 pr-2 text-right w-32 border border-input rounded-md bg-background"
                         />
@@ -746,8 +786,24 @@ function SectionCard({
                             .update({ labor_override: null } as any)
                             .eq("id", data.rev.id);
                         }
+                        if (section === "footings_walls") {
+                          const { data: existingComm } = await supabase
+                            .from("project_commissions")
+                            .select("id")
+                            .eq("project_id", projectId)
+                            .limit(1)
+                            .maybeSingle();
+                          if (existingComm?.id) {
+                            await supabase
+                              .from("project_commissions")
+                              .update({ override_amount: null, updated_at: new Date().toISOString() } as any)
+                              .eq("id", existingComm.id);
+                          }
+                        }
                         queryClient.invalidateQueries({ queryKey: ["pl-revenue", projectId] });
                         queryClient.invalidateQueries({ queryKey: ["pl-schedule-hours", projectId] });
+                        queryClient.invalidateQueries({ queryKey: ["commission-saved", projectId] });
+                        queryClient.invalidateQueries({ queryKey: ["commission-report-commissions"] });
                       }}
                     >
                       Reset to calculated
