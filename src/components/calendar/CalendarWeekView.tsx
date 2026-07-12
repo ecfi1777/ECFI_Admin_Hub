@@ -14,7 +14,7 @@ interface CalendarWeekViewProps {
   onDayClick: (date: Date) => void;
   onEntryClick: (entry: ScheduleEntry) => void;
   onShowDayDetail: (date: Date, entries: ScheduleEntry[]) => void;
-  onAddEntry: (date: Date) => void;
+  onAddEntry?: (date: Date) => void;
   isMobile?: boolean;
   onRescheduled?: (newDate: string) => void;
 }
