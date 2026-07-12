@@ -278,7 +278,7 @@ interface MobileMonthDayProps {
   hasNotes: boolean;
   onDayClick: (date: Date) => void;
   onEntryClick: (entry: ScheduleEntry) => void;
-  onAddEntry: (date: Date) => void;
+  onAddEntry?: (date: Date) => void;
 }
 
 const MobileMonthDay = memo(function MobileMonthDay({
