@@ -340,7 +340,9 @@ export function ProjectCommissionTab({ projectId, readOnly = false }: ProjectCom
   };
 
   // ── Summary ──
-  const cogs = fwConcreteTotal + fwOtherTotal + allowance + crewLabor;
+  // allowance already reflects crew labor (via P&L↔Commission mirroring/auto-suggest),
+  // so do not add crewLabor again — that would double-count labor in COGS.
+  const cogs = fwConcreteTotal + fwOtherTotal + allowance;
   const grossProfit = fwInvoiceTotal - cogs;
   const hasRevenue = fwInvoiceTotal > 0;
 
