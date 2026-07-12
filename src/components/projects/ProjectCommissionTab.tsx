@@ -229,7 +229,7 @@ export function ProjectCommissionTab({ projectId, readOnly = false }: ProjectCom
     const filledFromSuggestion =
       (savedRate == null && suggestedRatePerCy > 0) ||
       (savedPct == null && suggestedPctOfInvoice > 0);
-    if (filledFromSuggestion && projectId && organizationId && crewId) {
+    if (!readOnly && filledFromSuggestion && projectId && organizationId && crewId) {
       const payload: any = {
         ...(commission?.id ? { id: commission.id } : {}),
         organization_id: organizationId,
@@ -340,7 +340,9 @@ export function ProjectCommissionTab({ projectId, readOnly = false }: ProjectCom
   };
 
   // ── Summary ──
-  const cogs = fwConcreteTotal + fwOtherTotal + allowance + crewLabor;
+  // allowance already reflects crew labor (via P&L↔Commission mirroring/auto-suggest),
+  // so do not add crewLabor again — that would double-count labor in COGS.
+  const cogs = fwConcreteTotal + fwOtherTotal + allowance;
   const grossProfit = fwInvoiceTotal - cogs;
   const hasRevenue = fwInvoiceTotal > 0;
 

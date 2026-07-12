@@ -14,7 +14,7 @@ interface CalendarWeekViewProps {
   onDayClick: (date: Date) => void;
   onEntryClick: (entry: ScheduleEntry) => void;
   onShowDayDetail: (date: Date, entries: ScheduleEntry[]) => void;
-  onAddEntry: (date: Date) => void;
+  onAddEntry?: (date: Date) => void;
   isMobile?: boolean;
   onRescheduled?: (newDate: string) => void;
 }
@@ -156,13 +156,15 @@ export const CalendarWeekView = memo(function CalendarWeekView({
                         <StickyNote className="w-4 h-4 text-amber-500" />
                       )}
                     </div>
-                    <button
-                      onClick={() => onAddEntry(day)}
-                      className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-all"
-                      aria-label={`Add entry for ${format(day, "MMMM d")}`}
-                    >
-                      <Plus className="w-4 h-4" />
-                    </button>
+                    {onAddEntry && (
+                      <button
+                        onClick={() => onAddEntry(day)}
+                        className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-all"
+                        aria-label={`Add entry for ${format(day, "MMMM d")}`}
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
 
                   {dayEntries.length > 0 ? (
@@ -260,18 +262,20 @@ export const CalendarWeekView = memo(function CalendarWeekView({
             )}
 
             {/* Add Button - appears on hover */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onAddEntry(day);
-              }}
-              className={`absolute top-2 right-2 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-all z-10 ${
-                isHovered ? "opacity-100 scale-100" : "opacity-0 scale-75"
-              }`}
-              aria-label={`Add entry for ${format(day, "MMMM d")}`}
-            >
-              <Plus className="w-4 h-4" />
-            </button>
+            {onAddEntry && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAddEntry(day);
+                }}
+                className={`absolute top-2 right-2 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-all z-10 ${
+                  isHovered ? "opacity-100 scale-100" : "opacity-0 scale-75"
+                }`}
+                aria-label={`Add entry for ${format(day, "MMMM d")}`}
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            )}
 
             {/* Entries */}
             <div className="flex-1 p-1">
