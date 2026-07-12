@@ -156,13 +156,15 @@ export const CalendarWeekView = memo(function CalendarWeekView({
                         <StickyNote className="w-4 h-4 text-amber-500" />
                       )}
                     </div>
-                    <button
-                      onClick={() => onAddEntry(day)}
-                      className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-all"
-                      aria-label={`Add entry for ${format(day, "MMMM d")}`}
-                    >
-                      <Plus className="w-4 h-4" />
-                    </button>
+                    {onAddEntry && (
+                      <button
+                        onClick={() => onAddEntry(day)}
+                        className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-all"
+                        aria-label={`Add entry for ${format(day, "MMMM d")}`}
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
 
                   {dayEntries.length > 0 ? (
