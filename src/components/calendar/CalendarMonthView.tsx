@@ -225,7 +225,7 @@ export const CalendarMonthView = memo(function CalendarMonthView({
                   </div>
 
                   {/* Add Button - appears on hover */}
-                  {isCurrentMonth && (
+                  {isCurrentMonth && onAddEntry && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
