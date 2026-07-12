@@ -320,16 +320,18 @@ const MobileMonthDay = memo(function MobileMonthDay({
               <span className="text-xs text-muted-foreground">{entryLabel}</span>
               {hasNotes && <StickyNote className="w-3.5 h-3.5 text-amber-500 shrink-0" />}
             </div>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onAddEntry(day);
-              }}
-              className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-all shrink-0"
-              aria-label={`Add entry for ${format(day, "MMMM d")}`}
-            >
-              <Plus className="w-3.5 h-3.5" />
-            </button>
+            {onAddEntry && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAddEntry(day);
+                }}
+                className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-all shrink-0"
+                aria-label={`Add entry for ${format(day, "MMMM d")}`}
+              >
+                <Plus className="w-3.5 h-3.5" />
+              </button>
+            )}
           </button>
         </CollapsibleTrigger>
 
