@@ -229,7 +229,7 @@ export function ProjectCommissionTab({ projectId, readOnly = false }: ProjectCom
     const filledFromSuggestion =
       (savedRate == null && suggestedRatePerCy > 0) ||
       (savedPct == null && suggestedPctOfInvoice > 0);
-    if (filledFromSuggestion && projectId && organizationId && crewId) {
+    if (!readOnly && filledFromSuggestion && projectId && organizationId && crewId) {
       const payload: any = {
         ...(commission?.id ? { id: commission.id } : {}),
         organization_id: organizationId,
