@@ -30,6 +30,8 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { useActiveProjects, usePhases } from "@/hooks/useReferenceData";
 import { useEntryForm } from "./entry-form/useEntryForm";
 import { GeneralTab, ConcreteTab, StoneTab, PumpTab, InspectionTab } from "./entry-form/tabs";
+import { checkDuplicateInvoiceNumbers, type InvoiceConflict } from "@/hooks/useDuplicateInvoiceCheck";
+import { DuplicateInvoiceDialog } from "./DuplicateInvoiceDialog";
 
 export interface PrefilledProject {
   id: string;
