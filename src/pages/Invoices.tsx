@@ -278,15 +278,14 @@ export default function Invoices() {
   };
 
   const renderTable = (entries: InvoiceEntry[], isLoading: boolean) => {
-    const filtered = filterEntries(entries);
-    
     if (isLoading) {
       return <div className="text-muted-foreground text-center py-12">Loading...</div>;
     }
 
-    if (filtered.length === 0) {
+    if (entries.length === 0) {
       return <div className="text-muted-foreground text-center py-12">No entries found</div>;
     }
+
 
     return (
       <div className="overflow-x-auto">
