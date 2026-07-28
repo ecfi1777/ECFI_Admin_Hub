@@ -49,11 +49,22 @@ interface EditEntryDialogProps {
 
 export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "general" }: EditEntryDialogProps) {
   const queryClient = useQueryClient();
+  const { organizationId } = useOrganization();
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [isProjectSheetOpen, setIsProjectSheetOpen] = useState(false);
-  
+  const [conflicts, setConflicts] = useState<InvoiceConflict[]>([]);
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
+
   const { formData, updateField, loadFromEntry, getUpdatePayload, addStoneLine, updateStoneLine, removeStoneLine } = useEntryForm();
   const { data: phases = [] } = usePhases();
+
+  // Clear any pending duplicate warning when the dialog closes
+  useEffect(() => {
+    if (!open) {
+      setConflicts([]);
+      setShowDuplicateDialog(false);
+    }
+  }, [open]);
 
   // Determine if the current phase is "Prep Slabs"
   const isPrepSlabs = useMemo(() => {
