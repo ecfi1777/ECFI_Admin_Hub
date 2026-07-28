@@ -25,6 +25,9 @@ import { getUserFriendlyError } from "@/lib/errorHandler";
 import { invalidateScheduleQueries } from "@/lib/queryHelpers";
 import { useEntryForm } from "./entry-form/useEntryForm";
 import { usePhases } from "@/hooks/useReferenceData";
+import { useOrganization } from "@/hooks/useOrganization";
+import { checkDuplicateInvoiceNumbers, type InvoiceConflict } from "@/hooks/useDuplicateInvoiceCheck";
+import { DuplicateInvoiceDialog } from "./DuplicateInvoiceDialog";
 import { ProjectDetailsSheet } from "@/components/projects/ProjectDetailsSheet";
 import { 
   GeneralTab, 
