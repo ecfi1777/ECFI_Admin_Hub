@@ -60,8 +60,11 @@ export default function Invoices() {
   const [invoiceNumberValue, setInvoiceNumberValue] = useState("");
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [isProjectSheetOpen, setIsProjectSheetOpen] = useState(false);
+  const [completedPage, setCompletedPage] = useState(1);
+  const [completedPageSize, setCompletedPageSize] = useState<"50" | "100" | "all">("100");
 
   const queryClient = useQueryClient();
+
   const { organizationId } = useOrganization();
 
   const { data: pendingEntries = [], isLoading: loadingPending } = useQuery({
