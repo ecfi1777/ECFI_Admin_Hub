@@ -508,8 +508,9 @@ export default function Invoices() {
               </TabsTrigger>
               <TabsTrigger value="completed" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-muted-foreground">
                 <Check className="w-4 h-4 mr-2" />
-                Completed
+                Completed ({filterEntries(completedEntries).length})
               </TabsTrigger>
+
             </TabsList>
           </div>
 
