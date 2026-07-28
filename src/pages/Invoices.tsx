@@ -198,6 +198,21 @@ export default function Invoices() {
     setFilterPhase("all");
   };
 
+  const paginateCompleted = (entries: InvoiceEntry[]) => {
+    const filtered = filterEntries(entries);
+    const pageSizeNum = completedPageSize === "all" ? filtered.length : parseInt(completedPageSize, 10);
+    const totalPages = Math.ceil(filtered.length / pageSizeNum) || 1;
+    const safePage = Math.min(completedPage, totalPages);
+    const start = (safePage - 1) * pageSizeNum;
+    return {
+      entries: filtered.slice(start, start + pageSizeNum),
+      total: filtered.length,
+      totalPages,
+      safePage,
+    };
+  };
+
+
   const handleStartEditInvoice = (entry: InvoiceEntry) => {
     setEditingInvoiceId(entry.id);
     setInvoiceNumberValue(entry.invoice_number || "");
