@@ -1,24 +1,69 @@
 ## Goal
-Let the Completed invoices tab show more than 100 records by adding pagination, while still allowing the user to view the full list if they choose.
 
-## Current state
-- `src/pages/Invoices.tsx` loads completed invoices with `.limit(100)` and no pagination.
-- Once a user exceeds 100 completed invoices, older records are hidden with no way to reach them.
-- Pending invoices are not capped, so this issue only affects the Completed tab.
+When saving a Daily Schedule entry, warn if a concrete, pump, inspection, or sub invoice number already exists on another entry — matching the "Duplicate Bill Number" warning on the Vendor Bills page. Advisory only: "Add Anyway" always saves.
 
-## Proposed changes
-1. **Remove the hard 100-record cap** on the Completed query (or make it optional via "All").
-2. **Add client-side pagination state** for the Completed tab only:
-   - `completedPage` (number)
-   - `completedPageSize` (50 | 100 | "all")
-3. **Add a page-size selector** above the Completed table with options: 50, 100, All. Default to 100 to preserve today's behavior.
-4. **Add pagination controls** (Previous / Next / page info) below the Completed table.
-5. **Apply filters first, then paginate**, so search and filter still operate across the entire result set.
-6. **Leave export unchanged** — it already exports the filtered full set, which is the expected behavior.
-7. **Leave Pending tab unchanged** — its volume is naturally limited.
+## Files
 
-## Files affected
-- `src/pages/Invoices.tsx` — pagination state, query change, page-size selector, pagination controls.
+Only these four:
+- CREATE `src/hooks/useDuplicateInvoiceCheck.ts`
+- CREATE `src/components/schedule/DuplicateInvoiceDialog.tsx`
+- EDIT `src/components/schedule/AddEntryDialog.tsx`
+- EDIT `src/components/schedule/EditEntryDialog.tsx`
 
-## Outcome
-Users can scroll through completed invoices 50 or 100 at a time, or switch to "All" to see every completed invoice at once without losing access to older records.
+No other files, no migrations, no schema changes.
+
+## 1. Duplicate check helper
+
+`useDuplicateInvoiceCheck.ts` exports:
+
+```ts
+export type InvoiceConflict = { label: string; value: string };
+```
+
+and an async `checkDuplicateInvoiceNumbers(organizationId, excludeEntryId, values)` where `values` is `{ concrete?, pump?, inspection?, sub? }`.
+
+Column mapping: concrete → `ready_mix_invoice_number`, pump → `pump_invoice_number`, inspection → `inspection_invoice_number`, sub → `sub_invoice_number`. (All four columns confirmed present on `schedule_entries`, along with the `deleted` boolean.)
+
+Behavior:
+- Return `[]` immediately when `organizationId` is falsy.
+- Trim each value; skip empty ones (blank numbers are never flagged).
+- Per non-empty field: `schedule_entries.select("id").eq("organization_id", …).eq("deleted", false).filter(<column>, "eq", trimmed).limit(1)`, plus `.neq("id", excludeEntryId)` when editing.
+- All queries run in parallel via `Promise.all`; any error is thrown for the caller to surface.
+- Returns conflicts in fixed order: concrete, pump, inspection, sub.
+
+## 2. DuplicateInvoiceDialog
+
+Presentational shadcn `AlertDialog`. Props: `open`, `onOpenChange`, `conflicts`, `onConfirm`.
+
+- Title: `Duplicate Bill Number`
+- One conflict: `A {label} bill with invoice number "{value}" already exists. Do you want to continue?`
+- Multiple: `The following invoice numbers already exist. Do you want to continue?` followed by one line per conflict in the same sentence form.
+- Footer: `Cancel` (AlertDialogCancel) and `Add Anyway` (AlertDialogAction → `onConfirm`).
+
+Wording and labels match the Vendor Bills dialog exactly.
+
+## 3. AddEntryDialog
+
+- Add `conflicts` and `showDuplicateDialog` state; clear both in the existing open/close reset effect.
+- `createMutation` is left untouched — the check does not go in `mutationFn`.
+- `handleSubmit` becomes async: existing date/crew/reason guards run first; if `did_not_work`, skip the check and mutate as today. Otherwise `await checkDuplicateInvoiceNumbers(organizationId, null, {…four formData values})`. Non-empty → set conflicts, open the warning, return without saving (entry dialog stays open, form intact). Empty → mutate. `try/catch` surfaces errors via `toast.error(getUserFriendlyError(error))` and blocks the save.
+- Render `<DuplicateInvoiceDialog />`; `onConfirm` closes it then calls `createMutation.mutate()` (never re-runs the check).
+
+## 4. EditEntryDialog
+
+- Add `useOrganization` import and `organizationId` (not currently imported here).
+- Same two state values, cleared on close.
+- `updateMutation` / `deleteMutation` unchanged.
+- `handleSave` becomes async, preserving the existing early returns in order: the `did_not_work` + empty-reason toast guard; the "not did_not_work and no project_id" path that calls `deleteMutation.mutate()` with no duplicate check; and the `did_not_work` path that mutates without checking. Only the normal save path runs the check, with `excludeEntryId: entry.id` so an entry never matches itself.
+- `<DuplicateInvoiceDialog />` with `onConfirm` closing it and calling `updateMutation.mutate()`.
+
+## Constraints
+
+- Stone is out of scope — no check on `stone_invoice_number` or `schedule_entry_stone_lines`.
+- Exact match on the trimmed string; no case-insensitive or fuzzy matching.
+- Soft-deleted entries (`deleted = true`) never trigger a warning.
+- No DB constraint or index added; no existing toast, label, or validation rule changed.
+
+## Verification
+
+Add and Edit flows for each of the four types (dialog names the right type, Cancel keeps the form and saves nothing, "Add Anyway" saves), multi-conflict single dialog, unchanged-number edit produces no warning, blank fields and "did not work" entries save silently, soft-deleted matches ignored, Vendor Bills warning unchanged, no TypeScript or console errors.
