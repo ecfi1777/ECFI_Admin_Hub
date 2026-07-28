@@ -230,7 +230,7 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
     },
   });
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (formData.did_not_work && !formData.not_working_reason.trim()) {
       toast.error("Please enter a reason why the crew did not work");
       return;
@@ -239,6 +239,28 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
       deleteMutation.mutate();
       return;
     }
+    if (formData.did_not_work) {
+      updateMutation.mutate();
+      return;
+    }
+
+    try {
+      const found = await checkDuplicateInvoiceNumbers(organizationId, entry?.id, {
+        concrete: formData.ready_mix_invoice_number,
+        pump: formData.pump_invoice_number,
+        inspection: formData.inspection_invoice_number,
+        sub: formData.sub_invoice_number,
+      });
+      if (found.length > 0) {
+        setConflicts(found);
+        setShowDuplicateDialog(true);
+        return;
+      }
+    } catch (error) {
+      toast.error(getUserFriendlyError(error as Error));
+      return;
+    }
+
     updateMutation.mutate();
   };
 
