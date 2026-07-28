@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
@@ -60,9 +60,18 @@ export default function Invoices() {
   const [invoiceNumberValue, setInvoiceNumberValue] = useState("");
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [isProjectSheetOpen, setIsProjectSheetOpen] = useState(false);
+  const [completedPage, setCompletedPage] = useState(1);
+  const [completedPageSize, setCompletedPageSize] = useState<"50" | "100" | "all">("100");
 
   const queryClient = useQueryClient();
+
+  // Reset completed pagination when filters or page size change
+  useEffect(() => {
+    setCompletedPage(1);
+  }, [searchQuery, filterBuilder, filterCrew, filterLocation, filterPhase, completedPageSize]);
+
   const { organizationId } = useOrganization();
+
 
   const { data: pendingEntries = [], isLoading: loadingPending } = useQuery({
     queryKey: ["invoice-pending", organizationId],
@@ -104,8 +113,8 @@ export default function Invoices() {
         .eq("invoice_complete", true)
         .eq("deleted", false)
         .eq("is_cancelled", false)
-        .order("scheduled_date", { ascending: false })
-        .limit(100);
+        .order("scheduled_date", { ascending: false });
+
       if (error) throw error;
       return data as InvoiceEntry[];
     },
@@ -189,6 +198,21 @@ export default function Invoices() {
     setFilterPhase("all");
   };
 
+  const paginateCompleted = (entries: InvoiceEntry[]) => {
+    const filtered = filterEntries(entries);
+    const pageSizeNum = completedPageSize === "all" ? filtered.length : parseInt(completedPageSize, 10);
+    const totalPages = Math.ceil(filtered.length / pageSizeNum) || 1;
+    const safePage = Math.min(completedPage, totalPages);
+    const start = (safePage - 1) * pageSizeNum;
+    return {
+      entries: filtered.slice(start, start + pageSizeNum),
+      total: filtered.length,
+      totalPages,
+      safePage,
+    };
+  };
+
+
   const handleStartEditInvoice = (entry: InvoiceEntry) => {
     setEditingInvoiceId(entry.id);
     setInvoiceNumberValue(entry.invoice_number || "");
@@ -269,15 +293,14 @@ export default function Invoices() {
   };
 
   const renderTable = (entries: InvoiceEntry[], isLoading: boolean) => {
-    const filtered = filterEntries(entries);
-    
     if (isLoading) {
       return <div className="text-muted-foreground text-center py-12">Loading...</div>;
     }
 
-    if (filtered.length === 0) {
+    if (entries.length === 0) {
       return <div className="text-muted-foreground text-center py-12">No entries found</div>;
     }
+
 
     return (
       <div className="overflow-x-auto">
@@ -295,7 +318,8 @@ export default function Invoices() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.map((entry) => (
+            {entries.map((entry) => (
+
               <TableRow key={entry.id}>
                 <TableCell>
                   <Checkbox
@@ -484,8 +508,9 @@ export default function Invoices() {
               </TabsTrigger>
               <TabsTrigger value="completed" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-muted-foreground">
                 <Check className="w-4 h-4 mr-2" />
-                Completed
+                Completed ({filterEntries(completedEntries).length})
               </TabsTrigger>
+
             </TabsList>
           </div>
 
@@ -502,7 +527,7 @@ export default function Invoices() {
                     Export to Excel
                   </Button>
                 </div>
-                {renderTable(pendingEntries, loadingPending)}
+                {renderTable(filterEntries(pendingEntries), loadingPending)}
               </CardContent>
             </Card>
           </TabsContent>
@@ -510,20 +535,73 @@ export default function Invoices() {
           <TabsContent value="completed">
             <Card>
               <CardContent className="p-0">
-                <div className="flex justify-end p-3 border-b border-border">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleExport("completed", completedEntries)}
-                  >
-                    <Download className="w-4 h-4 mr-2" />
-                    Export to Excel
-                  </Button>
-                </div>
-                {renderTable(completedEntries, loadingCompleted)}
+                {(() => {
+                  const { entries: paginatedCompleted, total: completedTotal, totalPages, safePage } = paginateCompleted(completedEntries);
+                  return (
+                    <>
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 border-b border-border">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground">Show</span>
+                          <Select
+                            value={completedPageSize}
+                            onValueChange={(value) => setCompletedPageSize(value as "50" | "100" | "all")}
+                          >
+                            <SelectTrigger className="w-24 h-8">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="50">50</SelectItem>
+                              <SelectItem value="100">100</SelectItem>
+                              <SelectItem value="all">All</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <span className="text-sm text-muted-foreground">per page</span>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleExport("completed", completedEntries)}
+                        >
+                          <Download className="w-4 h-4 mr-2" />
+                          Export to Excel
+                        </Button>
+                      </div>
+                      {renderTable(paginatedCompleted, loadingCompleted)}
+                      {completedTotal > 0 && (
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 border-t border-border">
+                          <span className="text-sm text-muted-foreground">
+                            Showing {paginatedCompleted.length} of {completedTotal} entries
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setCompletedPage((p) => Math.max(1, safePage - 1))}
+                              disabled={safePage <= 1}
+                            >
+                              Previous
+                            </Button>
+                            <span className="text-sm text-muted-foreground min-w-[100px] text-center">
+                              Page {safePage} of {totalPages}
+                            </span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setCompletedPage((p) => Math.min(totalPages, safePage + 1))}
+                              disabled={safePage >= totalPages}
+                            >
+                              Next
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
               </CardContent>
             </Card>
           </TabsContent>
+
         </Tabs>
       </div>
 
