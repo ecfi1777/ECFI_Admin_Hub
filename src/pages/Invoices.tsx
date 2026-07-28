@@ -113,8 +113,8 @@ export default function Invoices() {
         .eq("invoice_complete", true)
         .eq("deleted", false)
         .eq("is_cancelled", false)
-        .order("scheduled_date", { ascending: false })
-        .limit(100);
+        .order("scheduled_date", { ascending: false });
+
       if (error) throw error;
       return data as InvoiceEntry[];
     },
