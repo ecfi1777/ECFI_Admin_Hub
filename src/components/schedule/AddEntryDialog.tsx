@@ -54,6 +54,8 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate,
   const [projectId, setProjectId] = useState("");
   const [projectSearch, setProjectSearch] = useState("");
   const [invoiceTouched, setInvoiceTouched] = useState(false);
+  const [conflicts, setConflicts] = useState<InvoiceConflict[]>([]);
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
     defaultDate ? new Date(defaultDate + "T12:00:00") : undefined
   );
@@ -89,9 +91,11 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate,
     }
   }, [defaultCrewId, updateField]);
 
-  // Reset the "invoice touched" flag when dialog opens/closes
+  // Reset the "invoice touched" flag and duplicate warning when dialog opens/closes
   useEffect(() => {
     if (!open) setInvoiceTouched(false);
+    setConflicts([]);
+    setShowDuplicateDialog(false);
   }, [open]);
 
   // Auto-check "To Be Invoiced" when selected phase has default_to_be_invoiced=true,
