@@ -199,7 +199,7 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate,
     resetForm();
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (showDatePicker && !selectedDate) {
       toast.error("Please select a scheduled date");
@@ -214,10 +214,30 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate,
         toast.error("Please select a crew");
         return;
       }
+      createMutation.mutate();
+      return;
     } else if (!formData.crew_id) {
       toast.error("Please select a crew");
       return;
     }
+
+    try {
+      const found = await checkDuplicateInvoiceNumbers(organizationId, null, {
+        concrete: formData.ready_mix_invoice_number,
+        pump: formData.pump_invoice_number,
+        inspection: formData.inspection_invoice_number,
+        sub: formData.sub_invoice_number,
+      });
+      if (found.length > 0) {
+        setConflicts(found);
+        setShowDuplicateDialog(true);
+        return;
+      }
+    } catch (error) {
+      toast.error(getUserFriendlyError(error as Error));
+      return;
+    }
+
     createMutation.mutate();
   };
 
