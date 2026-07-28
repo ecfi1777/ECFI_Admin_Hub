@@ -65,7 +65,13 @@ export default function Invoices() {
 
   const queryClient = useQueryClient();
 
+  // Reset completed pagination when filters or page size change
+  useEffect(() => {
+    setCompletedPage(1);
+  }, [searchQuery, filterBuilder, filterCrew, filterLocation, filterPhase, completedPageSize]);
+
   const { organizationId } = useOrganization();
+
 
   const { data: pendingEntries = [], isLoading: loadingPending } = useQuery({
     queryKey: ["invoice-pending", organizationId],
