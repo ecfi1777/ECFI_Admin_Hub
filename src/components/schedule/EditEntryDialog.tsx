@@ -450,6 +450,15 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
           </>
         )}
       </DialogContent>
+      <DuplicateInvoiceDialog
+        open={showDuplicateDialog}
+        onOpenChange={setShowDuplicateDialog}
+        conflicts={conflicts}
+        onConfirm={() => {
+          setShowDuplicateDialog(false);
+          updateMutation.mutate();
+        }}
+      />
       <ProjectDetailsSheet
         projectId={selectedProjectId}
         isOpen={isProjectSheetOpen}
