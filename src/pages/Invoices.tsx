@@ -534,20 +534,73 @@ export default function Invoices() {
           <TabsContent value="completed">
             <Card>
               <CardContent className="p-0">
-                <div className="flex justify-end p-3 border-b border-border">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleExport("completed", completedEntries)}
-                  >
-                    <Download className="w-4 h-4 mr-2" />
-                    Export to Excel
-                  </Button>
-                </div>
-                {renderTable(completedEntries, loadingCompleted)}
+                {(() => {
+                  const { entries: paginatedCompleted, total: completedTotal, totalPages, safePage } = paginateCompleted(completedEntries);
+                  return (
+                    <>
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 border-b border-border">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground">Show</span>
+                          <Select
+                            value={completedPageSize}
+                            onValueChange={(value) => setCompletedPageSize(value as "50" | "100" | "all")}
+                          >
+                            <SelectTrigger className="w-24 h-8">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="50">50</SelectItem>
+                              <SelectItem value="100">100</SelectItem>
+                              <SelectItem value="all">All</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <span className="text-sm text-muted-foreground">per page</span>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleExport("completed", completedEntries)}
+                        >
+                          <Download className="w-4 h-4 mr-2" />
+                          Export to Excel
+                        </Button>
+                      </div>
+                      {renderTable(paginatedCompleted, loadingCompleted)}
+                      {completedTotal > 0 && (
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 border-t border-border">
+                          <span className="text-sm text-muted-foreground">
+                            Showing {paginatedCompleted.length} of {completedTotal} entries
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setCompletedPage((p) => Math.max(1, safePage - 1))}
+                              disabled={safePage <= 1}
+                            >
+                              Previous
+                            </Button>
+                            <span className="text-sm text-muted-foreground min-w-[100px] text-center">
+                              Page {safePage} of {totalPages}
+                            </span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setCompletedPage((p) => Math.min(totalPages, safePage + 1))}
+                              disabled={safePage >= totalPages}
+                            >
+                              Next
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
               </CardContent>
             </Card>
           </TabsContent>
+
         </Tabs>
       </div>
 
