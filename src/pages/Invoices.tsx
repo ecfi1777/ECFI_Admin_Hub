@@ -303,7 +303,8 @@ export default function Invoices() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.map((entry) => (
+            {entries.map((entry) => (
+
               <TableRow key={entry.id}>
                 <TableCell>
                   <Checkbox
