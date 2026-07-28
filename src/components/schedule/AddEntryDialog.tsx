@@ -468,6 +468,15 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate,
             </Button>
           </div>
         </form>
+        <DuplicateInvoiceDialog
+          open={showDuplicateDialog}
+          onOpenChange={setShowDuplicateDialog}
+          conflicts={conflicts}
+          onConfirm={() => {
+            setShowDuplicateDialog(false);
+            createMutation.mutate();
+          }}
+        />
       </DialogContent>
     </Dialog>
   );
