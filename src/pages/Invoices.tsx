@@ -526,7 +526,7 @@ export default function Invoices() {
                     Export to Excel
                   </Button>
                 </div>
-                {renderTable(pendingEntries, loadingPending)}
+                {renderTable(filterEntries(pendingEntries), loadingPending)}
               </CardContent>
             </Card>
           </TabsContent>
