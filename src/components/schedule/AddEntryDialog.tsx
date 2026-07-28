@@ -30,6 +30,8 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { useActiveProjects, usePhases } from "@/hooks/useReferenceData";
 import { useEntryForm } from "./entry-form/useEntryForm";
 import { GeneralTab, ConcreteTab, StoneTab, PumpTab, InspectionTab } from "./entry-form/tabs";
+import { checkDuplicateInvoiceNumbers, type InvoiceConflict } from "@/hooks/useDuplicateInvoiceCheck";
+import { DuplicateInvoiceDialog } from "./DuplicateInvoiceDialog";
 
 export interface PrefilledProject {
   id: string;
@@ -52,6 +54,8 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate,
   const [projectId, setProjectId] = useState("");
   const [projectSearch, setProjectSearch] = useState("");
   const [invoiceTouched, setInvoiceTouched] = useState(false);
+  const [conflicts, setConflicts] = useState<InvoiceConflict[]>([]);
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
     defaultDate ? new Date(defaultDate + "T12:00:00") : undefined
   );
@@ -87,9 +91,11 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate,
     }
   }, [defaultCrewId, updateField]);
 
-  // Reset the "invoice touched" flag when dialog opens/closes
+  // Reset the "invoice touched" flag and duplicate warning when dialog opens/closes
   useEffect(() => {
     if (!open) setInvoiceTouched(false);
+    setConflicts([]);
+    setShowDuplicateDialog(false);
   }, [open]);
 
   // Auto-check "To Be Invoiced" when selected phase has default_to_be_invoiced=true,
@@ -193,7 +199,7 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate,
     resetForm();
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (showDatePicker && !selectedDate) {
       toast.error("Please select a scheduled date");
@@ -208,10 +214,30 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate,
         toast.error("Please select a crew");
         return;
       }
+      createMutation.mutate();
+      return;
     } else if (!formData.crew_id) {
       toast.error("Please select a crew");
       return;
     }
+
+    try {
+      const found = await checkDuplicateInvoiceNumbers(organizationId, null, {
+        concrete: formData.ready_mix_invoice_number,
+        pump: formData.pump_invoice_number,
+        inspection: formData.inspection_invoice_number,
+        sub: formData.sub_invoice_number,
+      });
+      if (found.length > 0) {
+        setConflicts(found);
+        setShowDuplicateDialog(true);
+        return;
+      }
+    } catch (error) {
+      toast.error(getUserFriendlyError(error as Error));
+      return;
+    }
+
     createMutation.mutate();
   };
 
@@ -442,6 +468,15 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate,
             </Button>
           </div>
         </form>
+        <DuplicateInvoiceDialog
+          open={showDuplicateDialog}
+          onOpenChange={setShowDuplicateDialog}
+          conflicts={conflicts}
+          onConfirm={() => {
+            setShowDuplicateDialog(false);
+            createMutation.mutate();
+          }}
+        />
       </DialogContent>
     </Dialog>
   );

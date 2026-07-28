@@ -25,6 +25,9 @@ import { getUserFriendlyError } from "@/lib/errorHandler";
 import { invalidateScheduleQueries } from "@/lib/queryHelpers";
 import { useEntryForm } from "./entry-form/useEntryForm";
 import { usePhases } from "@/hooks/useReferenceData";
+import { useOrganization } from "@/hooks/useOrganization";
+import { checkDuplicateInvoiceNumbers, type InvoiceConflict } from "@/hooks/useDuplicateInvoiceCheck";
+import { DuplicateInvoiceDialog } from "./DuplicateInvoiceDialog";
 import { ProjectDetailsSheet } from "@/components/projects/ProjectDetailsSheet";
 import { 
   GeneralTab, 
@@ -46,11 +49,22 @@ interface EditEntryDialogProps {
 
 export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "general" }: EditEntryDialogProps) {
   const queryClient = useQueryClient();
+  const { organizationId } = useOrganization();
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [isProjectSheetOpen, setIsProjectSheetOpen] = useState(false);
-  
+  const [conflicts, setConflicts] = useState<InvoiceConflict[]>([]);
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
+
   const { formData, updateField, loadFromEntry, getUpdatePayload, addStoneLine, updateStoneLine, removeStoneLine } = useEntryForm();
   const { data: phases = [] } = usePhases();
+
+  // Clear any pending duplicate warning when the dialog closes
+  useEffect(() => {
+    if (!open) {
+      setConflicts([]);
+      setShowDuplicateDialog(false);
+    }
+  }, [open]);
 
   // Determine if the current phase is "Prep Slabs"
   const isPrepSlabs = useMemo(() => {
@@ -216,7 +230,7 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
     },
   });
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (formData.did_not_work && !formData.not_working_reason.trim()) {
       toast.error("Please enter a reason why the crew did not work");
       return;
@@ -225,6 +239,28 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
       deleteMutation.mutate();
       return;
     }
+    if (formData.did_not_work) {
+      updateMutation.mutate();
+      return;
+    }
+
+    try {
+      const found = await checkDuplicateInvoiceNumbers(organizationId, entry?.id, {
+        concrete: formData.ready_mix_invoice_number,
+        pump: formData.pump_invoice_number,
+        inspection: formData.inspection_invoice_number,
+        sub: formData.sub_invoice_number,
+      });
+      if (found.length > 0) {
+        setConflicts(found);
+        setShowDuplicateDialog(true);
+        return;
+      }
+    } catch (error) {
+      toast.error(getUserFriendlyError(error as Error));
+      return;
+    }
+
     updateMutation.mutate();
   };
 
@@ -414,6 +450,15 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
           </>
         )}
       </DialogContent>
+      <DuplicateInvoiceDialog
+        open={showDuplicateDialog}
+        onOpenChange={setShowDuplicateDialog}
+        conflicts={conflicts}
+        onConfirm={() => {
+          setShowDuplicateDialog(false);
+          updateMutation.mutate();
+        }}
+      />
       <ProjectDetailsSheet
         projectId={selectedProjectId}
         isOpen={isProjectSheetOpen}
