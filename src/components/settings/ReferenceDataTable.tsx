@@ -130,7 +130,7 @@ export function ReferenceDataTable({ tableName, displayName, hasCode = false, ha
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, ...updates }: Partial<ReferenceItem> & { id: string }) => {
-      const { error } = await supabase.from(tableName).update(updates).eq("id", id);
+      const { error } = await supabase.from(tableName).update(updates as never).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {

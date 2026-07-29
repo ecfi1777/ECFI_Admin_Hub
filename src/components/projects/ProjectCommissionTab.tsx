@@ -334,7 +334,7 @@ export function ProjectCommissionTab({ projectId, readOnly = false }: ProjectCom
   });
 
   const updateCost = async (id: string, updates: Record<string, any>) => {
-    const { error } = await supabase.from("project_other_costs").update(updates).eq("id", id);
+    const { error } = await supabase.from("project_other_costs").update(updates as never).eq("id", id);
     if (error) toast.error(getUserFriendlyError(error));
     else invalidateOtherCosts();
   };
