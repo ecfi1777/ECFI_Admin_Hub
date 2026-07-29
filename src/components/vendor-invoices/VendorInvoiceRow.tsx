@@ -164,7 +164,7 @@ export function VendorInvoiceRow({
       const field = NOTES_FIELD[type];
       const { error } = await supabase
         .from("schedule_entries")
-        .update({ [field]: noteValue.trim() ? noteValue : null })
+        .update({ [field]: noteValue.trim() ? noteValue : null } as never)
         .eq("id", entry.id);
       if (error) throw error;
     },
@@ -201,7 +201,7 @@ export function VendorInvoiceRow({
     }
     const { error } = await supabase
       .from("schedule_entries")
-      .update(updates)
+      .update(updates as never)
       .eq("id", entry.id);
     if (error) throw error;
   }, [type, invoiceNumber, yards, amount, entry.id]);
@@ -263,7 +263,7 @@ export function VendorInvoiceRow({
       };
       const { error } = await supabase
         .from("schedule_entries")
-        .update(updates)
+        .update(updates as never)
         .eq("id", entry.id);
       if (error) throw error;
     },

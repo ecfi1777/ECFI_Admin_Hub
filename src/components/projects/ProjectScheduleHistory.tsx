@@ -241,7 +241,7 @@ export function ProjectScheduleHistory({ projectId, readOnly = false }: ProjectS
       if (!editingEntry) return;
       const { error } = await supabase
         .from("schedule_entries")
-        .update(updates)
+        .update(updates as never)
         .eq("id", editingEntry.id);
       if (error) throw error;
     },
