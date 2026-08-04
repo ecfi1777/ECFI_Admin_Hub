@@ -41,6 +41,7 @@ const allNavItems = [
   { href: "/calendar", label: "Calendar", icon: CalendarDays, minRole: "viewer" as const },
   { href: "/kanban", label: "Kanban", icon: Columns3, minRole: "manager" as const },
   { href: "/invoices", label: "Jobs to Invoice", icon: FileText, minRole: "manager" as const },
+  { href: "/extras", label: "Extras to Invoice", icon: FilePlus, minRole: "manager" as const },
   { href: "/vendor-invoices", label: "Vendor Bills", icon: Receipt, minRole: "manager" as const },
   { href: "/discrepancies", label: "Discrepancies", icon: AlertTriangle, minRole: "manager" as const },
   { href: "/reports", label: "Reports", icon: ClipboardList, minRole: "manager" as const },
