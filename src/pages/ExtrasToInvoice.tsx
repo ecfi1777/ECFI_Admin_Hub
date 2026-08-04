@@ -159,6 +159,40 @@ export default function ExtrasToInvoice() {
     onError: () => toast.error("Failed to delete extra"),
   });
 
+  const fieldUpdateMutation = useMutation({
+    mutationFn: async ({
+      id,
+      field,
+      value,
+    }: {
+      id: string;
+      field: "amount" | "invoice_number";
+      value: string;
+    }) => {
+      let payload: Partial<InvoiceExtra> = {};
+      if (field === "amount") {
+        const trimmed = value.trim();
+        if (trimmed && Number.isNaN(Number(trimmed))) {
+          throw new Error("Amount must be a number");
+        }
+        payload = { amount: trimmed ? Number(trimmed) : null };
+      } else {
+        payload = { invoice_number: value.trim() || null };
+      }
+      const { error } = await supabase
+        .from("invoice_extras")
+        .update(payload)
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["invoice-extras"] });
+    },
+    onError: (err: any) => {
+      toast.error(err?.message || "Failed to update field");
+    },
+  });
+
   const filterExtras = (rows: InvoiceExtra[]) => {
     const searchLower = searchQuery.trim().toLowerCase();
     return rows.filter((e) => {
@@ -252,7 +286,10 @@ export default function ExtrasToInvoice() {
       setDialogOpen(true);
     },
     onDelete: (extra: InvoiceExtra) => setPendingDelete(extra),
-    isMutating: toggleMutation.isPending,
+    onUpdateField: async (extra: InvoiceExtra, field: "amount" | "invoice_number", value: string) => {
+      await fieldUpdateMutation.mutateAsync({ id: extra.id, field, value });
+    },
+    isMutating: toggleMutation.isPending || fieldUpdateMutation.isPending,
   };
 
   return (
