@@ -20,6 +20,7 @@ import {
   LogOut,
   AlertTriangle,
   FileText,
+  FilePlus,
   Sun,
   Moon,
   ClipboardList,
