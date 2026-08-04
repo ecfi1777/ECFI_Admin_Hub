@@ -1,3 +1,4 @@
+import { useState, useRef, KeyboardEvent } from "react";
 import { format } from "date-fns";
 import {
   Table,
@@ -9,8 +10,12 @@ import {
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Pencil, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { InvoiceExtra } from "./types";
+
+type EditingCell = { id: string; field: "amount" | "invoice_number"; value: string } | null;
 
 interface ExtrasTableProps {
   extras: InvoiceExtra[];
@@ -18,6 +23,7 @@ interface ExtrasTableProps {
   onToggleComplete: (extra: InvoiceExtra, complete: boolean) => void;
   onEdit: (extra: InvoiceExtra) => void;
   onDelete: (extra: InvoiceExtra) => void;
+  onUpdateField: (extra: InvoiceExtra, field: "amount" | "invoice_number", value: string) => Promise<void>;
   isMutating: boolean;
 }
 
@@ -27,8 +33,13 @@ export function ExtrasTable({
   onToggleComplete,
   onEdit,
   onDelete,
+  onUpdateField,
   isMutating,
 }: ExtrasTableProps) {
+  const [editingCell, setEditingCell] = useState<EditingCell>(null);
+  const amountInputRef = useRef<HTMLInputElement>(null);
+  const invoiceInputRef = useRef<HTMLInputElement>(null);
+
   if (isLoading) {
     return <div className="text-muted-foreground text-center py-12">Loading...</div>;
   }
@@ -36,6 +47,107 @@ export function ExtrasTable({
   if (extras.length === 0) {
     return <div className="text-muted-foreground text-center py-12">No extras found</div>;
   }
+
+  const startEditing = (extra: InvoiceExtra, field: "amount" | "invoice_number") => {
+    const initial = field === "amount"
+      ? (extra.amount != null ? String(extra.amount) : "")
+      : (extra.invoice_number || "");
+    setEditingCell({ id: extra.id, field, value: initial });
+    setTimeout(() => {
+      (field === "amount" ? amountInputRef : invoiceInputRef).current?.focus();
+      (field === "amount" ? amountInputRef : invoiceInputRef).current?.select();
+    }, 0);
+  };
+
+  const commit = async () => {
+    if (!editingCell) return;
+    const extra = extras.find((e) => e.id === editingCell.id);
+    if (!extra) {
+      setEditingCell(null);
+      return;
+    }
+    const currentValue = editingCell.field === "amount"
+      ? (extra.amount != null ? String(extra.amount) : "")
+      : (extra.invoice_number || "");
+    if (editingCell.value === currentValue) {
+      setEditingCell(null);
+      return;
+    }
+    try {
+      await onUpdateField(extra, editingCell.field, editingCell.value);
+    } catch {
+      toast.error("Failed to update");
+    } finally {
+      setEditingCell(null);
+    }
+  };
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      commit();
+    } else if (e.key === "Escape") {
+      setEditingCell(null);
+    }
+  };
+
+  const renderAmountCell = (extra: InvoiceExtra) => {
+    if (editingCell?.id === extra.id && editingCell.field === "amount") {
+      return (
+        <Input
+          ref={amountInputRef}
+          value={editingCell.value}
+          onChange={(e) => setEditingCell({ ...editingCell, value: e.target.value })}
+          onBlur={commit}
+          onKeyDown={handleKeyDown}
+          inputMode="decimal"
+          className="h-8 text-right pr-2"
+          placeholder="0.00"
+        />
+      );
+    }
+    return (
+      <button
+        type="button"
+        onClick={() => startEditing(extra, "amount")}
+        className="w-full text-right whitespace-nowrap hover:underline focus:outline-none"
+        disabled={isMutating}
+      >
+        {extra.amount != null
+          ? `$${extra.amount.toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}`
+          : "-"}
+      </button>
+    );
+  };
+
+  const renderInvoiceCell = (extra: InvoiceExtra) => {
+    if (editingCell?.id === extra.id && editingCell.field === "invoice_number") {
+      return (
+        <Input
+          ref={invoiceInputRef}
+          value={editingCell.value}
+          onChange={(e) => setEditingCell({ ...editingCell, value: e.target.value })}
+          onBlur={commit}
+          onKeyDown={handleKeyDown}
+          className="h-8"
+          placeholder="Invoice #"
+        />
+      );
+    }
+    return (
+      <button
+        type="button"
+        onClick={() => startEditing(extra, "invoice_number")}
+        className="w-full text-left whitespace-nowrap hover:underline focus:outline-none text-muted-foreground"
+        disabled={isMutating}
+      >
+        {extra.invoice_number || "-"}
+      </button>
+    );
+  };
 
   return (
     <div className="overflow-x-auto">
@@ -80,15 +192,10 @@ export function ExtrasTable({
                 {extra.description}
               </TableCell>
               <TableCell className="text-right whitespace-nowrap">
-                {extra.amount != null
-                  ? `$${extra.amount.toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}`
-                  : "-"}
+                {renderAmountCell(extra)}
               </TableCell>
-              <TableCell className="text-muted-foreground">
-                {extra.invoice_number || "-"}
+              <TableCell className="whitespace-nowrap">
+                {renderInvoiceCell(extra)}
               </TableCell>
               <TableCell>
                 <div className="flex items-center gap-1">
