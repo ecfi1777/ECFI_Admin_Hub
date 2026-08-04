@@ -21,6 +21,7 @@ import Dashboard from "./pages/Dashboard";
 import Projects from "./pages/Projects";
 import CalendarView from "./pages/CalendarView";
 import Invoices from "./pages/Invoices";
+import ExtrasToInvoice from "./pages/ExtrasToInvoice";
 import Discrepancies from "./pages/Discrepancies";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
@@ -115,6 +116,7 @@ const App = () => (
                   <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                   {/* Manager+ only routes */}
                   <Route path="/invoices" element={<ProtectedRoute><ManagerRoute><Invoices /></ManagerRoute></ProtectedRoute>} />
+                  <Route path="/extras" element={<ProtectedRoute><ManagerRoute><ExtrasToInvoice /></ManagerRoute></ProtectedRoute>} />
                   <Route path="/vendor-invoices" element={<ProtectedRoute><ManagerRoute><VendorInvoices /></ManagerRoute></ProtectedRoute>} />
                   <Route path="/discrepancies" element={<ProtectedRoute><ManagerRoute><Discrepancies /></ManagerRoute></ProtectedRoute>} />
                   <Route path="/reports" element={<ProtectedRoute><ManagerRoute><Reports /></ManagerRoute></ProtectedRoute>} />
