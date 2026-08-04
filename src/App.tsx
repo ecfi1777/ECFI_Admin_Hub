@@ -21,6 +21,7 @@ import Dashboard from "./pages/Dashboard";
 import Projects from "./pages/Projects";
 import CalendarView from "./pages/CalendarView";
 import Invoices from "./pages/Invoices";
+import ExtrasToInvoice from "./pages/ExtrasToInvoice";
 import Discrepancies from "./pages/Discrepancies";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
