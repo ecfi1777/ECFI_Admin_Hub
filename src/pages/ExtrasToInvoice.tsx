@@ -286,7 +286,10 @@ export default function ExtrasToInvoice() {
       setDialogOpen(true);
     },
     onDelete: (extra: InvoiceExtra) => setPendingDelete(extra),
-    isMutating: toggleMutation.isPending,
+    onUpdateField: async (extra: InvoiceExtra, field: "amount" | "invoice_number", value: string) => {
+      await fieldUpdateMutation.mutateAsync({ id: extra.id, field, value });
+    },
+    isMutating: toggleMutation.isPending || fieldUpdateMutation.isPending,
   };
 
   return (
