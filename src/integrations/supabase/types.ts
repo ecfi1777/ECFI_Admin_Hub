@@ -480,6 +480,62 @@ export type Database = {
           },
         ]
       }
+      invoice_extras: {
+        Row: {
+          amount: number | null
+          builder_name: string
+          created_at: string
+          created_by: string | null
+          description: string
+          entry_date: string
+          id: string
+          invoice_complete: boolean
+          invoice_number: string | null
+          location_name: string | null
+          lot_number: string | null
+          organization_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number | null
+          builder_name: string
+          created_at?: string
+          created_by?: string | null
+          description: string
+          entry_date?: string
+          id?: string
+          invoice_complete?: boolean
+          invoice_number?: string | null
+          location_name?: string | null
+          lot_number?: string | null
+          organization_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number | null
+          builder_name?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          entry_date?: string
+          id?: string
+          invoice_complete?: boolean
+          invoice_number?: string | null
+          location_name?: string | null
+          lot_number?: string | null
+          organization_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_extras_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       locations: {
         Row: {
           created_at: string
