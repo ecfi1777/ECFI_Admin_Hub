@@ -41,6 +41,16 @@ export function WeekHeader({ anchorDate, onPrev, onNext, onToday, onPrint }: Wee
         >
           Today
         </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="ml-1 gap-1.5"
+          onClick={onPrint}
+        >
+          <Printer className="h-4 w-4" />
+          Print / PDF
+        </Button>
       </div>
     </div>
   );
