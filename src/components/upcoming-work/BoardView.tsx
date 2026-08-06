@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -12,7 +12,7 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
-import { addDays, format, parseISO } from "date-fns";
+import { addDays, format } from "date-fns";
 import { DayColumn } from "./DayColumn";
 import { JobCard } from "./JobCard";
 import type { UpcomingWorkItem } from "./types";
