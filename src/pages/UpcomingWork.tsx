@@ -5,7 +5,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useUserRole } from "@/hooks/useUserRole";
-import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useUpcomingWork } from "@/components/upcoming-work/useUpcomingWork";
 import { WeekHeader } from "@/components/upcoming-work/WeekHeader";
@@ -196,18 +197,38 @@ export default function UpcomingWork() {
     <div className="space-y-4 p-4 sm:p-6">
       <WeekHeader
         anchorDate={anchorDate}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        needsEntryCount={needsEntryCount}
         onPrev={handlePrevWeek}
         onNext={handleNextWeek}
         onToday={handleToday}
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <div className="w-full border-b">
+          <TabsList className="h-auto w-full justify-start rounded-none bg-transparent p-0">
+            <TabsTrigger
+              value="board"
+              className="rounded-none border-b-2 border-transparent px-4 py-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+            >
+              Board
+            </TabsTrigger>
+            <TabsTrigger
+              value="needs-entry"
+              className="gap-1.5 rounded-none border-b-2 border-transparent px-4 py-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+            >
+              Needs Schedule Entry
+              {needsEntryCount > 0 && (
+                <Badge variant="destructive" className="h-5 min-w-5 px-1 text-[10px]">
+                  {needsEntryCount}
+                </Badge>
+              )}
+            </TabsTrigger>
+          </TabsList>
+        </div>
+
         <TabsContent value="board" className="space-y-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
+
               <span className="h-2 w-2 rounded-full bg-blue-500" />
               <span className="text-xs text-muted-foreground">Scheduled</span>
               <span className="h-2 w-2 rounded-full bg-emerald-500" />

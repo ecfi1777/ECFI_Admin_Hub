@@ -33,7 +33,7 @@ export function DayColumn({
     <div
       ref={setNodeRef}
       className={cn(
-        "flex min-w-[10rem] flex-1 flex-col rounded-lg border bg-card/50 p-2 transition-colors",
+        "flex min-w-[12rem] flex-1 flex-col rounded-lg border bg-card/50 p-2 transition-colors",
         isOver && "border-primary bg-primary/5",
         isToday && "ring-1 ring-primary/30"
       )}
