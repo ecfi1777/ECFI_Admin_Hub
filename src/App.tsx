@@ -26,6 +26,7 @@ import Discrepancies from "./pages/Discrepancies";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import Kanban from "./pages/Kanban";
+import UpcomingWork from "./pages/UpcomingWork";
 import VendorInvoices from "./pages/VendorInvoices";
 import NotFound from "./pages/NotFound";
 
@@ -113,6 +114,7 @@ const App = () => (
                   <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
                   <Route path="/kanban" element={<ProtectedRoute><ManagerRoute><Kanban /></ManagerRoute></ProtectedRoute>} />
                   <Route path="/calendar" element={<ProtectedRoute><CalendarView /></ProtectedRoute>} />
+                  <Route path="/upcoming-work" element={<ProtectedRoute><UpcomingWork /></ProtectedRoute>} />
                   <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                   {/* Manager+ only routes */}
                   <Route path="/invoices" element={<ProtectedRoute><ManagerRoute><Invoices /></ManagerRoute></ProtectedRoute>} />
