@@ -16,7 +16,7 @@ A standalone freehand planning page, fully separate from the operational Daily S
 
 ## Page
 
-New "Upcoming Work" route, added to the sidebar right under Daily Schedule, visible to all roles, using the existing app shell, theme and toasts.
+New "Upcoming Work" route, added to the sidebar between Calendar and Kanban, visible to all roles, using the existing app shell, theme and toasts.
 
 **Header:** title, week navigation (Prev / "Week of MM/DD/YYYY" / Next / Today), weeks start Monday, opens on the current week. Two tabs: Board and Needs Schedule Entry (with a count badge of completed items not yet entered in the main schedule, org-wide; hidden at zero).
 
