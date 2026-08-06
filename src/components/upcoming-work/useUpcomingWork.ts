@@ -309,7 +309,7 @@ export function useUpcomingWork(anchorDate: Date) {
       if (existing) {
         const { error } = await supabase
           .from("upcoming_work_week_notes")
-          .update({ notes, updated_by: user?.id || null })
+          .update({ notes })
           .eq("id", existing.id);
         if (error) throw error;
       } else {
@@ -317,8 +317,6 @@ export function useUpcomingWork(anchorDate: Date) {
           organization_id: organizationId,
           week_start_date: mondayStr,
           notes,
-          created_by: user?.id || null,
-          updated_by: user?.id || null,
         });
         if (error) throw error;
       }
