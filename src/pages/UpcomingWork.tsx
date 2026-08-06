@@ -15,6 +15,7 @@ import { BoardView } from "@/components/upcoming-work/BoardView";
 import { SiteNotes } from "@/components/upcoming-work/SiteNotes";
 import { HorizonPanel } from "@/components/upcoming-work/HorizonPanel";
 import { NeedsEntryTab } from "@/components/upcoming-work/NeedsEntryTab";
+import { PrintView } from "@/components/upcoming-work/PrintView";
 import { EditItemDialog } from "@/components/upcoming-work/EditItemDialog";
 import type {
   UpcomingWorkItem,
