@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Printer } from "lucide-react";
 import { format, startOfWeek } from "date-fns";
 import { Button } from "@/components/ui/button";
 
@@ -7,9 +7,10 @@ interface WeekHeaderProps {
   onPrev: () => void;
   onNext: () => void;
   onToday: () => void;
+  onPrint: () => void;
 }
 
-export function WeekHeader({ anchorDate, onPrev, onNext, onToday }: WeekHeaderProps) {
+export function WeekHeader({ anchorDate, onPrev, onNext, onToday, onPrint }: WeekHeaderProps) {
   const monday = startOfWeek(anchorDate, { weekStartsOn: 1 });
 
   return (
@@ -39,6 +40,16 @@ export function WeekHeader({ anchorDate, onPrev, onNext, onToday }: WeekHeaderPr
           onClick={onToday}
         >
           Today
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="ml-1 gap-1.5"
+          onClick={onPrint}
+        >
+          <Printer className="h-4 w-4" />
+          Print / PDF
         </Button>
       </div>
     </div>

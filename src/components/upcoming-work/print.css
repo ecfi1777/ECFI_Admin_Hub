@@ -1,0 +1,254 @@
+/* Print-only styles for the Upcoming Work weekly sheet.
+   The print root is portaled to <body>, so these rules are scoped to it
+   and do not affect any other page's print behavior. */
+
+.uwp-root {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: letter portrait;
+    margin: 0.5in;
+  }
+
+  /* Hide the entire app when the Upcoming Work print root is mounted */
+  body:has(> .uwp-root) > *:not(.uwp-root) {
+    display: none !important;
+  }
+
+  body:has(> .uwp-root) {
+    background: #ffffff !important;
+  }
+
+  .uwp-root {
+    display: block !important;
+    position: static;
+    background: #ffffff;
+    color: #1b2a3d;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 10pt;
+    line-height: 1.35;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .uwp-root * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .uwp-kicker {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 8pt;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #d96b3f;
+    margin: 0 0 2pt;
+  }
+
+  .uwp-title {
+    font-size: 22pt;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin: 0;
+    color: #1b2a3d;
+  }
+
+  .uwp-week {
+    font-size: 11pt;
+    font-weight: 600;
+    margin: 2pt 0 0;
+    color: #1b2a3d;
+  }
+
+  .uwp-crews {
+    font-size: 9pt;
+    margin: 1pt 0 0;
+    color: #4a5a6b;
+  }
+
+  .uwp-legend {
+    display: flex;
+    gap: 14pt;
+    align-items: center;
+    margin: 8pt 0 10pt;
+    font-size: 8.5pt;
+    color: #4a5a6b;
+  }
+
+  .uwp-legend span.uwp-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4pt;
+  }
+
+  .uwp-dot {
+    display: inline-block;
+    width: 7pt;
+    height: 7pt;
+    border-radius: 50%;
+  }
+
+  .uwp-dot-scheduled {
+    background: #2d5e8e;
+  }
+
+  .uwp-dot-complete {
+    background: #3e7d4f;
+  }
+
+  .uwp-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8pt;
+  }
+
+  .uwp-day {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    border: 1px solid #dcd6c4;
+    border-radius: 4pt;
+    overflow: hidden;
+  }
+
+  .uwp-day-head {
+    background: #1b2a3d;
+    color: #ffffff;
+    padding: 4pt 6pt;
+  }
+
+  .uwp-day-name {
+    font-size: 8.5pt;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    display: block;
+  }
+
+  .uwp-day-date {
+    font-size: 7.5pt;
+    opacity: 0.85;
+    display: block;
+  }
+
+  .uwp-day-body {
+    padding: 5pt;
+    display: flex;
+    flex-direction: column;
+    gap: 5pt;
+    min-height: 40pt;
+  }
+
+  .uwp-card {
+    background: #f8f3e7;
+    border: 1px dashed #cfc6ab;
+    border-radius: 4pt;
+    padding: 4pt 5pt;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .uwp-card-top {
+    display: flex;
+    align-items: center;
+    gap: 4pt;
+    flex-wrap: wrap;
+    margin-bottom: 2pt;
+  }
+
+  .uwp-crew {
+    font-size: 8pt;
+    font-weight: 700;
+    color: #1b2a3d;
+  }
+
+  .uwp-phase {
+    font-size: 7.5pt;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #d96b3f;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  .uwp-desc {
+    font-size: 8.5pt;
+    color: #1b2a3d;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    margin: 0;
+  }
+
+  .uwp-section {
+    margin-top: 14pt;
+    break-inside: auto;
+  }
+
+  .uwp-section-title {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 9pt;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: #d96b3f;
+    margin: 0 0 5pt;
+  }
+
+  .uwp-notes {
+    border: 1px dashed #cfc6ab;
+    background: #f8f3e7;
+    border-radius: 4pt;
+    padding: 6pt 8pt;
+    font-size: 9pt;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    color: #1b2a3d;
+  }
+
+  .uwp-month {
+    font-size: 8pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #1b2a3d;
+    margin: 8pt 0 4pt;
+    border-bottom: 1px solid #dcd6c4;
+    padding-bottom: 2pt;
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  .uwp-h-row {
+    display: flex;
+    gap: 7pt;
+    align-items: flex-start;
+    padding: 3pt 0;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .uwp-h-date {
+    flex: 0 0 auto;
+    min-width: 42pt;
+    text-align: center;
+    background: #fbeee7;
+    color: #d96b3f;
+    border-radius: 999pt;
+    padding: 2pt 6pt;
+    font-size: 8pt;
+    font-weight: 700;
+  }
+
+  .uwp-h-body {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .uwp-h-meta {
+    font-size: 7.5pt;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #4a5a6b;
+    margin-bottom: 1pt;
+  }
+}

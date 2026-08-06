@@ -15,6 +15,7 @@ import { BoardView } from "@/components/upcoming-work/BoardView";
 import { SiteNotes } from "@/components/upcoming-work/SiteNotes";
 import { HorizonPanel } from "@/components/upcoming-work/HorizonPanel";
 import { NeedsEntryTab } from "@/components/upcoming-work/NeedsEntryTab";
+import { PrintView } from "@/components/upcoming-work/PrintView";
 import { EditItemDialog } from "@/components/upcoming-work/EditItemDialog";
 import type {
   UpcomingWorkItem,
@@ -95,6 +96,15 @@ export default function UpcomingWork() {
       return selectedCrews.includes(crewId);
     });
   }, [horizonItems, selectedCrews]);
+
+  const crewLabels = useMemo(
+    () =>
+      selectedCrews.map((id) =>
+        id === null ? "Unassigned" : crews.find((c) => c.id === id)?.name || "Unknown crew"
+      ),
+    [selectedCrews, crews]
+  );
+
 
   const openAddDialog = (dateStr: string | null = null) => {
     setEditingItem(null);
@@ -200,6 +210,15 @@ export default function UpcomingWork() {
         onPrev={handlePrevWeek}
         onNext={handleNextWeek}
         onToday={handleToday}
+        onPrint={() => window.print()}
+      />
+
+      <PrintView
+        anchorDate={anchorDate}
+        items={filteredBoardItems}
+        horizonItems={filteredHorizonItems}
+        notes={weekNote || ""}
+        crewLabels={crewLabels}
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
