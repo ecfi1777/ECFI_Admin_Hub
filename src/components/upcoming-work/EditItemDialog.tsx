@@ -3,6 +3,16 @@ import { format, parseISO } from "date-fns";
 import { CalendarIcon, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -64,6 +74,7 @@ export function EditItemDialog({
   const [description, setDescription] = useState<string>("");
   const [status, setStatus] = useState<"scheduled" | "complete">("scheduled");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -271,10 +282,7 @@ export function EditItemDialog({
                 variant="destructive"
                 size="sm"
                 className="gap-1"
-                onClick={() => {
-                  onDelete(item.id);
-                  onOpenChange(false);
-                }}
+                onClick={() => setDeleteConfirmOpen(true)}
               >
                 <Trash2 className="h-4 w-4" />
                 Delete
@@ -293,6 +301,32 @@ export function EditItemDialog({
           </DialogFooter>
         </form>
       </DialogContent>
+
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this job?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove "{item?.description || "this job"}" from the planning board. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteConfirmOpen(false)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90"
+              onClick={() => {
+                if (item && onDelete) {
+                  onDelete(item.id);
+                }
+                setDeleteConfirmOpen(false);
+                onOpenChange(false);
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }

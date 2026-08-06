@@ -1,6 +1,17 @@
+import { useState } from "react";
 import { format, parseISO } from "date-fns";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { getCrewColor, getContrastTextColor } from "@/lib/crewColors";
 import { cn } from "@/lib/utils";
 import type { UpcomingWorkItem } from "./types";
@@ -96,64 +107,90 @@ function HorizonRow({
   onEdit: (item: UpcomingWorkItem) => void;
   onDelete: (id: string) => void;
 }) {
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const crew = item.crews;
   const crewColor = crew ? getCrewColor(crew) : null;
   const crewTextColor = crewColor ? getContrastTextColor(crewColor) : undefined;
   const phaseName = item.phases?.name || item.phase_custom || "Unknown phase";
 
   return (
-    <div className="flex items-start gap-3 rounded-md border p-3 hover:bg-muted/40">
-      {item.work_date ? (
-        <span className="shrink-0 rounded bg-secondary px-2 py-1 text-xs font-medium text-secondary-foreground">
-          {format(parseISO(item.work_date), "MMM d")}
-        </span>
-      ) : (
-        <span className="shrink-0 rounded bg-muted px-2 py-1 text-xs font-medium text-muted-foreground">
-          TBD
-        </span>
-      )}
+    <>
+      <div className="flex items-start gap-3 rounded-md border p-3 hover:bg-muted/40">
+        {item.work_date ? (
+          <span className="shrink-0 rounded bg-secondary px-2 py-1 text-xs font-medium text-secondary-foreground">
+            {format(parseISO(item.work_date), "MMM d")}
+          </span>
+        ) : (
+          <span className="shrink-0 rounded bg-muted px-2 py-1 text-xs font-medium text-muted-foreground">
+            TBD
+          </span>
+        )}
 
-      <div className="min-w-0 flex-1">
-        <div className="mb-1 flex flex-wrap items-center gap-1.5">
-          <span className="text-xs font-medium text-muted-foreground">{phaseName}</span>
-          {crew ? (
-            <span
-              className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
-              style={{ backgroundColor: crewColor || "#64748b", color: crewTextColor }}
-            >
-              {crew.name}
-            </span>
-          ) : (
-            <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-              No crew
-            </span>
-          )}
+        <div className="min-w-0 flex-1">
+          <div className="mb-1 flex flex-wrap items-center gap-1.5">
+            <span className="text-xs font-medium text-muted-foreground">{phaseName}</span>
+            {crew ? (
+              <span
+                className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
+                style={{ backgroundColor: crewColor || "#64748b", color: crewTextColor }}
+              >
+                {crew.name}
+              </span>
+            ) : (
+              <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                No crew
+              </span>
+            )}
+          </div>
+          <p className="whitespace-pre-wrap text-sm">{item.description}</p>
         </div>
-        <p className="whitespace-pre-wrap text-sm">{item.description}</p>
+
+        {canManage && (
+          <div className="flex shrink-0 gap-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={() => onEdit(item)}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-destructive hover:text-destructive"
+              onClick={() => setConfirmOpen(true)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
       </div>
 
-      {canManage && (
-        <div className="flex shrink-0 gap-1">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            onClick={() => onEdit(item)}
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 text-destructive hover:text-destructive"
-            onClick={() => onDelete(item.id)}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      )}
-    </div>
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this horizon item?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove "{item.description || "this item"}" from the horizon. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setConfirmOpen(false)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90"
+              onClick={() => {
+                onDelete(item.id);
+                setConfirmOpen(false);
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
