@@ -60,6 +60,7 @@ export function EditItemDialog({
   const [crewId, setCrewId] = useState<string>("");
   const [phaseId, setPhaseId] = useState<string>("");
   const [phaseCustom, setPhaseCustom] = useState<string>("");
+  const [isOtherPhase, setIsOtherPhase] = useState(false);
   const [description, setDescription] = useState<string>("");
   const [status, setStatus] = useState<"scheduled" | "complete">("scheduled");
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -71,6 +72,7 @@ export function EditItemDialog({
       setCrewId(item.crew_id || "");
       setPhaseId(item.phase_id || "");
       setPhaseCustom(item.phase_custom || "");
+      setIsOtherPhase(!!item.phase_custom && !item.phase_id);
       setDescription(item.description || "");
       setStatus(item.status);
     } else {
@@ -78,6 +80,7 @@ export function EditItemDialog({
       setCrewId("");
       setPhaseId("");
       setPhaseCustom("");
+      setIsOtherPhase(false);
       setDescription("");
       setStatus("scheduled");
     }
@@ -91,16 +94,17 @@ export function EditItemDialog({
     .filter((c) => c.is_active)
     .sort((a, b) => a.display_order - b.display_order);
 
-  const isCustomPhase = phaseId === "" && (item?.phase_custom || phaseCustom !== "");
-  const phaseSelectValue = isCustomPhase ? OTHER_VALUE : phaseId;
+  const phaseSelectValue = isOtherPhase ? OTHER_VALUE : phaseId;
 
   const validate = () => {
     const next: Record<string, string> = {};
     if (!description.trim()) {
       next.description = "Description is required";
     }
-    if (phaseSelectValue === OTHER_VALUE && !phaseCustom.trim()) {
-      next.phase = "Custom phase is required";
+    if (isOtherPhase) {
+      if (!phaseCustom.trim()) next.phase = "Enter a custom phase";
+    } else if (!phaseId) {
+      next.phase = "Phase is required";
     }
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -113,14 +117,15 @@ export function EditItemDialog({
     const values: UpcomingWorkFormValues = {
       work_date: workDate,
       crew_id: crewId,
-      phase_id: phaseSelectValue === OTHER_VALUE ? "" : phaseId,
-      phase_custom: phaseSelectValue === OTHER_VALUE ? phaseCustom : "",
+      phase_id: isOtherPhase ? "" : phaseId,
+      phase_custom: isOtherPhase ? phaseCustom.trim() : "",
       description: description.trim(),
       status: workDate ? status : "scheduled",
     };
     onSave(values);
     onOpenChange(false);
   };
+
 
   const selectedDate = workDate ? parseISO(workDate) : undefined;
 
