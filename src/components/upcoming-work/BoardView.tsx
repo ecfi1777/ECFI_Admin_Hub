@@ -137,16 +137,17 @@ export function BoardView({
       const activeIndex = localItemsByDay[activeContainer].findIndex(
         (i) => i.id === active.id
       );
-      const overIndex = localItemsByDay[overContainer].findIndex(
+      const overItemIndex = localItemsByDay[overContainer].findIndex(
         (i) => i.id === overId
       );
 
       if (activeContainer === overContainer) {
-        if (activeIndex !== overIndex && overIndex >= 0) {
+        const targetIndex = overItemIndex >= 0 ? overItemIndex : localItemsByDay[overContainer].length - 1;
+        if (activeIndex !== targetIndex && targetIndex >= 0) {
           const newOrder = arrayMove(
             localItemsByDay[overContainer].map((i) => i.id),
             activeIndex,
-            overIndex
+            targetIndex
           );
           onReorderDay(overContainer, newOrder);
         }
