@@ -332,15 +332,19 @@ export function useUpcomingWork(anchorDate: Date) {
   });
 
   const reorderDay = useMutation({
-    mutationFn: async ({ date, orderedIds }: { date: string; orderedIds: string[] }) => {
+    mutationFn: async ({ orderedIds }: { orderedIds: string[] }) => {
       if (!organizationId) throw new Error("No organization");
-      const updates = orderedIds.map((id, index) =>
-        supabase
-          .from("upcoming_work_items")
-          .update({ display_order: index + 1, updated_by: user?.id || null })
-          .eq("id", id)
+      await Promise.all(
+        orderedIds.map((id, index) =>
+          supabase
+            .from("upcoming_work_items")
+            .update({ display_order: index + 1, updated_by: user?.id || null })
+            .eq("id", id)
+            .then(({ error }) => {
+              if (error) throw error;
+            })
+        )
       );
-      await Promise.all(updates);
     },
     onSuccess: () => {
       invalidateAll();
