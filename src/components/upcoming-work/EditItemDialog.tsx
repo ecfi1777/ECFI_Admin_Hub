@@ -194,8 +194,14 @@ export function EditItemDialog({
               value={phaseSelectValue}
               onChange={(e) => {
                 const value = e.target.value;
-                setPhaseId(value === OTHER_VALUE ? "" : value);
-                if (value !== OTHER_VALUE) setPhaseCustom("");
+                if (value === OTHER_VALUE) {
+                  setIsOtherPhase(true);
+                  setPhaseId("");
+                } else {
+                  setIsOtherPhase(false);
+                  setPhaseId(value);
+                  setPhaseCustom("");
+                }
               }}
               className={cn(
                 "flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
@@ -210,7 +216,7 @@ export function EditItemDialog({
               ))}
               <option value={OTHER_VALUE}>Other — type my own…</option>
             </select>
-            {phaseSelectValue === OTHER_VALUE && (
+            {isOtherPhase && (
               <Input
                 value={phaseCustom}
                 onChange={(e) => setPhaseCustom(e.target.value)}
