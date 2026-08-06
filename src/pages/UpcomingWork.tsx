@@ -200,6 +200,15 @@ export default function UpcomingWork() {
         onPrev={handlePrevWeek}
         onNext={handleNextWeek}
         onToday={handleToday}
+        onPrint={() => window.print()}
+      />
+
+      <PrintView
+        anchorDate={anchorDate}
+        items={filteredBoardItems}
+        horizonItems={filteredHorizonItems}
+        notes={weekNote || ""}
+        crewLabels={crewLabels}
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
