@@ -97,6 +97,15 @@ export default function UpcomingWork() {
     });
   }, [horizonItems, selectedCrews]);
 
+  const crewLabels = useMemo(
+    () =>
+      selectedCrews.map((id) =>
+        id === null ? "Unassigned" : crews.find((c) => c.id === id)?.name || "Unknown crew"
+      ),
+    [selectedCrews, crews]
+  );
+
+
   const openAddDialog = (dateStr: string | null = null) => {
     setEditingItem(null);
     setDialogInitialDate(dateStr);
