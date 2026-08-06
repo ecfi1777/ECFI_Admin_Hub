@@ -226,6 +226,7 @@ export function useUpcomingWork(anchorDate: Date) {
         description?: string;
         status?: "scheduled" | "complete";
         entered_in_main_schedule?: boolean;
+        display_order?: number;
       };
     }) => {
       if (!organizationId) throw new Error("No organization");
