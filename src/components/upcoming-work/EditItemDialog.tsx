@@ -199,7 +199,9 @@ export function EditItemDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="phase">Phase</Label>
+            <Label htmlFor="phase">
+              Phase <span className="text-destructive">*</span>
+            </Label>
             <select
               id="phase"
               value={phaseSelectValue}
@@ -219,19 +221,19 @@ export function EditItemDialog({
                 errors.phase ? "border-destructive" : "border-input"
               )}
             >
-              <option value="">Select a phase...</option>
+              <option value="">Select a phase (required)...</option>
+              <option value={OTHER_VALUE}>Other — type my own phase…</option>
               {activePhases.map((phase) => (
                 <option key={phase.id} value={phase.id}>
                   {phase.name}
                 </option>
               ))}
-              <option value={OTHER_VALUE}>Other — type my own…</option>
             </select>
             {isOtherPhase && (
               <Input
                 value={phaseCustom}
                 onChange={(e) => setPhaseCustom(e.target.value)}
-                placeholder="Enter custom phase"
+                placeholder="Enter custom phase (required)"
                 className={errors.phase ? "border-destructive" : ""}
               />
             )}
