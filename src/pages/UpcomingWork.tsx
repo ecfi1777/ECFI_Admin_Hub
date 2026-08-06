@@ -265,11 +265,3 @@ export default function UpcomingWork() {
   );
 }
 
-function format(date: Date, fmt: string) {
-  const pad = (n: number) => n.toString().padStart(2, "0");
-  const year = date.getFullYear();
-  const month = pad(date.getMonth() + 1);
-  const day = pad(date.getDate());
-  if (fmt === "yyyy-MM-dd") return `${year}-${month}-${day}`;
-  return `${year}-${month}-${day}`;
-}
