@@ -99,9 +99,6 @@ export function EditItemDialog({
     if (!description.trim()) {
       next.description = "Description is required";
     }
-    if (phaseSelectValue !== OTHER_VALUE && !phaseId) {
-      next.phase = "Phase is required";
-    }
     if (phaseSelectValue === OTHER_VALUE && !phaseCustom.trim()) {
       next.phase = "Custom phase is required";
     }
