@@ -376,11 +376,12 @@ export function useUpcomingWork(anchorDate: Date) {
 }
 
 async function nextDisplayOrder(organizationId: string, workDate: string | null) {
-  const { data, error } = await supabase
+  let query = supabase
     .from("upcoming_work_items")
     .select("display_order")
-    .eq("organization_id", organizationId)
-    .eq("work_date", workDate)
+    .eq("organization_id", organizationId);
+  query = workDate ? query.eq("work_date", workDate) : query.is("work_date", null);
+  const { data, error } = await query
     .order("display_order", { ascending: false })
     .limit(1)
     .single();
