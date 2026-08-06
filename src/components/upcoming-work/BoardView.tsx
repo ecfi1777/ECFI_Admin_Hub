@@ -59,9 +59,11 @@ export function BoardView({
   const [localItemsByDay, setLocalItemsByDay] = useState<Record<string, UpcomingWorkItem[]>>(itemsByDay);
 
   // Keep local state in sync with query data when not dragging
-  if (activeId === null && JSON.stringify(localItemsByDay) !== JSON.stringify(itemsByDay)) {
-    setLocalItemsByDay(itemsByDay);
-  }
+  useEffect(() => {
+    if (activeId === null) {
+      setLocalItemsByDay(itemsByDay);
+    }
+  }, [itemsByDay, activeId]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
