@@ -1,0 +1,1 @@
+ALTER TABLE public.upcoming_work_items DROP CONSTRAINT IF EXISTS upcoming_work_items_phase_required;
