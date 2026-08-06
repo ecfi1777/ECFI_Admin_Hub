@@ -1807,6 +1807,114 @@ export type Database = {
           },
         ]
       }
+      upcoming_work_items: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          crew_id: string | null
+          description: string
+          display_order: number
+          entered_in_main_schedule: boolean
+          id: string
+          organization_id: string
+          phase_custom: string | null
+          phase_id: string | null
+          status: string
+          updated_at: string
+          updated_by: string | null
+          work_date: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          crew_id?: string | null
+          description: string
+          display_order?: number
+          entered_in_main_schedule?: boolean
+          id?: string
+          organization_id: string
+          phase_custom?: string | null
+          phase_id?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          work_date?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          crew_id?: string | null
+          description?: string
+          display_order?: number
+          entered_in_main_schedule?: boolean
+          id?: string
+          organization_id?: string
+          phase_custom?: string | null
+          phase_id?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          work_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "upcoming_work_items_crew_id_fkey"
+            columns: ["crew_id"]
+            isOneToOne: false
+            referencedRelation: "crews"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "upcoming_work_items_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "upcoming_work_items_phase_id_fkey"
+            columns: ["phase_id"]
+            isOneToOne: false
+            referencedRelation: "phases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      upcoming_work_week_notes: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string
+          organization_id: string
+          updated_at: string
+          week_start_date: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string
+          organization_id: string
+          updated_at?: string
+          week_start_date: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string
+          organization_id?: string
+          updated_at?: string
+          week_start_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "upcoming_work_week_notes_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
