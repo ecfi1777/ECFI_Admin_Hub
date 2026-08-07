@@ -91,9 +91,15 @@ export function BoardView({
     return null;
   }, [activeId, localItemsByDay]);
 
-  const handleDragStart = useCallback((event: DragStartEvent) => {
-    setActiveId(event.active.id as string);
-  }, []);
+  const handleDragStart = useCallback(
+    (event: DragStartEvent) => {
+      const id = event.active.id as string;
+      originContainerRef.current = findContainer(id);
+      setActiveId(id);
+    },
+    [findContainer]
+  );
+
 
   const handleDragOver = useCallback(
     (event: DragOverEvent) => {
