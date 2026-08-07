@@ -41,6 +41,7 @@ export function BoardView({
   onReorderDay,
 }: BoardViewProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
+  const originContainerRef = useRef<string | null>(null);
 
   const itemsByDay = useMemo(() => {
     const map: Record<string, UpcomingWorkItem[]> = {};
