@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -41,6 +41,7 @@ export function BoardView({
   onReorderDay,
 }: BoardViewProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
+  const originContainerRef = useRef<string | null>(null);
 
   const itemsByDay = useMemo(() => {
     const map: Record<string, UpcomingWorkItem[]> = {};
@@ -90,9 +91,15 @@ export function BoardView({
     return null;
   }, [activeId, localItemsByDay]);
 
-  const handleDragStart = useCallback((event: DragStartEvent) => {
-    setActiveId(event.active.id as string);
-  }, []);
+  const handleDragStart = useCallback(
+    (event: DragStartEvent) => {
+      const id = event.active.id as string;
+      originContainerRef.current = findContainer(id);
+      setActiveId(id);
+    },
+    [findContainer]
+  );
+
 
   const handleDragOver = useCallback(
     (event: DragOverEvent) => {
@@ -126,6 +133,8 @@ export function BoardView({
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
       const { active, over } = event;
+      const originContainer = originContainerRef.current;
+      originContainerRef.current = null;
       setActiveId(null);
       if (!over) return;
 
@@ -141,24 +150,31 @@ export function BoardView({
         (i) => i.id === overId
       );
 
-      if (activeContainer === overContainer) {
-        const targetIndex = overItemIndex >= 0 ? overItemIndex : localItemsByDay[overContainer].length - 1;
-        if (activeIndex !== targetIndex && targetIndex >= 0) {
-          const newOrder = arrayMove(
-            localItemsByDay[overContainer].map((i) => i.id),
-            activeIndex,
-            targetIndex
-          );
-          onReorderDay(overContainer, newOrder);
-        }
-      } else {
-        const targetItems = localItemsByDay[overContainer];
-        const newDisplayOrder = (targetItems[targetItems.length - 1]?.display_order || 0) + 1;
-        onMoveItem(active.id as string, overContainer, newDisplayOrder);
+      // Moved to a different day column (localItemsByDay was already updated in dragOver)
+      if (originContainer && originContainer !== overContainer) {
+        const targetIds = localItemsByDay[overContainer].map((i) => i.id);
+        const finalIndex = targetIds.indexOf(active.id as string);
+        onMoveItem(
+          active.id as string,
+          overContainer,
+          (finalIndex >= 0 ? finalIndex : targetIds.length) + 1
+        );
+        return;
+      }
+
+      const targetIndex = overItemIndex >= 0 ? overItemIndex : localItemsByDay[overContainer].length - 1;
+      if (activeIndex !== targetIndex && targetIndex >= 0) {
+        const newOrder = arrayMove(
+          localItemsByDay[overContainer].map((i) => i.id),
+          activeIndex,
+          targetIndex
+        );
+        onReorderDay(overContainer, newOrder);
       }
     },
     [findContainer, localItemsByDay, onMoveItem, onReorderDay]
   );
+
 
   return (
     <DndContext
