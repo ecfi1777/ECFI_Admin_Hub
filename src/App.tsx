@@ -114,7 +114,7 @@ const App = () => (
                   <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
                   <Route path="/kanban" element={<ProtectedRoute><ManagerRoute><Kanban /></ManagerRoute></ProtectedRoute>} />
                   <Route path="/calendar" element={<ProtectedRoute><CalendarView /></ProtectedRoute>} />
-                  <Route path="/upcoming-work" element={<ProtectedRoute><UpcomingWork /></ProtectedRoute>} />
+                  <Route path="/upcoming-work" element={<ProtectedRoute><AppLayout><UpcomingWork /></AppLayout></ProtectedRoute>} />
                   <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                   {/* Manager+ only routes */}
                   <Route path="/invoices" element={<ProtectedRoute><ManagerRoute><Invoices /></ManagerRoute></ProtectedRoute>} />
