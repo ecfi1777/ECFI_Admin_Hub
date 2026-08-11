@@ -184,7 +184,7 @@ export function BoardView({
       onDragOver={canManage ? handleDragOver : undefined}
       onDragEnd={canManage ? handleDragEnd : undefined}
     >
-      <div className="grid min-w-full grid-cols-7 gap-2">
+      <div className="grid min-w-[84rem] grid-cols-7 gap-2">
         {DAYS.map((offset) => {
           const date = addDays(monday, offset);
           const dateStr = format(date, "yyyy-MM-dd");
