@@ -883,14 +883,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
                               </button>
                             );
                           }
-                          return renderSelectCellWithQuickEdit(
-                            entry,
-                            "stone_supplier_id",
-                            entry.stone_supplier_id,
-                            stoneSuppliers,
-                            entry.stone_suppliers?.code || entry.stone_suppliers?.name || "-",
-                            "stone"
-                          );
+                          return renderStoneVendorSelect(entry);
                         })()
                       : renderSelectCellWithQuickEdit(
                           entry,
