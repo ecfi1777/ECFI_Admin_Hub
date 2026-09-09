@@ -405,11 +405,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
   const renderStoneVendorSelect = (entry: ScheduleEntry) => {
     const line: any = (entry.stone_lines || [])[0];
     const currentId: string | null = line?.supplier_id || null;
-    const hasStoneData = (entry.stone_lines || []).some((l: any) => {
-      const qty = parseFloat(l.qty_ordered ?? "");
-      return (!isNaN(qty) && qty > 0) || !!l.invoice_number || (l.invoice_amount ?? 0) > 0 || (l.tons_billed ?? 0) > 0;
-    });
-    const displayValue = line?.stone_suppliers?.code || line?.stone_suppliers?.name || (hasStoneData ? "Set vendor" : "-");
+    const displayValue = line?.stone_suppliers?.code || line?.stone_suppliers?.name || "-";
 
     if (readOnly) {
       return <span className="px-1 py-0.5 block truncate text-xs">{displayValue}</span>;
@@ -424,9 +420,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
             }
           >
             <SelectTrigger className="h-7 bg-background border-border text-foreground text-xs w-full">
-              <SelectValue>
-                <span className={!currentId && hasStoneData ? "text-amber-500" : undefined}>{displayValue}</span>
-              </SelectValue>
+              <SelectValue>{displayValue}</SelectValue>
             </SelectTrigger>
             <SelectContent className="bg-popover border-border">
               <SelectItem value="none" className="text-muted-foreground">None</SelectItem>
