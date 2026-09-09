@@ -192,8 +192,9 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
   const { data: inspectors = [] } = useInspectors();
 
   // Helper to detect stone phase entries
+  const STONE_PREP_PHASES = ["prep slabs", "prep b&g slabs", "prep exterior slabs"];
   const isPrepSlabs = (entry: ScheduleEntry) =>
-    entry.phases?.name?.toLowerCase() === "prep slabs";
+    STONE_PREP_PHASES.includes((entry.phases?.name || "").trim().toLowerCase());
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Record<string, any> }) => {
@@ -463,7 +464,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
     currentId: string | null,
     options: { id: string; name: string }[],
     displayValue: string,
-    quickEditTab: "concrete" | "pump" | "inspection"
+    quickEditTab: "concrete" | "pump" | "inspection" | "stone"
   ) => {
     if (readOnly) {
       return <span className="px-1 py-0.5 block truncate text-xs">{displayValue}</span>;
@@ -775,14 +776,49 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
                     )}
                   </TableCell>
                   <TableCell className="py-2 text-center align-middle">
-                    {renderSelectCellWithQuickEdit(
-                      entry,
-                      "pump_vendor_id",
-                      entry.pump_vendor_id,
-                      pumpVendors,
-                      entry.pump_vendors?.code || entry.pump_vendors?.name || "-",
-                      "pump"
-                    )}
+                    {isPrepSlabs(entry)
+                      ? (() => {
+                          const labels = Array.from(
+                            new Set(
+                              (entry.stone_lines || [])
+                                .map((l: any) => l.stone_suppliers?.code || l.stone_suppliers?.name)
+                                .filter((v: string | undefined): v is string => !!v && v.trim() !== "")
+                            )
+                          );
+                          if (labels.length > 0) {
+                            const text = labels.join(", ");
+                            return (
+                              <button
+                                type="button"
+                                className="text-xs truncate max-w-full hover:underline"
+                                title={text}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditEntry(entry);
+                                  setEditEntryTab("stone");
+                                }}
+                              >
+                                {text}
+                              </button>
+                            );
+                          }
+                          return renderSelectCellWithQuickEdit(
+                            entry,
+                            "stone_supplier_id",
+                            entry.stone_supplier_id,
+                            stoneSuppliers,
+                            entry.stone_suppliers?.code || entry.stone_suppliers?.name || "-",
+                            "stone"
+                          );
+                        })()
+                      : renderSelectCellWithQuickEdit(
+                          entry,
+                          "pump_vendor_id",
+                          entry.pump_vendor_id,
+                          pumpVendors,
+                          entry.pump_vendors?.code || entry.pump_vendors?.name || "-",
+                          "pump"
+                        )}
                   </TableCell>
                   <TableCell className="py-2 text-center align-middle">
                     {renderSelectCellWithQuickEdit(
