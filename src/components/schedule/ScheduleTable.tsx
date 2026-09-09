@@ -586,6 +586,17 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
     );
   }
 
+  // Column 7 shows pump vendors for concrete pours and stone vendors for slab prep;
+  // label the header accordingly.
+  const schedulableEntries = entries.filter((e) => !e.is_cancelled && !e.did_not_work);
+  const prepCount = schedulableEntries.filter((e) => isPrepSlabs(e)).length;
+  const pumpStoneHeader =
+    prepCount === 0
+      ? "Pump Co."
+      : prepCount === schedulableEntries.length
+      ? "Stone Co."
+      : "Pump / Stone";
+
   return (
     <>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
