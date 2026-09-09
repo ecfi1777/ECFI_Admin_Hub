@@ -464,7 +464,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
     currentId: string | null,
     options: { id: string; name: string }[],
     displayValue: string,
-    quickEditTab: "concrete" | "pump" | "inspection"
+    quickEditTab: "concrete" | "pump" | "inspection" | "stone"
   ) => {
     if (readOnly) {
       return <span className="px-1 py-0.5 block truncate text-xs">{displayValue}</span>;
