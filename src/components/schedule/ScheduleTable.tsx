@@ -941,14 +941,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
                           );
                         })()
                       : isPrepSlabs(entry)
-                      ? renderSelectCellWithQuickEdit(
-                          entry,
-                          "stone_supplier_id",
-                          entry.stone_supplier_id,
-                          stoneSuppliers,
-                          entry.stone_suppliers?.code || entry.stone_suppliers?.name || "-",
-                          "concrete"
-                        )
+                      ? renderStoneVendorSelect(entry)
                       : renderSelectCellWithQuickEdit(
                           entry,
                           "supplier_id",
