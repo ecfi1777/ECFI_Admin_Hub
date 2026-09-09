@@ -371,6 +371,87 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
     updateMutation.mutate({ id: entryId, updates });
   };
 
+  // Set the stone vendor on the entry's stone line (creating a line if none exists)
+  const stoneVendorMutation = useMutation({
+    mutationFn: async ({ entry, supplierId }: { entry: ScheduleEntry; supplierId: string | null }) => {
+      const lines = entry.stone_lines || [];
+      if (lines.length > 0) {
+        const { error } = await supabase
+          .from("schedule_entry_stone_lines")
+          .update({ supplier_id: supplierId })
+          .eq("id", lines[0].id);
+        if (error) throw error;
+      } else {
+        const isExterior = (entry.phases?.name || "").toLowerCase().includes("exterior");
+        const { error } = await supabase.from("schedule_entry_stone_lines").insert({
+          schedule_entry_id: entry.id,
+          organization_id: entry.organization_id,
+          supplier_id: supplierId,
+          pl_category: isExterior ? "exterior" : "basement_garage",
+          display_order: 0,
+        });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      invalidateScheduleQueries(queryClient);
+      setEditingCell(null);
+    },
+    onError: (error: Error) => {
+      toast.error(getUserFriendlyError(error));
+    },
+  });
+
+  const renderStoneVendorSelect = (entry: ScheduleEntry) => {
+    const line: any = (entry.stone_lines || [])[0];
+    const currentId: string | null = line?.supplier_id || null;
+    const hasStoneData = (entry.stone_lines || []).some((l: any) => {
+      const qty = parseFloat(l.qty_ordered ?? "");
+      return (!isNaN(qty) && qty > 0) || !!l.invoice_number || (l.invoice_amount ?? 0) > 0 || (l.tons_billed ?? 0) > 0;
+    });
+    const displayValue = line?.stone_suppliers?.code || line?.stone_suppliers?.name || (hasStoneData ? "Set vendor" : "-");
+
+    if (readOnly) {
+      return <span className="px-1 py-0.5 block truncate text-xs">{displayValue}</span>;
+    }
+    return (
+      <div className="group flex items-center gap-1">
+        <div className="flex-1 min-w-0">
+          <Select
+            value={currentId || "none"}
+            onValueChange={(value) =>
+              stoneVendorMutation.mutate({ entry, supplierId: value === "none" ? null : value })
+            }
+          >
+            <SelectTrigger className="h-7 bg-background border-border text-foreground text-xs w-full">
+              <SelectValue>
+                <span className={!currentId && hasStoneData ? "text-amber-500" : undefined}>{displayValue}</span>
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent className="bg-popover border-border">
+              <SelectItem value="none" className="text-muted-foreground">None</SelectItem>
+              {stoneSuppliers.map((opt) => (
+                <SelectItem key={opt.id} value={opt.id} className="text-foreground">{opt.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <Button
+          size="icon"
+          variant="ghost"
+          onClick={() => {
+            setEditEntry(entry);
+            setEditEntryTab("stone");
+          }}
+          className="h-6 w-6 text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+          title="Edit stone details"
+        >
+          <MoreVertical className="w-3 h-3" />
+        </Button>
+      </div>
+    );
+  };
+
   const handleCheckboxChange = (entryId: string, currentValue: boolean) => {
     updateMutation.mutate({ 
       id: entryId, 
