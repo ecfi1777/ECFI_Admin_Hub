@@ -405,11 +405,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
   const renderStoneVendorSelect = (entry: ScheduleEntry) => {
     const line: any = (entry.stone_lines || [])[0];
     const currentId: string | null = line?.supplier_id || null;
-    const hasStoneData = (entry.stone_lines || []).some((l: any) => {
-      const qty = parseFloat(l.qty_ordered ?? "");
-      return (!isNaN(qty) && qty > 0) || !!l.invoice_number || (l.invoice_amount ?? 0) > 0 || (l.tons_billed ?? 0) > 0;
-    });
-    const displayValue = line?.stone_suppliers?.code || line?.stone_suppliers?.name || (hasStoneData ? "Set vendor" : "-");
+    const displayValue = line?.stone_suppliers?.code || line?.stone_suppliers?.name || "-";
 
     if (readOnly) {
       return <span className="px-1 py-0.5 block truncate text-xs">{displayValue}</span>;
@@ -424,9 +420,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
             }
           >
             <SelectTrigger className="h-7 bg-background border-border text-foreground text-xs w-full">
-              <SelectValue>
-                <span className={!currentId && hasStoneData ? "text-amber-500" : undefined}>{displayValue}</span>
-              </SelectValue>
+              <SelectValue>{displayValue}</SelectValue>
             </SelectTrigger>
             <SelectContent className="bg-popover border-border">
               <SelectItem value="none" className="text-muted-foreground">None</SelectItem>
@@ -592,6 +586,17 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
     );
   }
 
+  // Column 7 shows pump vendors for concrete pours and stone vendors for slab prep;
+  // label the header accordingly.
+  const schedulableEntries = entries.filter((e) => !e.is_cancelled && !e.did_not_work);
+  const prepCount = schedulableEntries.filter((e) => isPrepSlabs(e)).length;
+  const pumpStoneHeader =
+    prepCount === 0
+      ? "Pump Co."
+      : prepCount === schedulableEntries.length
+      ? "Stone Co."
+      : "Pump / Stone";
+
   return (
     <>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -605,7 +610,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
               <TableHead className="text-muted-foreground w-20">Location</TableHead>
               <TableHead className="text-muted-foreground w-14 text-center">Lot #</TableHead>
               <TableHead className="text-muted-foreground w-[4.25rem] text-center">Phase</TableHead>
-              <TableHead className="text-muted-foreground w-[4.25rem] text-center">Pump Co.</TableHead>
+              <TableHead className="text-muted-foreground w-[4.25rem] text-center">{pumpStoneHeader}</TableHead>
               <TableHead className="text-muted-foreground w-20 text-center">Insp. Type</TableHead>
               <TableHead className="text-muted-foreground w-20 text-center">Inspector</TableHead>
               <TableHead className="text-muted-foreground w-[4.25rem] text-center">Supplier</TableHead>
@@ -858,33 +863,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
                   </TableCell>
                   <TableCell className="py-2 text-center align-middle">
                     {isPrepSlabs(entry)
-                      ? (() => {
-                          const labels = Array.from(
-                            new Set(
-                              (entry.stone_lines || [])
-                                .map((l: any) => l.stone_suppliers?.code || l.stone_suppliers?.name)
-                                .filter((v: string | undefined): v is string => !!v && v.trim() !== "")
-                            )
-                          );
-                          if (labels.length > 0) {
-                            const text = labels.join(", ");
-                            return (
-                              <button
-                                type="button"
-                                className="text-xs truncate max-w-full hover:underline"
-                                title={text}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setEditEntry(entry);
-                                  setEditEntryTab("stone");
-                                }}
-                              >
-                                {text}
-                              </button>
-                            );
-                          }
-                          return renderStoneVendorSelect(entry);
-                        })()
+                      ? renderStoneVendorSelect(entry)
                       : renderSelectCellWithQuickEdit(
                           entry,
                           "pump_vendor_id",
