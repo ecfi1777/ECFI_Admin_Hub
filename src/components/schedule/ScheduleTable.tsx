@@ -192,8 +192,9 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
   const { data: inspectors = [] } = useInspectors();
 
   // Helper to detect stone phase entries
+  const STONE_PREP_PHASES = ["prep slabs", "prep b&g slabs", "prep exterior slabs"];
   const isPrepSlabs = (entry: ScheduleEntry) =>
-    entry.phases?.name?.toLowerCase() === "prep slabs";
+    STONE_PREP_PHASES.includes((entry.phases?.name || "").trim().toLowerCase());
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Record<string, any> }) => {
