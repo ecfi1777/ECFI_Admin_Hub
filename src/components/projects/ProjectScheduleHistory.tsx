@@ -49,6 +49,9 @@ interface ScheduleEntry {
   inspection_invoice_number: string | null;
   inspection_amount: number | null;
   inspection_notes: string | null;
+  sub_will_invoice: boolean;
+  sub_invoice_number: string | null;
+  sub_invoice_amount: number | null;
   stone_notes: string | null;
   notes: string | null;
   supplier_id: string | null;
@@ -115,6 +118,10 @@ export function ProjectScheduleHistory({ projectId, readOnly = false }: ProjectS
     // Crew tab
     crew_yards_poured: "",
     crew_notes: "",
+    // Sub contractor
+    sub_will_invoice: false,
+    sub_invoice_number: "",
+    sub_invoice_amount: "",
   });
 
   const { data: entries = [], isLoading } = useQuery({
@@ -138,6 +145,9 @@ export function ProjectScheduleHistory({ projectId, readOnly = false }: ProjectS
           inspection_invoice_number,
           inspection_amount,
           inspection_notes,
+          sub_will_invoice,
+          sub_invoice_number,
+          sub_invoice_amount,
           stone_notes,
           notes,
           supplier_id,
@@ -317,6 +327,9 @@ export function ProjectScheduleHistory({ projectId, readOnly = false }: ProjectS
       inspection_notes: entry.inspection_notes || "",
       crew_yards_poured: entry.crew_yards_poured?.toString() || "",
       crew_notes: entry.crew_notes || "",
+      sub_will_invoice: entry.sub_will_invoice || false,
+      sub_invoice_number: entry.sub_invoice_number || "",
+      sub_invoice_amount: entry.sub_invoice_amount?.toString() || "",
     });
   };
 
@@ -340,11 +353,14 @@ export function ProjectScheduleHistory({ projectId, readOnly = false }: ProjectS
       inspection_notes: formData.inspection_notes || null,
       crew_yards_poured: formData.crew_yards_poured ? parseFloat(formData.crew_yards_poured) : null,
       crew_notes: formData.crew_notes || null,
+      sub_will_invoice: formData.sub_will_invoice,
+      sub_invoice_number: formData.sub_will_invoice ? (formData.sub_invoice_number || null) : null,
+      sub_invoice_amount: formData.sub_will_invoice && formData.sub_invoice_amount ? parseFloat(formData.sub_invoice_amount) : null,
     };
     updateMutation.mutate(updates);
   };
 
-  const updateField = (field: string, value: string) => {
+  const updateField = (field: string, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -617,6 +633,26 @@ export function ProjectScheduleHistory({ projectId, readOnly = false }: ProjectS
                             </div>
                           )}
 
+                          {/* Sub Labor */}
+                          {!readOnly && entry.sub_will_invoice && (entry.sub_invoice_number || entry.sub_invoice_amount) && (
+                            <div className="bg-muted rounded p-2 space-y-1">
+                              <div className="flex items-center gap-1 text-muted-foreground text-xs font-medium">
+                                <Users className="w-3 h-3" />
+                                Sub Labor
+                              </div>
+                              {entry.sub_invoice_number && (
+                                <div className="text-muted-foreground">
+                                  Inv: {entry.sub_invoice_number}
+                                </div>
+                              )}
+                              {formatCurrency(entry.sub_invoice_amount) && (
+                                <div className="text-green-400">
+                                  {formatCurrency(entry.sub_invoice_amount)}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
                           {/* Crew */}
                           {(entry.crew_yards_poured || entry.crew_notes) && (
                             <div className="bg-muted rounded p-2 space-y-1">
@@ -674,6 +710,45 @@ export function ProjectScheduleHistory({ projectId, readOnly = false }: ProjectS
               Edit Vendor Details - {editingEntry && format(new Date(editingEntry.scheduled_date + "T00:00:00"), "MMM d, yyyy")}
             </DialogTitle>
           </DialogHeader>
+
+          <div className="bg-muted rounded p-3 space-y-3">
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="history_sub_will_invoice"
+                checked={formData.sub_will_invoice}
+                onChange={(e) => updateField("sub_will_invoice", e.target.checked)}
+                className="h-4 w-4 rounded border-input"
+              />
+              <Label htmlFor="history_sub_will_invoice" className="text-foreground">
+                Sub will invoice for this work (creates a Sub Labor vendor bill)
+              </Label>
+            </div>
+            {formData.sub_will_invoice && (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Sub Invoice #</Label>
+                  <Input
+                    value={formData.sub_invoice_number}
+                    onChange={(e) => updateField("sub_invoice_number", e.target.value)}
+                    placeholder="Invoice #"
+                    className="bg-card border-border text-foreground"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Sub Invoice Amount ($)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={formData.sub_invoice_amount}
+                    onChange={(e) => updateField("sub_invoice_amount", e.target.value)}
+                    placeholder="0.00"
+                    className="bg-card border-border text-foreground"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
 
           <Tabs defaultValue="concrete" className="w-full">
             <TabsList className="grid w-full grid-cols-4 bg-muted">
