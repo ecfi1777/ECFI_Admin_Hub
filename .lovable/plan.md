@@ -19,6 +19,12 @@ Add a "Sub Labor" detail card to each entry in Schedule History, shown whenever 
 
 Card position: after Inspection and before Crew, so costs stay grouped together.
 
+## Second fix: the two different Edit screens
+
+Clicking Edit on the Schedule History tab opens a smaller "Edit Vendor Details" box with only Concrete, Pump, Inspection and Crew. The pencil on the Daily Schedule opens the full entry editor with General, Concrete, Pump, Inspection, Invoicing and Crew. That's why the sub invoice fields can't be seen or corrected from the project page.
+
+Fix: add the same "Sub will invoice for this work" block (checkbox, Sub Invoice #, Sub Invoice Amount) to the Schedule History edit box, so both screens can record the same information.
+
 ## Technical notes
 
 - `src/components/projects/ProjectScheduleHistory.tsx`: add `sub_will_invoice`, `sub_invoice_number`, `sub_invoice_amount` to the `schedule_entries` select and to the local `ScheduleEntry` interface.
