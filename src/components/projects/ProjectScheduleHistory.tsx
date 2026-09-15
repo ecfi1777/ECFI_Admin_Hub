@@ -49,6 +49,9 @@ interface ScheduleEntry {
   inspection_invoice_number: string | null;
   inspection_amount: number | null;
   inspection_notes: string | null;
+  sub_will_invoice: boolean;
+  sub_invoice_number: string | null;
+  sub_invoice_amount: number | null;
   stone_notes: string | null;
   notes: string | null;
   supplier_id: string | null;
@@ -115,6 +118,10 @@ export function ProjectScheduleHistory({ projectId, readOnly = false }: ProjectS
     // Crew tab
     crew_yards_poured: "",
     crew_notes: "",
+    // Sub contractor
+    sub_will_invoice: false,
+    sub_invoice_number: "",
+    sub_invoice_amount: "",
   });
 
   const { data: entries = [], isLoading } = useQuery({
