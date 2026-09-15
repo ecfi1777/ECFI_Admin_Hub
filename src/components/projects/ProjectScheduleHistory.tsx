@@ -633,6 +633,26 @@ export function ProjectScheduleHistory({ projectId, readOnly = false }: ProjectS
                             </div>
                           )}
 
+                          {/* Sub Labor */}
+                          {!readOnly && entry.sub_will_invoice && (entry.sub_invoice_number || entry.sub_invoice_amount) && (
+                            <div className="bg-muted rounded p-2 space-y-1">
+                              <div className="flex items-center gap-1 text-muted-foreground text-xs font-medium">
+                                <Users className="w-3 h-3" />
+                                Sub Labor
+                              </div>
+                              {entry.sub_invoice_number && (
+                                <div className="text-muted-foreground">
+                                  Inv: {entry.sub_invoice_number}
+                                </div>
+                              )}
+                              {formatCurrency(entry.sub_invoice_amount) && (
+                                <div className="text-green-400">
+                                  {formatCurrency(entry.sub_invoice_amount)}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
                           {/* Crew */}
                           {(entry.crew_yards_poured || entry.crew_notes) && (
                             <div className="bg-muted rounded p-2 space-y-1">
