@@ -29,4 +29,5 @@ Fix: add the same "Sub will invoice for this work" block (checkbox, Sub Invoice 
 
 - `src/components/projects/ProjectScheduleHistory.tsx`: add `sub_will_invoice`, `sub_invoice_number`, `sub_invoice_amount` to the `schedule_entries` select and to the local `ScheduleEntry` interface.
 - Render a new card block guarded by `entry.sub_will_invoice && (sub_invoice_number || sub_invoice_amount)`, reusing the existing `bg-muted rounded p-2` card markup, `formatCurrency`, and the `!readOnly` guard used by the Pump/Inspection cards.
+- Same file's inline edit dialog (`editingEntry` form state, `formData`, `updateField`, save mutation): add the three sub fields to the form state, load them in the edit handler, render the checkbox + two inputs above the tab strip (mirroring `GeneralTab.tsx`), and include them in the update payload, clearing number/amount when the checkbox is off.
 - No database or schema changes; the data already exists on `schedule_entries`.
