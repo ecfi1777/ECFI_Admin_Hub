@@ -327,6 +327,9 @@ export function ProjectScheduleHistory({ projectId, readOnly = false }: ProjectS
       inspection_notes: entry.inspection_notes || "",
       crew_yards_poured: entry.crew_yards_poured?.toString() || "",
       crew_notes: entry.crew_notes || "",
+      sub_will_invoice: entry.sub_will_invoice || false,
+      sub_invoice_number: entry.sub_invoice_number || "",
+      sub_invoice_amount: entry.sub_invoice_amount?.toString() || "",
     });
   };
 
@@ -350,11 +353,14 @@ export function ProjectScheduleHistory({ projectId, readOnly = false }: ProjectS
       inspection_notes: formData.inspection_notes || null,
       crew_yards_poured: formData.crew_yards_poured ? parseFloat(formData.crew_yards_poured) : null,
       crew_notes: formData.crew_notes || null,
+      sub_will_invoice: formData.sub_will_invoice,
+      sub_invoice_number: formData.sub_will_invoice ? (formData.sub_invoice_number || null) : null,
+      sub_invoice_amount: formData.sub_will_invoice && formData.sub_invoice_amount ? parseFloat(formData.sub_invoice_amount) : null,
     };
     updateMutation.mutate(updates);
   };
 
-  const updateField = (field: string, value: string) => {
+  const updateField = (field: string, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
