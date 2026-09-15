@@ -4,7 +4,9 @@
 
 The Schedule History tab on a project never loads or shows the subcontractor invoice fields. It only shows Concrete, Stone, Pump, Inspection, Crew, and Invoicing details.
 
-What you see on the Basement & Garage Slab entries ("inv # 713" under Crew) is not the subcontractor invoice — that is free text someone typed into the crew note box. So the Exterior Flatwork and Driveways entries, where the sub invoice number and amount were entered properly in the entry screen, show nothing.
+What you see on the Basement & Garage Slab entries ("inv # 713" under Crew) is not the subcontractor invoice. Verified against those two entries in the database: their sub-invoice fields are empty, and the text sits in the crew notes field — typed by hand on the Crew tab (one reads "inv # 713", the other "Inv # 713", different capitalization). Nothing in the app generates that note; it is free text.
+
+Meanwhile Exterior Flatwork (inv 767, $1,064) and Driveways (inv 786, $2,391) do have real sub-invoice data saved, and the Schedule History tab simply never loads or displays those fields — so they show nothing.
 
 ## The fix
 
