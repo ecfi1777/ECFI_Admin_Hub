@@ -711,6 +711,45 @@ export function ProjectScheduleHistory({ projectId, readOnly = false }: ProjectS
             </DialogTitle>
           </DialogHeader>
 
+          <div className="bg-muted rounded p-3 space-y-3">
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="history_sub_will_invoice"
+                checked={formData.sub_will_invoice}
+                onChange={(e) => updateField("sub_will_invoice", e.target.checked)}
+                className="h-4 w-4 rounded border-input"
+              />
+              <Label htmlFor="history_sub_will_invoice" className="text-foreground">
+                Sub will invoice for this work (creates a Sub Labor vendor bill)
+              </Label>
+            </div>
+            {formData.sub_will_invoice && (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Sub Invoice #</Label>
+                  <Input
+                    value={formData.sub_invoice_number}
+                    onChange={(e) => updateField("sub_invoice_number", e.target.value)}
+                    placeholder="Invoice #"
+                    className="bg-card border-border text-foreground"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Sub Invoice Amount ($)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={formData.sub_invoice_amount}
+                    onChange={(e) => updateField("sub_invoice_amount", e.target.value)}
+                    placeholder="0.00"
+                    className="bg-card border-border text-foreground"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
           <Tabs defaultValue="concrete" className="w-full">
             <TabsList className="grid w-full grid-cols-4 bg-muted">
               <TabsTrigger value="concrete" className="data-[state=active]:bg-border">Concrete</TabsTrigger>
