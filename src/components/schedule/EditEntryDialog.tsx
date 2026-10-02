@@ -71,7 +71,7 @@ export function EditEntryDialog({ entry, open, onOpenChange, defaultTab = "gener
     const phaseId = formData.phase_id;
     if (!phaseId) return false;
     const phase = phases.find(p => p.id === phaseId);
-    return phase?.name === "Prep Slabs";
+    return ["prep slabs", "prep b&g slabs", "prep exterior slabs"].includes((phase?.name || "").trim().toLowerCase());
   }, [formData.phase_id, phases]);
 
   // Resolve the effective tab: if defaultTab is "concrete" but phase is Prep Slabs, use "stone"

@@ -397,7 +397,7 @@ export function AddEntryDialog({ open, onOpenChange, defaultCrewId, defaultDate,
             const isPrepSlabs = (() => {
               if (!formData.phase_id) return false;
               const phase = phases.find(p => p.id === formData.phase_id);
-              return phase?.name === "Prep Slabs";
+              return ["prep slabs", "prep b&g slabs", "prep exterior slabs"].includes((phase?.name || "").trim().toLowerCase());
             })();
             const materialTabLabel = isPrepSlabs ? "Stone" : "Concrete";
             const materialTabValue = isPrepSlabs ? "stone" : "concrete";
