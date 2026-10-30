@@ -10,6 +10,8 @@ import ExcelJS from "exceljs";
 import { cn } from "@/lib/utils";
 import { ProjectDetailsSheet } from "@/components/projects/ProjectDetailsSheet";
 import { useUserRole } from "@/hooks/useUserRole";
+import { PayrollReconciliationBlock, type ReconPatch } from "@/components/reports/PayrollReconciliationBlock";
+import { carryForward, commissionDue, type PayrollRecon } from "@/lib/payrollReconciliation";
 
 interface CommissionReportProps {
   month: number;
@@ -221,6 +223,49 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
       queryClient.invalidateQueries({ queryKey: ["commission-report-notes", organizationId, month, year] });
     },
     onError: () => toast.error("Failed to save note"),
+  });
+
+  // ── Payroll reconciliation (all months for org, for carry-forward) ──
+  const { data: reconData } = useQuery({
+    queryKey: ["commission-payroll-recon", organizationId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("commission_payroll_reconciliations")
+        .select("crew_id, month, year, quickbooks_amount, payroll_used_amount, adjustment_notes, amount_paid, labor_allowance_snapshot")
+        .eq("organization_id", organizationId);
+      if (error) throw error;
+      return (data || []) as PayrollRecon[];
+    },
+    enabled: !!organizationId && canManage,
+  });
+
+  const reconByCrew = useMemo(() => {
+    const m: Record<string, PayrollRecon> = {};
+    (reconData || []).forEach((r) => { if (r.month === month && r.year === year) m[r.crew_id] = r; });
+    return m;
+  }, [reconData, month, year]);
+
+  const saveReconMutation = useMutation({
+    mutationFn: async ({ crewId, laborAllow, patch }: { crewId: string; laborAllow: number; patch: ReconPatch }) => {
+      const existing = reconByCrew[crewId];
+      const { error } = await supabase
+        .from("commission_payroll_reconciliations")
+        .upsert(
+          {
+            organization_id: organizationId, crew_id: crewId, month, year,
+            quickbooks_amount: existing?.quickbooks_amount ?? null,
+            payroll_used_amount: existing?.payroll_used_amount ?? null,
+            adjustment_notes: existing?.adjustment_notes ?? null,
+            amount_paid: existing?.amount_paid ?? null,
+            ...patch,
+            labor_allowance_snapshot: laborAllow,
+          },
+          { onConflict: "organization_id,crew_id,month,year" }
+        );
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["commission-payroll-recon", organizationId] }),
+    onError: () => toast.error("Failed to save payroll reconciliation"),
   });
 
   const [overrides, setOverrides] = useState<Record<string, {
@@ -762,6 +807,34 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
           sheet.mergeCells(noteRow.number, 1, noteRow.number, COLUMNS.length);
         }
 
+        // Payroll reconciliation (managers only)
+        if (canManage) {
+          const rec = reconByCrew[group.crewId];
+          const allow = group.totals.laborAllow;
+          const used = rec?.payroll_used_amount ?? null;
+          const due = commissionDue(allow, used);
+          const lines: [string, number | string | null][] = [
+            ["QuickBooks commission payroll", rec?.quickbooks_amount ?? null],
+            ["Payroll figure used", used],
+            ["Labor allowance", allow],
+            ["Commission due", due],
+            ["Amount paid", rec?.amount_paid ?? null],
+            ["Carry-forward (+ overpaid / − underpaid)", carryForward(reconData || [], group.crewId, month, year, allow)],
+          ];
+          sheet.addRow(["Payroll Reconciliation:"]).font = { bold: true, size: 9 };
+          for (const [label, val] of lines) {
+            const r = sheet.addRow([label, val]);
+            r.font = { size: 9 };
+            r.getCell(2).numFmt = currencyFmt;
+          }
+          if (rec?.adjustment_notes?.trim()) {
+            const r = sheet.addRow(["Adjustment notes", rec.adjustment_notes]);
+            r.font = { size: 9 };
+            r.alignment = { wrapText: true, vertical: "top" };
+            sheet.mergeCells(r.number, 2, r.number, COLUMNS.length);
+          }
+        }
+
         // Blank spacer
         sheet.addRow([]);
       }
@@ -997,6 +1070,15 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
               canManage={canManage}
               onSave={(notes) => saveNoteMutation.mutate({ crewId: group.crewId, notes })}
             />
+            {canManage && (
+              <PayrollReconciliationBlock
+                crewName={group.crewName}
+                record={reconByCrew[group.crewId]}
+                laborAllowance={group.totals.laborAllow}
+                carry={carryForward(reconData || [], group.crewId, month, year, group.totals.laborAllow)}
+                onSave={(patch) => saveReconMutation.mutate({ crewId: group.crewId, laborAllow: group.totals.laborAllow, patch })}
+              />
+            )}
           </div>
           {gi < crewGroups.length - 1 && <div className="py-3" />}
         </div>
