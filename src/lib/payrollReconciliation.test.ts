@@ -23,4 +23,13 @@ describe("payroll reconciliation", () => {
   it("unpaid months add nothing to carry-forward", () => {
     expect(carryForward([row(8, 8000, null, 10000)], "c1", 8, 2026, 10000)).toBe(0);
   });
+
+  it("balance history ends at the carry-forward and keeps notes", () => {
+    const rows = [{ ...row(9, 6000, 3500, 9000) }, { ...row(8, 8000, 2500, 10000), payment_notes: "Draw forward" }];
+    const h = carryForwardHistory(rows, "c1", 9, 2026, 9000);
+    expect(h.map((x) => x.month)).toEqual([8, 9]);
+    expect(h[0].note).toBe("Draw forward");
+    expect(h[1].running).toBe(carryForward(rows, "c1", 9, 2026, 9000));
+    expect(h[1].running).toBe(1000);
+  });
 });
