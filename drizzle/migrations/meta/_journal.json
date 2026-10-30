@@ -8,6 +8,13 @@
       "when": 1793395884238,
       "tag": "0000_commission_payroll_reconciliations",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793397859608,
+      "tag": "0001_add_payment_notes",
+      "breakpoints": true
     }
   ]
 }
