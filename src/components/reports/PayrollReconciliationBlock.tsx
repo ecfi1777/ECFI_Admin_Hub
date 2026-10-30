@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { commissionDue, monthOverUnder, PayrollRecon } from "@/lib/payrollReconciliation";
+import { commissionDue, monthOverUnder, PayrollRecon, type CarryHistoryRow } from "@/lib/payrollReconciliation";
+import { BalanceNotesDialog } from "@/components/reports/BalanceNotesDialog";
 
 const fmt = (v: number | null | undefined) =>
   v == null ? "—" : `${v < 0 ? "-" : ""}$${Math.abs(v).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-export type ReconPatch = Partial<Pick<PayrollRecon, "quickbooks_amount" | "payroll_used_amount" | "adjustment_notes" | "amount_paid">>;
+export type ReconPatch = Partial<Pick<PayrollRecon, "quickbooks_amount" | "payroll_used_amount" | "adjustment_notes" | "amount_paid" | "payment_notes">>;
 
 function MoneyInput({ value, onSave }: { value: number | null; onSave: (v: number | null) => void }) {
   const [focused, setFocused] = useState(false);
@@ -40,13 +41,20 @@ export function PayrollReconciliationBlock({
   laborAllowance,
   carry,
   onSave,
+  history,
+  onSaveHistoryNote,
 }: {
   crewName: string;
   record: PayrollRecon | undefined;
   laborAllowance: number;
   carry: number;
   onSave: (patch: ReconPatch) => void;
+  history: CarryHistoryRow[];
+  onSaveHistoryNote: (month: number, year: number, note: string) => void;
 }) {
+  const [payNote, setPayNote] = useState(record?.payment_notes ?? "");
+  useEffect(() => setPayNote(record?.payment_notes ?? ""), [record?.payment_notes]);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [notes, setNotes] = useState(record?.adjustment_notes ?? "");
   useEffect(() => setNotes(record?.adjustment_notes ?? ""), [record?.adjustment_notes]);
 
@@ -79,12 +87,27 @@ export function PayrollReconciliationBlock({
           <Row n="6." label="Amount actually paid">
             <MoneyInput value={paid} onSave={(v) => onSave({ amount_paid: v })} />
           </Row>
+          <div className="py-1 border-b border-border/50">
+            <input
+              type="text"
+              value={payNote}
+              onChange={(e) => setPayNote(e.target.value)}
+              onBlur={() => payNote !== (record?.payment_notes ?? "") && onSave({ payment_notes: payNote })}
+              onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+              placeholder="Payment note (e.g. Draw forward)"
+              className="w-full h-7 px-2 text-xs border border-input rounded bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
           <Row n="" label="This month over / under (6 − 5)">{paid == null ? "—" : <span className={sign(ou)}>{fmt(ou)}</span>}</Row>
           <Row n="" label="Carry-forward balance">
             <span className={cn("font-semibold", sign(carry))}>
               {carry === 0 ? "$0.00 — even" : carry > 0 ? `Overpaid ${fmt(carry)} to date` : `Underpaid ${fmt(-carry)} to date`}
             </span>
           </Row>
+          <button type="button" onClick={() => setHistoryOpen(true)} className="mt-1 text-xs text-primary hover:underline">
+            Balance notes ({history.length})
+          </button>
+          <BalanceNotesDialog open={historyOpen} onOpenChange={setHistoryOpen} crewName={crewName} rows={history} onSaveNote={onSaveHistoryNote} />
         </div>
         <div className="pt-1">
           <div className="text-muted-foreground mb-1"><span className="font-mono mr-1">3.</span>Deductions / modifications notes</div>

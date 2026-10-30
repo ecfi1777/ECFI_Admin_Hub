@@ -1,0 +1,1 @@
+ALTER TABLE public.commission_payroll_reconciliations ADD COLUMN IF NOT EXISTS payment_notes text;

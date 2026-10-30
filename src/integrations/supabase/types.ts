@@ -115,6 +115,7 @@ export type Database = {
           labor_allowance_snapshot: number | null
           month: number
           organization_id: string
+          payment_notes: string | null
           payroll_used_amount: number | null
           quickbooks_amount: number | null
           updated_at: string
@@ -129,6 +130,7 @@ export type Database = {
           labor_allowance_snapshot?: number | null
           month: number
           organization_id: string
+          payment_notes?: string | null
           payroll_used_amount?: number | null
           quickbooks_amount?: number | null
           updated_at?: string
@@ -143,6 +145,7 @@ export type Database = {
           labor_allowance_snapshot?: number | null
           month?: number
           organization_id?: string
+          payment_notes?: string | null
           payroll_used_amount?: number | null
           quickbooks_amount?: number | null
           updated_at?: string
