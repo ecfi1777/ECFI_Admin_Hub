@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 import { ProjectDetailsSheet } from "@/components/projects/ProjectDetailsSheet";
 import { useUserRole } from "@/hooks/useUserRole";
 import { PayrollReconciliationBlock, type ReconPatch } from "@/components/reports/PayrollReconciliationBlock";
-import { carryForward, commissionDue, type PayrollRecon } from "@/lib/payrollReconciliation";
+import { carryForward, carryForwardHistory, commissionDue, type PayrollRecon } from "@/lib/payrollReconciliation";
 
 interface CommissionReportProps {
   month: number;
@@ -231,7 +231,7 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
     queryFn: async () => {
       const { data, error } = await supabase
         .from("commission_payroll_reconciliations")
-        .select("crew_id, month, year, quickbooks_amount, payroll_used_amount, adjustment_notes, amount_paid, labor_allowance_snapshot")
+        .select("crew_id, month, year, quickbooks_amount, payroll_used_amount, adjustment_notes, amount_paid, labor_allowance_snapshot, payment_notes")
         .eq("organization_id", organizationId);
       if (error) throw error;
       return (data || []) as PayrollRecon[];
@@ -257,6 +257,7 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
             payroll_used_amount: existing?.payroll_used_amount ?? null,
             adjustment_notes: existing?.adjustment_notes ?? null,
             amount_paid: existing?.amount_paid ?? null,
+            payment_notes: existing?.payment_notes ?? null,
             ...patch,
             labor_allowance_snapshot: laborAllow,
           },
@@ -266,6 +267,18 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["commission-payroll-recon", organizationId] }),
     onError: () => toast.error("Failed to save payroll reconciliation"),
+  });
+
+  const savePastNoteMutation = useMutation({
+    mutationFn: async ({ crewId, m, y, note }: { crewId: string; m: number; y: number; note: string }) => {
+      const { error } = await supabase
+        .from("commission_payroll_reconciliations")
+        .update({ payment_notes: note || null })
+        .eq("organization_id", organizationId).eq("crew_id", crewId).eq("month", m).eq("year", y);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["commission-payroll-recon", organizationId] }),
+    onError: () => toast.error("Failed to save balance note"),
   });
 
   const [overrides, setOverrides] = useState<Record<string, {
@@ -819,6 +832,7 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
             ["Labor allowance", allow],
             ["Commission due", due],
             ["Amount paid", rec?.amount_paid ?? null],
+            ["Payment note", rec?.payment_notes?.trim() || null],
             ["Carry-forward (+ overpaid / − underpaid)", carryForward(reconData || [], group.crewId, month, year, allow)],
           ];
           sheet.addRow(["Payroll Reconciliation:"]).font = { bold: true, size: 9 };
@@ -1077,6 +1091,8 @@ export function CommissionReport({ month, year, organizationId }: CommissionRepo
                 laborAllowance={group.totals.laborAllow}
                 carry={carryForward(reconData || [], group.crewId, month, year, group.totals.laborAllow)}
                 onSave={(patch) => saveReconMutation.mutate({ crewId: group.crewId, laborAllow: group.totals.laborAllow, patch })}
+                history={carryForwardHistory(reconData || [], group.crewId, month, year, group.totals.laborAllow)}
+                onSaveHistoryNote={(m, y, note) => savePastNoteMutation.mutate({ crewId: group.crewId, m, y, note })}
               />
             )}
           </div>
