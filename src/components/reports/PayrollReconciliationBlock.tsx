@@ -9,24 +9,28 @@ const fmt = (v: number | null | undefined) =>
 export type ReconPatch = Partial<Pick<PayrollRecon, "quickbooks_amount" | "payroll_used_amount" | "adjustment_notes" | "amount_paid">>;
 
 function MoneyInput({ value, onSave }: { value: number | null; onSave: (v: number | null) => void }) {
+  const [focused, setFocused] = useState(false);
   const [draft, setDraft] = useState(value?.toString() ?? "");
-  useEffect(() => setDraft(value?.toString() ?? ""), [value]);
+  useEffect(() => { if (!focused) setDraft(value?.toString() ?? ""); }, [value, focused]);
+  const display = value == null ? "" : fmt(value);
   return (
-    <div className="flex items-center gap-1">
-      <span className="text-muted-foreground">$</span>
-      <input
-        type="number"
-        step="0.01"
-        value={draft}
-        onChange={(e) => setDraft(e.target.value)}
-        onBlur={() => {
-          const next = draft === "" ? null : parseFloat(draft);
-          if (next !== value) onSave(next);
-        }}
-        onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
-        className="w-28 h-7 px-2 text-right text-xs border border-input rounded bg-background focus:outline-none focus:ring-1 focus:ring-primary"
-      />
-    </div>
+    <input
+      type="text"
+      inputMode="decimal"
+      value={focused ? draft : display}
+      placeholder="$0.00"
+      onFocus={() => { setDraft(value?.toString() ?? ""); setFocused(true); }}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={() => {
+        setFocused(false);
+        const cleaned = draft.replace(/[$,\s]/g, "");
+        const parsed = cleaned === "" ? null : parseFloat(cleaned);
+        const next = parsed != null && isNaN(parsed) ? value : parsed;
+        if (next !== value) onSave(next);
+      }}
+      onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+      className="w-32 h-7 px-2 text-right text-xs font-medium border border-input rounded bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+    />
   );
 }
 
