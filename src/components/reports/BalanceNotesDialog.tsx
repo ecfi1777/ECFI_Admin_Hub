@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { SavedNoteField } from "@/components/reports/SavedNoteField";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import type { CarryHistoryRow } from "@/lib/payrollReconciliation";
@@ -9,21 +9,6 @@ const signed = (v: number) => (v > 0 ? `+${fmt(v)}` : fmt(v));
 const tone = (v: number) => (v > 0 ? "text-green-600 dark:text-green-400" : v < 0 ? "text-destructive" : "");
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-function NoteCell({ value, onSave }: { value: string | null; onSave: (v: string) => void }) {
-  const [draft, setDraft] = useState(value ?? "");
-  useEffect(() => setDraft(value ?? ""), [value]);
-  return (
-    <input
-      type="text"
-      value={draft}
-      onChange={(e) => setDraft(e.target.value)}
-      onBlur={() => draft !== (value ?? "") && onSave(draft)}
-      onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
-      placeholder="Add note…"
-      className="w-full h-7 px-2 text-xs border border-transparent hover:border-input focus:border-input rounded bg-transparent focus:bg-background focus:outline-none"
-    />
-  );
-}
 
 export function BalanceNotesDialog({
   open, onOpenChange, crewName, rows, onSaveNote,
@@ -63,7 +48,7 @@ export function BalanceNotesDialog({
                     <td className="text-right px-2">{fmt(r.paid)}</td>
                     <td className={cn("text-right px-2", tone(r.overUnder))}>{r.paid == null ? "—" : signed(r.overUnder)}</td>
                     <td className={cn("text-right px-2 font-semibold", tone(r.running))}>{signed(r.running)}</td>
-                    <td className="pl-2"><NoteCell value={r.note} onSave={(v) => onSaveNote(r.month, r.year, v)} /></td>
+                    <td className="pl-2"><SavedNoteField value={r.note} onSave={(v) => onSaveNote(r.month, r.year, v)} onDelete={() => onSaveNote(r.month, r.year, "")} rows={2} /></td>
                   </tr>
                 ))}
               </tbody>

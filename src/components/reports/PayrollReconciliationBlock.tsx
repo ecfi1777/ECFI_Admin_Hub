@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Textarea } from "@/components/ui/textarea";
+import { SavedNoteField } from "@/components/reports/SavedNoteField";
 import { cn } from "@/lib/utils";
 import { commissionDue, monthOverUnder, PayrollRecon, type CarryHistoryRow } from "@/lib/payrollReconciliation";
 import { BalanceNotesDialog } from "@/components/reports/BalanceNotesDialog";
@@ -52,11 +52,7 @@ export function PayrollReconciliationBlock({
   history: CarryHistoryRow[];
   onSaveHistoryNote: (month: number, year: number, note: string) => void;
 }) {
-  const [payNote, setPayNote] = useState(record?.payment_notes ?? "");
-  useEffect(() => setPayNote(record?.payment_notes ?? ""), [record?.payment_notes]);
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [notes, setNotes] = useState(record?.adjustment_notes ?? "");
-  useEffect(() => setNotes(record?.adjustment_notes ?? ""), [record?.adjustment_notes]);
 
   const used = record?.payroll_used_amount ?? null;
   const paid = record?.amount_paid ?? null;
@@ -88,14 +84,12 @@ export function PayrollReconciliationBlock({
             <MoneyInput value={paid} onSave={(v) => onSave({ amount_paid: v })} />
           </Row>
           <div className="py-1 border-b border-border/50">
-            <input
-              type="text"
-              value={payNote}
-              onChange={(e) => setPayNote(e.target.value)}
-              onBlur={() => payNote !== (record?.payment_notes ?? "") && onSave({ payment_notes: payNote })}
-              onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+            <SavedNoteField
+              value={record?.payment_notes}
+              onSave={(t) => onSave({ payment_notes: t })}
+              onDelete={() => onSave({ payment_notes: null })}
               placeholder="Payment note (e.g. Draw forward)"
-              className="w-full h-7 px-2 text-xs border border-input rounded bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+              rows={2}
             />
           </div>
           <Row n="" label="This month over / under (6 − 5)">{paid == null ? "—" : <span className={sign(ou)}>{fmt(ou)}</span>}</Row>
@@ -111,13 +105,12 @@ export function PayrollReconciliationBlock({
         </div>
         <div className="pt-1">
           <div className="text-muted-foreground mb-1"><span className="font-mono mr-1">3.</span>Deductions / modifications notes</div>
-          <Textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            onBlur={() => notes !== (record?.adjustment_notes ?? "") && onSave({ adjustment_notes: notes })}
+          <SavedNoteField
+            value={record?.adjustment_notes}
+            onSave={(t) => onSave({ adjustment_notes: t })}
+            onDelete={() => onSave({ adjustment_notes: null })}
             placeholder="e.g. Gave $1,850 credit to labor to keep key employees"
             rows={5}
-            className="text-xs resize-y bg-background"
           />
         </div>
       </div>
