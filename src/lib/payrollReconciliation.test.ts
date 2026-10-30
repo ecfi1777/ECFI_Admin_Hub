@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { commissionDue, carryForward, PayrollRecon } from "./payrollReconciliation";
+import { commissionDue, carryForward, carryForwardHistory, PayrollRecon } from "./payrollReconciliation";
 
 const row = (month: number, used: number, paid: number | null, snap: number): PayrollRecon => ({
   crew_id: "c1", month, year: 2026, quickbooks_amount: null, payroll_used_amount: used,
