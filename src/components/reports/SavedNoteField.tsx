@@ -31,7 +31,7 @@ export function SavedNoteField({
           onChange={(e) => setDraft(e.target.value)}
           placeholder={placeholder}
           rows={rows}
-          className="text-xs resize-y bg-background"
+          className="px-2 py-1.5 text-xs resize-y bg-background"
         />
         <div className="flex gap-1 justify-end">
           <Button size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={() => setEditing(false)}>Cancel</Button>
@@ -50,14 +50,22 @@ export function SavedNoteField({
 
   if (!current) {
     return (
-      <Button size="sm" variant="outline" className="h-6 px-2 text-xs" onClick={startEdit}>Add note</Button>
+      <button
+        type="button"
+        onClick={startEdit}
+        className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-left text-xs text-muted-foreground hover:border-primary/60 hover:text-foreground"
+      >
+        + Add note
+      </button>
     );
   }
 
   return (
-    <div className="flex items-start gap-2">
-      <p className="flex-1 whitespace-pre-wrap text-xs">{current}</p>
-      <div className="flex gap-1 shrink-0">
+    <div className="flex items-start gap-1.5">
+      <p className="min-w-0 flex-1 whitespace-pre-wrap break-words rounded-md border border-input bg-background px-2 py-1.5 text-xs">
+        {current}
+      </p>
+      <div className="flex shrink-0 gap-1">
         <Button size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={startEdit}>Edit</Button>
         <Button size="sm" variant="ghost" className="h-6 px-2 text-xs text-muted-foreground" onClick={() => setConfirmOpen(true)}>Delete</Button>
       </div>
