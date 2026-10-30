@@ -105,6 +105,66 @@ export type Database = {
           },
         ]
       }
+      commission_payroll_reconciliations: {
+        Row: {
+          adjustment_notes: string | null
+          amount_paid: number | null
+          created_at: string
+          crew_id: string
+          id: string
+          labor_allowance_snapshot: number | null
+          month: number
+          organization_id: string
+          payroll_used_amount: number | null
+          quickbooks_amount: number | null
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          adjustment_notes?: string | null
+          amount_paid?: number | null
+          created_at?: string
+          crew_id: string
+          id?: string
+          labor_allowance_snapshot?: number | null
+          month: number
+          organization_id: string
+          payroll_used_amount?: number | null
+          quickbooks_amount?: number | null
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          adjustment_notes?: string | null
+          amount_paid?: number | null
+          created_at?: string
+          crew_id?: string
+          id?: string
+          labor_allowance_snapshot?: number | null
+          month?: number
+          organization_id?: string
+          payroll_used_amount?: number | null
+          quickbooks_amount?: number | null
+          updated_at?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_payroll_reconciliations_crew_id_fkey"
+            columns: ["crew_id"]
+            isOneToOne: false
+            referencedRelation: "crews"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_payroll_reconciliations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       commission_report_notes: {
         Row: {
           created_at: string
