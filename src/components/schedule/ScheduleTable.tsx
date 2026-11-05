@@ -419,7 +419,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
               stoneVendorMutation.mutate({ entry, supplierId: value === "none" ? null : value })
             }
           >
-            <SelectTrigger className="h-7 bg-background border-border text-foreground text-xs w-full">
+            <SelectTrigger className="h-7 bg-background border-border text-foreground text-xs inline-flex w-auto max-w-full min-w-0 gap-1 px-2">
               <SelectValue>{displayValue}</SelectValue>
             </SelectTrigger>
             <SelectContent className="bg-popover border-border">
@@ -551,7 +551,7 @@ export function ScheduleTable({ entries, readOnly = false, onRescheduled }: Sche
             value={currentId || "none"}
             onValueChange={(value) => handleSelectChange(entry.id, field, value)}
           >
-            <SelectTrigger className="h-7 bg-background border-border text-foreground text-xs w-full">
+            <SelectTrigger className="h-7 bg-background border-border text-foreground text-xs inline-flex w-auto max-w-full min-w-0 gap-1 px-2">
               <SelectValue>{displayValue || "-"}</SelectValue>
             </SelectTrigger>
             <SelectContent className="bg-popover border-border">
